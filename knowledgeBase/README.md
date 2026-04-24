@@ -5,45 +5,45 @@ This page is the main entry point for all issue knowledge in `knowledgeBase`.
 ## Main Categories
 
 - `auth/`
-  - Index: `auth/README.md`
+  - Index: `auth/`README`.md`
   - Subcategories:
-    - `auth/access-control/README.md` (Count: 5)
-    - `auth/policy-enforcement/README.md` (Count: 3)
-    - `auth/operational-security/README.md` (Count: 1)
+    - `auth/access-control/`README`.md` (Count: 5)
+    - `auth/policy-enforcement/`README`.md` (Count: 3)
+    - `auth/operational-security/`README`.md` (Count: 1)
 
 - `bridge/`
-  - Index: `bridge/README.md`
+  - Index: `bridge/`README`.md`
   - Subcategories:
-    - `bridge/cross-chain-core/README.md` (Count: 2)
-    - `bridge/router-pair-config/README.md` (Count: 3)
-    - `bridge/fee-tax-economics/README.md` (Count: 5)
-    - `bridge/session-time-windows/README.md` (Count: 3)
+    - `bridge/cross-chain-core/`README`.md` (Count: 2)
+    - `bridge/router-pair-config/`README`.md` (Count: 3)
+    - `bridge/fee-tax-economics/`README`.md` (Count: 5)
+    - `bridge/session-time-windows/`README`.md` (Count: 3)
 
 - `funds-lifecycle/`
-  - `funds-lifecycle/README.md` (Count: 6)
+  - `funds-lifecycle/`README`.md` (Count: 6)
 
 - `ops-runtime/`
-  - `ops-runtime/README.md` (Count: 1)
+  - `ops-runtime/`README`.md` (Count: 1)
 
 - `time/`
-  - `time/README.md`
+  - `time/`README`.md`
 
 - `gasSafing/`
-  - `gasSafing/README.md`
+  - `gasSafing/`README`.md`
 
 - `delegate call/`
-  - `delegate call/README.md`
+  - `delegate call/`README`.md`
 
 - `basic/`
-  - `basic/README.md`
+  - `basic/`README`.md`
 
 - `lending/`
-  - `lending/README.md`
+  - `lending/`README`.md`
 
 - `other/`
-  - `other/README.md`
+  - `other/`README`.md`
   - Subcategories:
-    - `other/data-structure-consistency/README.md` (Count: 1)
+    - `other/data-structure-consistency/`README`.md` (Count: 1)
 
 ## Quick Usage
 
