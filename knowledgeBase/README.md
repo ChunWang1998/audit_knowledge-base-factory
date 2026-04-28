@@ -7,20 +7,20 @@ This page is the main entry point for all issue knowledge in `knowledgeBase`.
 - `auth/`
   - Index: `auth/`README`.md`
   - Subcategories:
-    - `auth/access-control/`README`.md` (Count: 5)
-    - `auth/policy-enforcement/`README`.md` (Count: 3)
-    - `auth/operational-security/`README`.md` (Count: 1)
+    - `auth/access-control/`README`.md` (Count: 23)
+    - `auth/policy-enforcement/`README`.md` (Count: 11)
+    - `auth/operational-security/`README`.md` (Count: 2)
 
 - `bridge/`
   - Index: `bridge/`README`.md`
   - Subcategories:
     - `bridge/cross-chain-core/`README`.md` (Count: 2)
-    - `bridge/router-pair-config/`README`.md` (Count: 3)
-    - `bridge/fee-tax-economics/`README`.md` (Count: 5)
-    - `bridge/session-time-windows/`README`.md` (Count: 3)
+    - `bridge/router-pair-config/`README`.md` (Count: 10)
+    - `bridge/fee-tax-economics/`README`.md` (Count: 6)
+    - `bridge/session-time-windows/`README`.md` (Count: 4)
 
 - `funds-lifecycle/`
-  - `funds-lifecycle/`README`.md` (Count: 6)
+  - `funds-lifecycle/`README`.md` (Count: 13)
 
 - `ops-runtime/`
   - `ops-runtime/`README`.md` (Count: 1)
@@ -43,7 +43,7 @@ This page is the main entry point for all issue knowledge in `knowledgeBase`.
 - `other/`
   - `other/`README`.md`
   - Subcategories:
-    - `other/data-structure-consistency/`README`.md` (Count: 1)
+    - `other/data-structure-consistency/`README`.md` (Count: 16)
 
 ## Quick Usage
 

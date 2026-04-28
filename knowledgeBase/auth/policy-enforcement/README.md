@@ -1,6 +1,6 @@
 # auth/policy-enforcement - Issues
 
-- Count: 3
+- Count: 11
 
 ## F-2026-14935 - Auction Mode Bypass in bulkTransferTokens AllowsTransfers During Active Auctions
 - 嚴重度：Medium
@@ -40,3 +40,92 @@ Blacklist enforcement should be decoupled from the transaction-limitexemption ch
 
 ### 修補方式（實際）
 Fixed in c20e980: In KnoxNet, blacklist enforcement has been moved ahead of thetransaction-limit exemption guard within `_enforceTxLimit`. The function nowchecks sender, recipient, and `_msgSender` against the blacklist beforeevaluating isTxLimitExempt, so tx-limit exemption no longer bypassesblacklist restrictions. The previously described path allowing blacklistedsenders to transfer to exempt addresses is therefore removed. function `_enforceTxLimit`( address sender, address recipient, uint256 amount ) internal view { `require(blacklist[sender] == 0, "Sender blacklisted!")`; `require(blacklist[recipient] == 0, "Recipient blacklisted!")`; require(blacklist[`_msgSender`()] == 0, "Caller blacklisted!"); if (isTxLimitExempt[sender] || isTxLimitExempt[recipient]) return; TransferType transferType = `_classifyTransfer`(sender, recipient); uint256 maxTxAmount = transferType == TransferType.Sell ? `_maxSellTxAmount` : `_maxBuyTxAmount`; 30 `require(amount <= maxTxAmount, "Amount exceeds the tx limit.")`; } 31
+
+## F-2025-14461 - Fee-on-Transfer / Rebasing Tokens Break Accounting- Medium
+- 嚴重度：Medium
+- Report source：BullBit.pdf
+
+### 問題內容（摘要）
+The depositToken() function assumes that the Pool contract receivesexactly the amount of tokens specified by the user. However, thisassumption does not hold for fee-on-transfer, deflationary, or rebasingERC20 tokens. When a user deposits such a token, the token contract may deduct atransfer fee, burn a portion of the amount, or otherwise reduce the numberof tokens actually transferred to the Pool. Despite this, the Pool credits theuserʼs internal balance by the full amount parameter, without verifying howmany tokens were actually received. As a result, the internal accounting can become inconsistent with the Poolʼs real token balance. The Pool may record a higher balance for theuser than the contract actually holds on-chain, leading to balance inflation. This inconsistency can later surface during on-chain withdrawals, forcedwithdrawals, or emergency exit flows, where the Pool attempts to transfertokens that it does not actually have. In such cases, withdrawals mayrevert or fail, effectively locking user funds or breaking the escape-hatchmechanism. Pool.sol — depositToken(): function depositToken(address token, uint256 amount) external whenNotPaused notContract nonReentrant { requi
+
+### 修補方式（實際）
+The deposit logic was updated to account for fee-on-transfer anddeflationary tokens by measuring the Poolʼs token balance before and afterthe transfer and crediting users only with the actual amount received incommit 322258e. function depositToken(uint256 amount) external whenNotPaused nonReentrant { require(usdcToken != address(0), Pool_Usdc0x()); require(amount > 0, Pool_AmountZero()); 29 uint256 balanceBefore = IERC20(usdcToken).balanceOf(address(this)); IERC20(usdcToken).safeTransferFrom(msg.sender, address(this), amount); uint256 balanceAfter = IERC20(usdcToken).balanceOf(address(this)); uint256 receivedAmount = balanceAfter - balanceBefore; require(receivedAmount > 0, Pool_NoTokenReceived()); uint256 userBalanceBefore = balances[msg.sender][usdcToken]; balances[msg.sender][usdcToken] += receivedAmount; emit Deposit(msg.sender, usdcToken, receivedAmount, balances[msg.sende r][usdcTo
+
+
+## F-2026-14500 -  nalizeForceWithdrawal Silently Burns User BalanceWhen Pool Has Insu cient Token Balance - High
+- 嚴重度：High
+- Report source：BullBit.pdf
+
+### 問題內容（摘要）
+The finalizeForceWithdrawal() function in the Pool contract contains avulnerability where users can permanently lose their funds if the Pool contract's actual token balance is insufficient to cover the withdrawalamount. When the contract balance check fails, the function silently fallsthrough to a cross-chain withdrawal path that decrements the user'srecorded balance without transferring any tokens.The vulnerable code path is as follows: function finalizeForceWithdrawal(address _token) external notContract non Reentrant whenNotPaused { ForcedWithdrawalRequest memory request = forcedWithdrawalRequests[msg. sender][_token]; require(request.timestamp > 0, "Pool: no forced withdrawal initiated") ; require( block.timestamp >= request.timestamp + forceWithdrawDelay, "Pool: withdrawal delay not passed" ); uint256 amount = request.amount; string memory destination = request.destination; delete forcedWithdrawalRequests[msg.sender][_token]; // For on-chain assets, transfer tokens; for cross-chain, just emit ev ent as proof if (_token.code.length > 0) { // Try to transfer if it's an ERC20 contract try IERC20(_token).balanceOf(address(this)) returns (uint256 contr actBalance) { if (contractBal
+
+### 修補方式（實際）
+The force-withdrawal mechanism was entirely removed from the contractby eliminating the initiateForceWithdrawal() and finalizeForceWithdrawal() functions in commit 322258e. 19 Evidences PoC
+
+
+## F-2025-13316 - Total Supply ERC-721 Enumeration Incompliance -Medium
+- 嚴重度：Medium
+- Report source：Digital Oro International.pdf
+
+### 問題內容（摘要）
+The DOI_Gold and DOI_Token contracts are ERC-721 tokenimplementations. The contracts declare totalSupply function whichaccording to EIP-721 standard is meant to return the number of validtokens tracked by the contract. function totalSupply() public view override returns (uint256) { return tokenCounter; } However, the tokenCounter variable (used as return value of the totalSupply function) represents increasing counter to be used astoken id for new tokens minted and does not consider token burnpossibility. The replaceToken function (admin restricted) of the DOI_Gold contractburns token and mints a new one with a new token id, causing the tokenCounter increase while the actual number of tokens is kept same. function replaceToken( uint256 oldTokenId, address recipient, string calldata reason ) external onlyAdmin { ... // Burn the old token _burn(oldTokenId); // Mint the new token uint256 newTokenId = tokenCounter + 1; tokenCounter = newTokenId; _safeMint(recipient, newTokenId); ... } This may lead to the totalSupply function return an invalid valuepotentially causing issues in external services.
+
+### 修補方式（實際）
+The Finding is ﬁxed in the commit c19b227. The custom totalSupply function declarations are removed. 23
+
+
+## F-2025-13411 - Pausing Disables Allowance Revocation LeavingUsers Exposed During Emergencies - Medium
+- 嚴重度：Medium
+- Report source：NEBA Token.pdf
+
+### 問題內容（摘要）
+The token intentionally pauses transfers via ERC20PausableUpgradeable. Inaddition, approvals are also gated by the whenNotPaused modiﬁerthrough a custom _approve() override. This deviates fromOpenZeppelin’s default ERC20Pausable behavior, which does not pauseapprovals. // Approvals are disabled while paused function _approve(address owner, address spender, uint256 value, bool emitEve nt) internal virtual override whenNotPaused // <-- blocks *all* allowance changes during paus e { super._approve(owner, spender, value, emitEvent); } During a pause, users often want to rapidly reduce or zero-outallowances granted to DEXs, routers, custodians, bots, orcompromised third-party keys. Because _approve() function isguarded with the whenNotPaused modiﬁer, allowance changes—including reductions to 0—are rejected while the token is paused. As a result, users remain exposed to stale or compromised spendersfor the duration of a pause, exactly when risk is elevated (e.g., aDEX/router exploit discovered, API key leak, or phishing event).
+
+### 修補方式（實際）
+The approve() function does not enforce an unpaused status nowwithin the new implementation. Revised commit: 1f432d1. 9
+
+
+## F-2025-14262 - Reusable Authentication Signatures Due to MissingNonce - Medium
+- 嚴重度：Medium
+- Report source：RYT-2.pdf
+
+### 問題內容（摘要）
+The DIDContract implements an authenticate function that verifies userauthentication through an ECDSA signature constructed from the DID,verification method, timestamp, and msg.sender. However, the functiondoes not incorporate any nonce, replay counter, or signature-trackingmechanism. As a result, any valid signature remains reusable for the entireduration of the proof.timestamp window. Because the message hash isdeterministic and contains no unique per-request value, the contractaccepts identical signatures multiple times without detecting replayattempts. function authenticate( string memory did, AuthenticationProof memory proof ) external whenNotPaused validDID(did) notExpired(proof.timestamp + 300) { ... // Verify the signature bytes32 messageHash = keccak256( abi.encodePacked( did, proof.verificationMethod, proof.timestamp, msg.sender ) ); bytes32 ethSignedMessageHash = ECDSA.toEthSignedMessageHash(messageHash); address signer = ECDSA.recover(ethSignedMessageHash, proof.signature); require( signer == didDocuments[did].owner || didControllers[didDocuments[did].owner].contains(signer), "DIDContract: Invalid signature" ); // Update user stats _updateUserStats(msg.sender); emit Aut
+
+### 修補方式（實際）
+Fixed in a695108, the authentication hash now includes the nonce which isincremented each time when the signature was used ensuring thatpreviously issued signatures become invalid: bytes32 messageHash = keccak256( abi.encodePacked( did, proof.verificationMethod, proof.timestamp, msg.sender, proof.nonce ) ); authNonces[msg.sender] = authNonces[msg.sender] + 1; 16
+
+
+## F-2025-14269 - Possibility of Burning Incorrect Token Because ofMutable Credential Contract Address - Medium
+- 嚴重度：Medium
+- Report source：RYT-2.pdf
+
+### 問題內容（摘要）
+The DIDContract and SoulboundCredential contracts are designed to operatetogether. The soulbound credentials are minted through the DIDContract,which requires the credential contract address to be set beforehand. The revokeSBTCredential() function burns an existing ERC721 soulbound token byreferencing its token ID. function revokeSBTCredential(uint256 tokenId) external whenNotPaused sbtRequired { // Get the owner before burning address tokenOwner = sbtContract.ownerOf(tokenId); // Burn SBT through the SBT contract sbtContract.burnCredential(tokenId); emit SBTRevoked(msg.sender, tokenOwner, tokenId, block.timestamp); } The credential contract address can be modified by the contract owner atany time. function setSBTContract(address _sbtContract) external onlyOwner { require(_sbtContract != address(0), "DIDContract: Invalid SBT contract address"); sbtContract = SoulboundCredential(_sbtContract); sbtEnabled = true; emit SBTContractSet(_sbtContract); } If multiple instances of the SoulboundCredential contract exist, a modificationof the stored credential contract address while a revokeSBTCredential() transaction is pending in the mempool may result in a burn operationexecuted against a
+
+### 修補方式（實際）
+Fixed in a695108, the new sbtAddr param was introduced in the revokeSBTCredential() function that is used as the target address of the SoulboundCredential contract: function revokeSBTCredential(address sbtAddr, uint256 tokenId) external whenNotPaused sbtRequired onlyAuthorizedIssuer { if (sbtAddr == address(0)) revert InvalidSBTAddress(); SoulboundCredential target = SoulboundCredential(sbtAddr); ... } 18
+
+
+## F-2025-14222 - Security Mechanisms Inoperative due toOpenZeppelin v5 Hook Incompatibility - High
+- 嚴重度：High
+- Report source：RYT.pdf
+
+### 問題內容（摘要）
+The RYTStablecoin contract is an ERC20 token that implements regulatory andsecurity compliance features. It relies on the _beforeTokenTransfer internalfunction to enforce two critical restrictions before any tokens are moved(minted, burned, or transferred):    Pausability: Transfers should revert if the contract is paused by anadmin.   Blocklisting: Transfers should revert if the sender or receiver is in theisBlocklisted mapping. The project dependencies include OpenZeppelin Contracts v5.4.0, but thecontract implements the _beforeTokenTransfer hook, which was removed inversion 5.0 and replaced by _update. Because the parent ERC20 implementation in v5 never calls _beforeTokenTransfer, the custom securitylogic in RYTStablecoin is effectively dead code. Consequently, the Pauseand Blocklist features are completely non-functional, allowing blockedusers to transfer funds and preventing the admin from halting the contractduring emergencies. In OpenZeppelin Contracts v5.0, the _beforeTokenTransfer and _afterTokenTransfer hooks were refactored into a single _update function.The RYTStablecoin.sol contract defines its security logic as follows: function _beforeTokenTransfer(address from, addr
+
+### 修補方式（實際）
+In file hash 851798d95a8fa81a37c950c9c2da0a4085a96f52e73d38eb2f044b56868adb21, thefix replaces the deprecated _beforeTokenTransfer hook with the correct _update override, ensuring that pausability and blocklisting checks areactually executed during all token transfers, mints, and burns. Evidences PoC #1
+
+## F-2026-15162 - Deactivated Model Still Usable for Sessions and NodeRegistration
+- 嚴重度：Medium
+- Report source：Fabstir.pdf
+
+### 問題內容（完整）
+When the owner deactivates a model via deactivateModel, no enforcementexists in the session creation path to prevent new sessions from beingcreated against that model. The deactivation mechanism is effectivelybypassed. createSessionJobForModel and createSessionJobForModelWithToken validate that ahost supports a model by calling `nodeRegistry.nodeSupportsModel()`, whichonly checks the host's local supportedModels array: function `nodeSupportsModel(address nodeAddress, bytes32 modelId)` external view returns (bool) { bytes32[] memory models = nodes[nodeAddress].supportedModels; for (uint i = 0; i < models.length; i++) { if (models[i] == modelId) return true; } return false; } Neither the JobMarketplaceWithModelsUpgradeable session creationfunctions nor nodeSupportsModel ever call `modelRegistry.isModelApproved(modelId)` to verify the model is still active: JobMarketplaceWithModelsUpgradeable `require(nodeRegistry.nodeSupportsModel(host, modelId)`, "Host does not support model"); Model approval is checked only at node registration time (registerNode) andmodel update time (updateSupportedModels), but never at session creation.Once a host has the model in its local array, deactivation in ModelRegistryhas no downstream effect. A model deactivated by the owner for security reasons (e.g., compromisedweights, harmful outputs) continues to be available for new sessioncreation indefinitely. This renders the emergency deactivation mechanismineffective and exposes renters to inference from a model the ownerexplicitly deemed unsafe. Assets: `src/JobMarketplaceWithModelsUpgradeable.sol`[https://github.com/Fabstir/fabstir-compute-contracts#] 54 `src/NodeRegistryWithModelsUpgradeable.sol`[https://github.com/Fabstir/fabstir-compute-contracts#]src/ModelRegistryUpgradeable.sol [https://github.com/Fabstir/fabstir-compute-contracts#] Status: Fixed
+
+### 修補方式（建議）
+Add an isModelApproved check inJobMarketplaceWithModelsUpgradeable during model-aware sessioncreation, querying the ModelRegistry directly. Expose a reference toModelRegistry (either stored on JobMarketplace or accessed via `nodeRegistry.modelRegistry()`) and insert the check before the host-supportvalidation: `require(nodeRegistry.modelRegistry()`.`isModelApproved(modelId)`, "Model not act ive"); `require(nodeRegistry.nodeSupportsModel(host, modelId)`, "Host does not support model"); Apply this to both createSessionJobForModel and createSessionJobForModelWithToken. Resolution: Fixed in a49ef12: JobMarketplaceWithModelsUpgradeable now enforces model activationat model-aware session creation by requiring `nodeRegistry.modelRegistry()`.`isModelApproved(modelId)` before `nodeRegistry.nodeSupportsModel(host, modelId)`. `require(nodeRegistry.modelRegistry()`.`isModelApproved(modelId)`, "Model not app roved"); 55 The control is present in createSessionJobForModel and createSessionJobForModelWithToken, and the same enforcement is applied inthe delegate flow createSessionForModelAsDelegate. 56
+
+### 修補方式（實際）
+Fixed in a49ef12: JobMarketplaceWithModelsUpgradeable now enforces model activationat model-aware session creation by requiring `nodeRegistry.modelRegistry()`.`isModelApproved(modelId)` before `nodeRegistry.nodeSupportsModel(host, modelId)`. `require(nodeRegistry.modelRegistry()`.`isModelApproved(modelId)`, "Model not app roved"); 55 The control is present in createSessionJobForModel and createSessionJobForModelWithToken, and the same enforcement is applied inthe delegate flow createSessionForModelAsDelegate. 56
