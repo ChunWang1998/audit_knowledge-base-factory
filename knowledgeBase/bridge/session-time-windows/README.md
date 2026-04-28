@@ -1,6 +1,6 @@
 # bridge/session-time-windows - Issues
 
-- Count: 3
+- Count: 4
 
 ## F-2026-14911 - proofInterval Validated as Token Count but Used asSeconds in Timeout Calculation
 - 嚴重度：Medium
@@ -40,3 +40,14 @@ Restrict early cancel fee application to voluntary session completion only.One a
 
 ### 修補方式（實際）
 The early cancellation fee condition now additionally checks that session.status == SessionStatus.Completed, ensuring the fee is only applied onvoluntary depositor cancellations and not on timeout paths where thesession status is TimedOut: // Early cancel fee: depositor cancels before any proofs (F202615257: not on timeout) if (completedBy == session.depositor && session.status == SessionStatus.Compl eted && session.proofs.length == 0 && minTokensFee > 0) { Revised commit: df1f2e4. 58
+
+## F-2025-14287 - DoS via Concurrent Joint Contributor Invites -Medium
+- 嚴重度：Medium
+- Report source：RYT.pdf
+
+### 問題內容（摘要）
+The Komiti contract allows a Primary Contributor to invite a SecondaryContributor to share a slot via joinGroupWithJointContributor. The contractintends to limit each Primary Contributor to a single slot, enforcing this bychecking s_contributions[groupId][msg.sender] == 0. An issue allows a Primary Contributor to bypass the single-slot restrictionby sending multiple invites concurrently before any are accepted. Because s_contributions is only updated when a Secondary accepts an invite (in acceptInviteForJointContributor), the check in joinGroupWithJointContributor passes multiple times. This results in the Primary Contributor being addedto the group.members array multiple times, creating "duplicate slots." Since auser can only be paid once per group cycle, these duplicate slots disruptthe payout logic, causing the final payout cycle to fail  DoS) andpermanently locking the funds collected for that cycle. The issue stems from the timing gap between sending an invite and itsacceptance. Concurrent Invites: The Primary calls joinGroupWithJointContributor twice (or more) in rapid succession with different Secondaries. require(s_contributions[groupId][msg.sender] == 0, "Komiti: User alre
+
+### 修補方式（實際）
+Fixed in 1829f31. The functions acceptInviteForJointContributor() and joinGroupWithJointContributor() have been removed from the codebase. Evidences PoC
+

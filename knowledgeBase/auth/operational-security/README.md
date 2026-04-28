@@ -1,6 +1,6 @@
 # auth/operational-security - Issues
 
-- Count: 1
+- Count: 2
 
 ## F-2026-15280 - Hardcoded Private Key Exposure in Test ScriptsEnables Unauthorized Account Control
 - 嚴重度：Medium
@@ -14,3 +14,14 @@ Immediate revocation/retirement of all exposed keypairs should beenforced.Verifi
 
 ### 修補方式（實際）
 Hardcoded private keys have been replaced with environment variablereferences across all affected test scripts; however, the original keyspersist in Git history and the associated accounts should be consideredpermanently compromised — key rotation and fund migration are stillrequired. Revised commit: df1f2e4. 60
+
+## F-2025-14485 - Lack of Limits and Delay in Forced WithdrawalParameter Updates - Medium
+- 嚴重度：Medium
+- Report source：BullBit.pdf
+
+### 問題內容（摘要）
+The InclusionQueue contract enables the creation of forced withdrawalrequests originating from the Vault and Pool contracts. These requests arelater consumed by the verifier contract to finalize withdrawals. Duringrequest creation, a fee equal to the feeAmount variable must be paid. Thisfee is not deducted from the internally deposited balance, requiring theavailability of additional externally held assets. The setAmount() function is responsible for updating both minWithdrawAmount and feeAmount. This function is protected by the onlyOwner modifier.However, several design shortcomings introduce risk and negatively affectthe withdrawal process. function setAmount(uint256 _minWithdrawAmount, uint256 _feeAmount) external o nlyOwner { require(_minWithdrawAmount > 0, "Queue: 0 min amount"); minWithdrawAmount = _minWithdrawAmount; feeAmount = _feeAmount; } First, no reasonable upper bounds are enforced for either parameter. As aresult, minWithdrawAmount can be set to excessively high values, potentiallypreventing withdrawals of smaller deposits or blocking withdrawalsentirely. Similarly, feeAmount can be set to arbitrarily large values, requiringdisproportionately high external assets to
+
+### 修補方式（實際）
+The BullBit team implemented upper bounds for feeAmount and minWithdrawAmount and a time-lock mechanism is integrated to reflectchanges in commit 322258e. 32
+

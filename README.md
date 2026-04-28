@@ -1,16 +1,15 @@
 # hacken_note
 
 在找repo時也看: 是否有public 的repo 可以也記錄在這
-可以稍微看一下report, 如果沒有符合的issue 甚至不用下載
 
 根據 https://github.com/msitarzewski/agency-agents/blob/main/specialized/blockchain-security-auditor.md
 只要在cursor 説 "Activate Blockchain Security Auditor mode, ...." 然後搭配筆記(auditor 找到並且被接受的漏洞)
 
-進度: (knoxnet~sakle)
+進度: (knoxnet~seedify)
 
 prompt:
 `PDF` rename: 根據pdf report 的標題重新命名pdf file, 以Customer 命名即可，例如Dlicom
-pdf to knowledgeBase: 將pdf 中medium, high 而且是被fixed 的issue 整理出來, 包含內容出處資訊, 詳細解釋和說明該issue 以及如何fix, 並根據內容類型將內容寫入對應的folder `README` 中, 如果沒有在分類內就放進other
+pdf to knowledgeBase: 將 @newPDF/ 中medium, high 而且是被fixed 的issue 整理出來放入 @knowledgeBase/ 中, 參考原本的內容來進行分類, 架構也參考原本的內容
 
 backtest: TODO
 先找到確定有問題的github repo commmit, 不論是否是knowledgebase 來源都可以試看看, 看有沒有辦法偵測到

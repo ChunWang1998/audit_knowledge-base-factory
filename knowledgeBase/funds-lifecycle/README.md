@@ -1,6 +1,6 @@
 # funds-lifecycle - Issues
 
-- Count: 6
+- Count: 13
 
 ## F-2026-14861 - Front-Running DoS on Batch Se lement via RollingHash Invalidation
 - 嚴重度：Medium
@@ -79,3 +79,80 @@ Remove the `_checkExpiry`(id) check from the `burn()` and `burnBatch()` function
 
 ### 修補方式（實際）
 In commit 3b40377, the burn functions perform a validation to check if the RetirementReason is set as Expired; if so, the `_checkExpiry`(ids[i]) step isskipped, meaning the burning is now allowed for the expired tokens.
+
+## F-2025-14448 - Uncoordinated Escape Hatch Mechanisms CausePermanent forcedWithdrawalRequests Lock When InclusionQueueExecutes First - Medium
+- 嚴重度：Medium
+- Report source：BullBit.pdf
+
+### 問題內容（摘要）
+The protocol implements two separate escape hatch mechanisms to allowusers to withdraw funds when the sequencer is unresponsive orcensoring: 1. InclusionQueue.forceWithdrawalFromPool(uint256 amount) Users pay a fee to queue a forced withdrawal request in the poolQueue[] arrayAvailable anytime (doesn't require sequencer to be inactive)Can be processed in two ways:By sequencer: via Verifier.submitPoolUpdateBatch() which includes forcedQueueIds[] parameterBy anyone: via Verifier.processOverdueQueueItem(uint8 source) after forcedDeadline  24 hours) has passed — this is a permissionlessescape hatch that allows any user to trigger processing ofoverdue queue items when the sequencer is not respondingBoth processing paths ultimately call Pool.executeOnChainWithdrawal() totransfer tokens 2. Pool.initiateForceWithdrawal(address _token, string calldata destination) Users initiate a direct forced withdrawal stored in forcedWithdrawalRequests[user][token] Only available when sequencer has been inactive for sequencerInactivityThreshold  14 days)User must wait forceWithdrawDelay  7 days  then call Pool.finalizeForceWithdrawal(address _token) to completeTransfers tokens directly from Pool to user
+
+### 修補方式（實際）
+This issue is implicitly resolved by removing the Pool-level forcewithdrawal mechanism (initiateForceWithdrawal() and finalizeForceWithdrawal()), leaving only the InclusionQueue-based escapehatch, which handles insufficient balances gracefully without creatingstuck user state. Revised commit: 322258e. 27
+
+
+## F-2026-14523 - Pending Force Withdrawal Requests Removed OnBalance Update - Medium
+- 嚴重度：Medium
+- Report source：BullBit.pdf
+
+### 問題內容（摘要）
+The Pool and Vault contracts implement a force withdrawal flow thatenables withdrawal of tokens when the off-chain Sequencer is inactive.The Sequencer is responsible for normal withdrawal execution, while theforce withdrawal flow provides a fallback mechanism when the Sequenceris inactive for a period equal to the sequencerInactivityThreshold (default 14days). During initiateForceWithdrawal(), a ForcedWithdrawalRequest struct is createdand stored in the forcedWithdrawalRequests mapping using msg.sender as thekey. After a delay equal to forceWithdrawDelay (default 7 days), finalizeForceWithdrawal() allows tokens to be transferred to the user basedon the cached balance at the time of the initiation. function initiateForceWithdrawal() external notContract nonReentrant whenNotP aused { require(verifierContract != address(0), "Vault: verifier not set"); // Check if sequencer is inactive uint256 lastUpdate = IVerifierVault(verifierContract).lastVaultUpdateTime stamp(); require(block.timestamp > lastUpdate + sequencerInactivityThreshold, "Vault: sequencer is still active"); uint256 bal = balances[msg.sender]; require(bal > 0, "Vault: no balance to withdraw"); require(forcedWithdrawalReque
+
+### 修補方式（實際）
+The issue was fixed in commit e665fb628fd70fc9dd01b04067f7977ec08874e4. The initiateForceWithdrawal() and finalizeForceWithdrawal() functions wereremoved, along with the deletion of the forcedWithdrawalRequests mapping inthe applyStateChanges() function, removing the root cause. 49
+
+
+## F-2025-13424 - Payout Distribution Delays due to Invalid LastClaimed Timestamp Update - High
+- 嚴重度：High
+- Report source：Digital Oro International.pdf
+
+### 問題內容（摘要）
+The claimUserPayout function of the DOI_PayoutManager contract aims todistribute payout funds proportionally to the number of periodspassed. The number of periods passed is calculated as follows. uint256 periodsPassed = (currentTime - payout.lastPayoutTime) / periodInSecon ds The lastPayoutTime is updated to the current timestamp. uint256 currentTime = block.timestamp; payout.lastPayoutTime = currentTime; Such an approach ignores current distribution period is in progressand shifts the distribution schedule delaying the payments.
+
+### 修補方式（實際）
+The Finding is ﬁxed in the commits 2a5f4e4 and 8190ccc. The lastPayoutTime state variable is updated according to the numberof periods passed. Evidences PoC
+
+
+## F-2024-7645 - Potential Front-Running When DOIToken Is Sold inSecondary Market - Medium
+- 嚴重度：Medium
+- Report source：Digital Oro.pdf
+
+### 問題內容（摘要）
+The ERC721-compliant DOIToken can be purchased for 100 USDT eachand used for participating in raﬄes or acquiring a Gold MembershipNFT. Tokens are marked as used with DOIToken::useTokenForRaffle() whenentered into a raﬄe or with DOIToken::useTokenForMembership() when usedto obtain a Gold Membership by consuming 20 tokens. Once markedas used, tokens cannot be reused for these functionalities. A potential front-running vulnerability exists when tokens are tradedon secondary marketplaces. A malicious seller can list an unusedtoken for sale and monitor the mempool for the correspondingpurchase transaction. Before the purchase is ﬁnalized, the seller canexecute two transactions with higher gas fees to use the token forboth raﬄe entry and Gold Membership acquisition. These front-running transactions are executed before the buyer’s transaction,resulting in the buyer receiving a token that is already marked asused.
+
+### 修補方式（實際）
+The Finding was ﬁxed in commit 8ffa5a2df927a8a024fc3dc5eb4a752337dcc3e8.A block token mechanism was introduced to prevent transfers whenthe token is blocked. The corresponding check was added to the _update() function of the ERC20 contract. 18
+
+
+## F-2025-13501 - Output Accounting Uses Absolute Balance -Medium
+- 嚴重度：Medium
+- Report source：Dirol.pdf
+
+### 問題內容（摘要）
+_executeSwap determines the swap’s total output by reading the entirecurrent balance of the output token held by the contract ratherthan the delta produced by this swap. This mixes funds that mayhave been in the contract before the call (accidental transfers, dust,or third-party deposits) with the output of the current swap,allowing the caller to receive tokens that do not belong to them. // totalAmountOut should represent only this swap's output, // but it currently uses the absolute balance on the contract. if (isNativeOut) { totalAmountOut = IERC20(WRAPPED_NATIVE).balanceOf(address(this)); } else { totalAmountOut = IERC20(params.tokenOut).balanceOf(address(this)); }
+
+### 修補方式（實際）
+The Finding was ﬁxed in commit 4688ddad by adding proper snapshotmechanics for initial balances of the route tokens. 34 (bool hasSnapshot, uint256 snapshot) = _findTokenInSnapshot( uniqueTokensIn, tokenInSnapshots, uniqueTokenInCount, tokenTo Find ); if (!hasSnapshot) { // Failsafe: should never happen after pre-scan, but use curr entBalance as snapshot // This means tokenInBalance will be 0 for this route, preven ting unexpected behavior snapshot = currentBalance; tokenInSnapshots[uniqueTokenInCount] = snapshot; uniqueTokensIn[uniqueTokenInCount] = tokenToFind; unchecked {++uniqueTokenInCount;} } uint256 tokenInBalance = currentBalance - snapshot; Evidences POC
+
+
+## F-2025-14250 - Winner-Selection Logic Flaw Allows The GroupCreator To Capture All Contributed Funds - High
+- 嚴重度：High
+- Report source：RYT.pdf
+
+### 問題內容（摘要）
+The distributeFunds() function iterates through all group members, startingfrom index 0, to determine the payout winner. Since the ADMIN/ORGANIZER isalways the first member inserted into the members array, and theselection logic favors the first unpaid member by default, the ADMIN/ORGANIZER is always chosen as the first payout recipient, even whenthey are not assigned a payout position, since the default/unset payoutposition equals to the initial currentPayoutIndex and is zero. ... for (uint256 i = 0; i < totalMembers; i++) { address member = selectedGroup.members[i]; if ( !s_hasReceivedPayout[groupId][member] && (winner == address(0) || s_payoutPositions[groupId][me mber] == selectedGroup.currentPayoutIndex) ) { winner = member; break; } } ... As a result, the payout logic becomes corrupted and allows the ADMIN/ORGANIZER to illegitimately win and receive all pooled funds during thefirst distribution.
+
+### 修補方式（實際）
+In commit 1829f31, the winner == address(0) condition is removed from theloop, ensuring the winner is selected strictly by matching their assigned s_payoutPositions index rather than automatically defaulting to the firstmember (Admin) found in the list. Evidences POC
+
+
+## F-2025-14273 - Excess Contributions Become Permanently LockedDue to Non-Exact Deposit Enforcement - Medium
+- 嚴重度：Medium
+- Report source：RYT.pdf
+
+### 問題內容（摘要）
+The Komiti::joinGroup(), Komiti::joinGroupWithJointContributor(), Komiti::acceptInviteForJointContributor(), and Komiti::contribute() functionsall validate user deposits using a greater-than-or-equal check: require(msg.value >= group.perShareAmount, "Komiti: Incorrect amount sent"); This design allows users to send more funds than required by the protocol. However, the payout mechanism in Komiti::distributeFunds() only uses: uint256 payoutAmount = (selectedGroup.perShareAmount * selectedGroup.members. length); This means: Only the minimum required contribution is considered for distribution.Any extra amount contributed above perShareAmount is not refunded, notredistributed, and not withdrawable.These surplus funds accumulate inside the contract without anymechanism for recovery. As a result, all excess contributions become permanently locked, formingan unrecoverable ether sink inside the protocol.
+
+### 修補方式（實際）
+Fixed in 1829f31. Now in order to join the group or to contribute via joinGroup() and contribute() functions, the user needs to pay the exact perShareAmount as follows: ... if (msg.value != group.perShareAmount) revert InvalidContributionAmount(); ... 39
+

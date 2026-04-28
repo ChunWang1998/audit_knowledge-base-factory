@@ -1,6 +1,6 @@
 # bridge/router-pair-config - Issues
 
-- Count: 3
+- Count: 10
 
 ## F-2026-15975 - transferOwnership Does Not Update PrivilegedExemptions and Router Allowances After Ownership Transfer
 - 嚴重度：Medium
@@ -40,3 +40,80 @@ Modify `_calculatePriceImpact`() to accept the destination pair address asa para
 
 ### 修補方式（實際）
 Fixed in a5b8fec. The `_calculatePriceImpact`() function now accepts anadditional pancakePair parameter, which is used to perform the requiredpair-specific price impact validation.
+
+## F-2025-13503 - Native Balance Sweep via Absolute Balance onNATIVE Legs - High
+- 嚴重度：High
+- Report source：Dirol.pdf
+
+### 問題內容（摘要）
+swap() wraps the user’s msg.value into WETH immediately, but _executeSwap later sources per-route input for NATIVE legs from thecontract’s raw ETH balance: // swap(): wraps user ETH to WETH first if (params.tokenIn == NATIVE) { IWETH(WRAPPED_NATIVE).deposit{value: msg.value}(); } // _executeSwap(): per-route input is taken from absolute balances uint256 tokenInBalance = routeTokenIn == NATIVE ? address(this).balance // <— uses raw ETH on the con tract : IERC20(routeTokenIn).balanceOf(address(this)); uint256 routeAmountIn = (tokenInBalance * route.weight) / remainingWeight; If the contract already holds any ETH (e.g., prior native payouts,accidental transfers, owner funding), a malicious caller can: 1. ensure there is ETH on the contract (or wait until there is),2. call swap with tokenIn = NATIVE and tiny amountIn (e.g., 1 wei),3. use a route that sends native ETH (e.g., Kuru with isNativeSend[0] == true). Because tokenInBalance for NATIVE reads address(this).balance, the route’s amountIn becomes the entire ETH already on the contract, notthe user’s 1 wei. In _swapKuruOrderbook, that amountIn is forwarded as msg.value: if (isNativeSend.length > 0 && isNativeSend[0]) { IKuruRouter(ro
+
+### 修補方式（實際）
+The Finding was ﬁxed in commit 4688ddad by adding proper snapshotmechanics for initial balances of the route tokens. (bool hasSnapshot, uint256 snapshot) = _findTokenInSnapshot( uniqueTokensIn, tokenInSnapshots, uniqueTokenInCount, tokenTo Find ); if (!hasSnapshot) { // Failsafe: should never happen after pre-scan, but use curr entBalance as snapshot // This means tokenInBalance will be 0 for this route, preven ting unexpected behavior snapshot = currentBalance; tokenInSnapshots[uniqueTokenInCount] = snapshot; uniqueTokensIn[uniqueTokenInCount] = tokenToFind; unchecked {++uniqueTokenInCount;} } uint256 tokenInBalance = currentBalance - snapshot; Evidences POC 15
+
+
+## F-2025-13529 - Missing Check for Residual Input Tokens WhenRoute Weights Are Incomplete - High
+- 嚴重度：High
+- Report source：Dirol.pdf
+
+### 問題內容（摘要）
+The CoreAggregator._executeSwap function splits a swap across multipleroutes based on their weight. Each route consumes a proportionalamount of the total amountIn. However, there is no ﬁnal validation toensure all input tokens have been properly routed and utilized. This creates a problematic scenario: If routes are given with insuﬃcient cumulative weight (e.g.,weights summing to much less than 10000), the leftover tokensare not returned, refunded, or reverted.Those leftover tokens remain locked in the contract, as no pathexists to claim or automatically handle them.This violates the principle of least surprise: a user expects thefull amountIn to be either swapped or the transaction to fail. uint256 remainingWeight = MAX_WEIGHT; for (uint256 i = 0; i < params.routes.length;) { ... if (remainingWeight == 0) revert InvalidRoutes(); if (route.weight == 0) { unchecked { ++i; } continue; } if (route.weight > remainingWeight) revert InvalidRoutes(); uint256 tokenInBalance = routeTokenIn == NATIVE ? address(this).balance : IERC20(route TokenIn).balanceOf(address(this)); uint256 routeAmountIn = (tokenInBalance * route.weight) / remaini ngWeight; unchecked { remainingWeight -= route.weight;
+
+### 修補方式（實際）
+The Finding was ﬁxed in commit 39b76a13 by adding if (weightSum != MAX_WEIGHT) revert WeightNotFullyAllocated(); this if statement after the routes loop. Evidences POC
+
+
+## F-2025-13548 - Improper Weight Reset on tokenIn Change AllowsBypassing MAX_WEIGHT Cap - High
+- 嚴重度：High
+- Report source：Dirol.pdf
+
+### 問題內容（摘要）
+The _executeSwap() function in CoreAggregator is intended to limit thetotal route weight to MAX_WEIGHT = 10,000 per contiguous sequence ofroutes using the same tokenIn. This is enforced through the remainingWeight variable. However, there is a subtle and exploitable ﬂaw in the logic: if (routeTokenIn != currentTokenIn) { currentTokenIn = routeTokenIn; remainingWeight = MAX_WEIGHT; } This block resets the remainingWeight back to 10,000 whenever theinput token changes. While this might be intended for legitimatecases of token chaining (e.g., WETH → USDC → DAI), it opens up a bypass. A malicious user can oscillate tokenIn values between routes toreset the weight allowance repeatedly. This leads tounbounded weight usage across multiple routes, far exceedingthe intended 100% (MAX_WEIGHT), causing the aggregator to use moretokens than the user expected or authorized.
+
+### 修補方式（實際）
+The Finding was ﬁxed in commit d2cb1962 by adding _validateTokenInGrouping control under the _executeSwap function. function _validateTokenInGrouping(address[] memory seenTokensIn, uint256 seenCount, address newTokenIn) private pure { for (uint256 i; i < seenCount;) { if (seenTokensIn[i] == newTokenIn) revert TokenInNotGrouped(); unchecked {++i;} } } Evidences
+
+
+## F-2025-13566 - Weights Misapplied When Routes Are NotGrouped By TokenIn - High
+- 嚴重度：High
+- Report source：Dirol.pdf
+
+### 問題內容（摘要）
+In the _executeSwap functionhe splitter renormalizes weights everytime tokenIn changes, eﬀectively creating separate “weight blocks.”If routes with the same tokenIn are interleaved, their shares arecomputed in multiple blocks, so allocations become order-dependentand can diverge from intended global proportions. . if (routeTokenIn != currentTokenIn) { currentTokenIn = routeTokenIn; remainingWeight = MAX_WEIGHT; } Blocks can also leave unused balances when per-block weights sumto less than MAX_WEIGHT. Per contiguous tokenIn segment, weights are normalized to thesegment’s remainingWeight (starting at MAX_WEIGHT), using the livebalance at each step. Re-encountering the same tokenIn later opensa new block with fresh normalization. Example (deviation from plan): Input A = 1000, MAX_WEIGHT=10000Routes: A(5000), B(...), A(5000)First A block: 1000*5000/10000 = 500Second A block (after B): remaining A ≈ 500 → 500*5000/10000= 250Total A used = 750 (not 1000 as a 50%+50% plan wouldsuggest) This leads to under/over-allocation versus planner intent; residualbalances when per-block weights < MAX_WEIGHT.
+
+### 修補方式（實際）
+The Finding is ﬁxed in commit 1532bc2. The tokens grouping wasenforced. _validateTokenInGrouping(seenTokensIn, seenCount, routeTokenIn); seenTokensIn[seenCount] = currentTokenIn; unchecked {++seenCount;} Evidences
+
+
+## F-2025-13594 - ZkSwap Router Mismatch: Calls Non-ExistentexactInputSingle On Monad - High
+- 嚴重度：High
+- Report source：Dirol.pdf
+
+### 問題內容（摘要）
+The adapter assumes a Uniswap V3-style SwapRouter with exactInputSingle, but zkSwap on Monad exposes a Universal/Smartrouter, not a standalone V3 SwapRouter. The current code targets a function that is not deployed, causingruntime failures. IZkSwapV3Router(router).exactInputSingle(swapParams); Route execution reverts on Monad; zkSwap path is unusable (DoS forthat router type).
+
+### 修補方式（實際）
+The Finding was ﬁxed in commit 408c3d8. The router was switched tozkSwap’s Universal Router ABI: IUniversalRouter(router).execute(commands, inputs, deadline); 31 Evidences
+
+
+## F-2025-8551 - Rounding Issue in ﬁllOrder and partiallyFillOrderAllows Free Token Transfer - Medium
+- 嚴重度：Medium
+- Report source：EverValue Coin.pdf
+
+### 問題內容（摘要）
+The fillOrder() and partiallyFillOrder() functions in PairLib.sol suﬀerfrom an integer division rounding issue when calculating takerSendAmount (the amount of quote tokens the taker needs totransfer). Solidity uses integer division, meaning that when performing thecalculation: takerSendAmount = matchedOrder.availableQuantity * matchedOrder.price / PRECI SION; If (matchedOrder.availableQuantity * matchedOrder.price) is less than PRECISION, the result will be truncated to zero due to integer division,allowing the order to be executed without transferring anyquote tokens. This enables an attacker to receive base tokens without payingfor them by deliberately placing orders at small quantities and lowprices where rounding errors occur.
+
+### 修補方式（實際）
+The EverValue Coin team introduced necessary checks to ﬁx theissue. When takerSendAmount or takerReceiveAmount is zero, the fillOrder() function now reverts, and the partiallyFillOrder() function skips orderﬁlling and ﬁnalizes the taker's order. Lastly, the addOrder() functionreverts when takerSendAmount is zero (Revised commit: ef39ea0). 20
+
+
+## F-2025-8721 - Exploitable Order Quantity Leading to Fund Loss -High
+- 嚴重度：High
+- Report source：EverValue Coin.pdf
+
+### 問題內容（摘要）
+A vulnerability in the order book logic allows an attacker to exploitmismatches in order fulﬁllment, leading to fund theft or permanentfund freezing. The core issue arises because the availableQuantity of acompletely fulﬁlled or a partially fulﬁlled order is not updated,leading to inconsistencies in order cancellation and fulﬁllment byother takers. When an order is partially or fully matched, only the quantity ﬁeld isupdated, while the availableQuantity remains unchanged. Thisdiscrepancy allows an attacker to manipulate the system by eithercanceling the order and reclaiming excess funds or having anothertrader fulﬁll the order again for an amount greater than whatremains. The vulnerability originates from the matchOrder() function: if (newOrder.quantity >= matchingOrder.availableQuantity) { fillOrder(pair, matchingOrder, newOrder); } else { partiallyFillOrder(pair, matchingOrder, newOrder); return (newOrder.quantity, orderCount); } The fillOrder function correctly deducts quantity, but availableQuantity is not updated: takerOrder.quantity -= matchedOrder.availableQuantity; This issue persists when the remaining order is stored back into thequeue: if (_quantity > 0) { addOrder(pair,
+
+### 修補方式（實際）
+The EverValue Coin team ﬁxed the issue by updating the availableQuantity in order ﬁlling functions.(Revised commit: 1516471) Evidences PoC
+
