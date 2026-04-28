@@ -1,6 +1,6 @@
 # funds-lifecycle - Issues
 
-- Count: 13
+- Count: 15
 
 ## F-2026-14861 - Front-Running DoS on Batch Se lement via RollingHash Invalidation
 - 嚴重度：Medium
@@ -156,3 +156,26 @@ The Komiti::joinGroup(), Komiti::joinGroupWithJointContributor(), Komiti::accept
 ### 修補方式（實際）
 Fixed in 1829f31. Now in order to join the group or to contribute via joinGroup() and contribute() functions, the user needs to pay the exact perShareAmount as follows: ... if (msg.value != group.perShareAmount) revert InvalidContributionAmount(); ... 39
 
+## 補充 Issues
+
+- Count: 2
+
+## H-10 - Users redeeming early will with
+- 嚴重度：High
+- Report source：Cork.pdf
+
+### 問題內容（完整）
+draw Ra without decreasing the amount locked, which will lead to stolen funds when withdrawing after expiry Source: https://github.com/sherlock-audit/2024-08-cork-protocol-judging/issues/166 Found by 0x73696d616f, 0xNirix, KupiaSec, Matrox, dimulski, hunter_w3b, nikhil840096, oxelmiguel, vinica_boy Summary VaultLib::redeemEarly() is called when users redeem early via Vault::redeemEarlyLv(), which allows users to redeem Lv for Ra and pay a fee. In the process, the Vault burns Ct and Ds in VaultLib::_redeemCtDsAndSellExcessCt() for Ra, by calling PsmLib::PsmLibrary.lvRedeemRaWithCtDs(). However, it never calls RedemptionAssetManagerLib::decLocked() to decrease the tracked locked Ra, but the Ra leaves the Vault for the user redeeming. This means that when a new Ds is issued in the PsmLib or users call PsmLib::redeemWithCt (), PsmLib::_separateLiquidity() will be called and it will calculated the exchange rate to withdraw Ra and Pa as if the Ra amount withdrawn earlier was still there. When it calls self.psm.balances.ra.convertAllToFree(), it converts the locked amount to free and assumes these funds are available, when in reality they have been withdrawn earlier. As such, the Ra and Pa checkpoint will be incorrect and users will redeem more Ra than they should, such that the last users will not be able to withdraw and the first ones will profit. Root Cause In PsmLib.sol:125, self.psm.balances.ra.decLocked(amount); is not called. Internal pre-conditions None. External pre-conditions None. 49 Attack Path 1. User calls Vault::redeemEarlyLv() or ModuleCore::issueNewDs() is called by the admin. Impact Users withdraw more funds then they should via PsmLib::redeemWithCt() meaning the last users can not withdraw. PoC PsmLib::lvRedeemRaWithCtDs() does not reduce the amount of Ra locked. function lvRedeemRaWithCtDs(State storage self, uint256 amount, uint256 dsId) internal {,→ DepegSwap storage ds = self.ds[dsId]; ds.burnBothforSelf(amount); } Mitigation PsmLib::lvRedeemRaWithCtDs() must reduce the amount of Ra locked. function lvRedeemRaWithCtDs(State storage self, uint256 amount, uint256 dsId) internal {,→ self.psm.balances.ra.decLocked(amount); DepegSwap storage ds = self.ds[dsId]; ds.burnBothforSelf(amount); } Discussion ziankork dup of #44 and related #156 . will fix SakshamGuruji3 Escalate It should be dupe of https://github.com/sherlock-audit/2024-08-cork-protocol-judging/ issues/126 , Even though this report revolves around lvRedeemRaWithCtDs, the root cause co
+
+### 修補方式（實際）
+Status: Fixed/Resolved in report.
+
+## H-11 - VaultPoolLib::reserve() will
+- 嚴重度：High
+- Report source：Cork.pdf
+
+### 問題內容（完整）
+store the Pa not attributed to user with- drawals incorrectly and leave in untracked once it expires again Source: https://github.com/sherlock-audit/2024-08-cork-protocol-judging/issues/191 The protocol has acknowledged this issue. Found by 0x73696d616f, 0xNirix, dimulski, sakshamguruji Summary VaultPoolLib::reserve() stores the Pa attributed to withdrawals in self.withdrawalPool.sta gnatedPaBalance instead of storing the amount attributedToAmm. Additionally, this amount of Pa, the one attributed to the Amm is never dealt with and leads to stuck PA. The comment in the code mentions // FIXME : this is only temporary, for now // we trate PA the same as RA, thus we also separate PA // the difference is the PA here isn't being used as anything // and for now will just sit there until rationed again at next expiry. But it is incorrect as it is never rationed again, just forgotten. The VaultPoolLib::rationedT oAmm() function only uses the Ra balance, not the Pa, which is effectively left untracked. Root Cause In VaultPoolLib:170, the leftover non attributed Pa is not dealt with. Internal pre-conditions None. External pre-conditions None. 54 Attack Path 1. VaultPoolLib::reserve() is called when liquidating the lp position of the Vault via V aultLib::_liquidatedLP(), triggered by users when redeeming expired liquidity vault shares or on the admin trigerring a new issuance. Impact The Pa in the Vault is stuck. PoC VaultPoolLib::rationedToAmm() does not deal with the Pa. function rationedToAmm(VaultPool storage self, uint256 ratio) internal view returns (uint256 ra, uint256 ct) {,→ uint256 amount = self.ammLiquidityPool.balance; (ra, ct) = MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(amount, ratio);,→ } Mitigation Distributed the Pa to users based on their LV shares or redeem the Pa for Ra and add liquidity to the new issued Ds or similar. Discussion ziankork valid. will fix ziankork This is originally has a feature planned for that, but we're still working on it and the feature still needs some time for us to solidify all aspect of it. that's why we won't fix this. Since the feature are considered non-trivial 55 Issue M-1: The UUPS proxie standard is im- plemented incorrectly, making the proto- col not upgradeable Source: https://github.com/sherlock-audit/2024-08-cork-protocol-judging/issues/47 The protocol has acknowledged this issue. Found by dimulski Summary Both the AssetFactory.sol and FlashSwapRouter.sol contracts inherit the UUPSUpgradeable contr
+
+### 修補方式（實際）
+Status: Fixed/Resolved in report.

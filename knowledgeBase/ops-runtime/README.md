@@ -1,6 +1,6 @@
 # ops-runtime - Issues
 
-- Count: 1
+- Count: 4
 
 ## F-2026-14863 - Missing Gas Tank Auto-Fill for Recipients in BulkTransfers
 - 嚴重度：Medium
@@ -14,3 +14,37 @@ Add autoFillPrivate to bulkTransferTokens: autoFillPrivate(`_to`, `_symbols`[`_s
 
 ### 修補方式（實際）
 Fixed in bf20793: The function now calls autoFillPrivate(`_to`, `_symbols`[0], Tx.`AUTOFILL`) aftercompleting all transfers, ensuring the recipient's Gas Tank is refilled ifneeded. autoFillPrivate(`_to`, `_symbols`[0], Tx.`AUTOFILL`); 26
+
+## 補充 Issues
+
+- Count: 3
+
+## L-10 - No way to cancel or reduce cooldown re
+- 嚴重度：Low
+- Report source：Tori Finance.pdf
+
+### 問題內容（完整）
+quests [RESOLVED] Source: https://github.com/sherlock-audit/2026-01-tori-finance-jan-15th/issues/36 Summary Once a user initiates a cooldown via cooldownAssets() or cooldownShares(), there is no way to cancel the request, reduce the amount, or re-stake the assets. Users are locked into waiting for the full cooldown period. Vulnerability Detail The cooldown functions only allow increasing the underlyingAmount: // StakedTrUSD.sol:225-237 function cooldownAssets(uint256 assets) external ensureCooldownOn returns (uint256) {,→ if (assets > maxWithdraw(msg.sender)) revert ExcessiveWithdrawAmount(); uint256 shares = previewWithdraw(assets); StakedTrUSDStorage storage $ = _getStakedTrUSDStorage(); $.cooldowns[msg.sender].cooldownEnd = uint104(block.timestamp) + $.cooldownDuration;,→ $.cooldowns[msg.sender].underlyingAmount += assets; // Only increases! _withdraw(msg.sender, address($.silo), msg.sender, assets, shares); // Assets sent to silo,→ return shares; } // StakedTrUSD.sol:239-251 function cooldownShares(uint256 shares) external ensureCooldownOn returns (uint256) {,→ if (shares > maxRedeem(msg.sender)) revert ExcessiveRedeemAmount(); uint256 assets = previewRedeem(shares); StakedTrUSDStorage storage $ = _getStakedTrUSDStorage(); $.cooldowns[msg.sender].cooldownEnd = uint104(block.timestamp) + $.cooldownDuration;,→ $.cooldowns[msg.sender].underlyingAmount += assets; // Only increases! _withdraw(msg.sender, address($.silo), msg.sender, assets, shares); // Assets sent to silo,→ 43 return assets; } The TrUsdSilo contract only has a withdraw function callable by the staking vault: // TrUsdSilo.sol:29-31 function withdraw(address to, uint256 amount) external onlyStakingVault { trUSD.safeTransfer(to, amount); } // No user-facing cancel function Step Action Result 1 User calls cooldownAssets(10000) 10,000 TrUSD sent to silo, shares burned 2 Market conditions change, user wants to re-stake No option available 3 User must wait 7 days (default cooldown) Opportunity cost, no yield during cooldown 4 After cooldown, user calls unstake() Finally receives TrUSD 5 User deposits again Gets new shares at potentially worse rate Impact Users cannot change their mind after initiating cooldown. Code Snippet https://github.com/sherlock-audit/2026-01-tori-finance-jan-15th/blob/main/Tori-Finan ce__contracts/contracts/core/StakedTrUSD.sol#L225 Tool Used Manual Review Recommendation Consider adding a cancelCooldown() function. 44
+
+### 修補方式（實際）
+Status: Fixed/Resolved in report.
+
+## L-12 - Compilation Failure Due to Reentrancy
+- 嚴重度：Low
+- Report source：Tori Finance.pdf
+
+### 問題內容（完整）
+GuardUpgradeable Removal in OpenZeppelin v5.5 [RESOLVED] Source: https://github.com/sherlock-audit/2026-01-tori-finance-jan-15th/issues/38 Summary The project utilizes the OpenZeppelin Contracts Upgradeable library. Due to OpenZeppelin removing ReentrancyGuardUpgradeable (or modifying its path/implementation) in version v5.5.0, and Foundry potentially pulling this latest incompatible version, StakedTrUSD.sol fails to compile. Vulnerability Detail In StakedTrUSD.sol, the contract imports ReentrancyGuardUpgradeable: import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol"; According to the OpenZeppelin v5.5.0 release notes, changes in the library structure have made the above import path invalid or the file unavailable. Even if package.json defines a version range, Foundry's dependency management (via git submodules or remappings) may fetch the latest v5.5.0 version if not strictly locked. This results in build failures during compilation due to missing dependencies or incompatibility. Impact The project cannot compile, making it impossible to run tests or deploy the contracts. Code Snippet import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol"; Tool Used Manual Review 47 Recommendation It is recommended to take one of the following actions: 1. Lock Dependency Version: Strictly lock @openzeppelin/contracts-upgradeable to a compatible version (e.g., v5.4.0) in both package.json and Foundry configuration to ensure it does not auto-upgrade to v5.5.0. 2. Adapt to New Version: If v5.5.0 is required, update the code according to the OpenZeppelin migration guide to use the new import paths or storage patterns. 48
+
+### 修補方式（實際）
+Status: Fixed/Resolved in report.
+
+## L-13 - rescueOrphanFunds fails to reset vesting
+- 嚴重度：Low
+- Report source：Tori Finance.pdf
+
+### 問題內容（完整）
+Amount causing temporary DoS [RESOLVED] Source: https://github.com/sherlock-audit/2026-01-tori-finance-jan-15th/issues/41 Summary The rescueOrphanFunds function in StakedTrUSD extracts idle funds but fails to reset vesti ngAmount. This causes the totalAssets() function to revert due to integer underflow. Consequently, users cannot deposit funds during the remaining vesting period. Vulnerability Detail The StakedTrUSD contract uses rescueOrphanFunds to allow the admin to withdraw all underlying assets when totalSupply() == 0 . However, this function only transfers the asset balance but fails to reset the vestingAmount variable (which tracks unvested rewards) to zero. The logic for calculating total assets in StakedTrUSD is as follows: function totalAssets() public view override returns (uint256) { return IERC20(asset()).balanceOf(address(this)) - getUnvestedAmount(); } If rescueOrphanFunds is called while there are still unvested rewards ( getUnvestedAmount() > 0 ): 1. IERC20(asset()).balanceOf(address(this)) becomes 0. 2. getUnvestedAmount() remains a positive number. 3. totalAssets() executes 0 - positive_number , causing an EVM arithmetic underflow and revert. Since the ERC4626 deposit and mint flows rely on totalAssets() to calculate exchange rates, this causes a Denial of Service (DoS) where the contract cannot process any new deposits until the vesting period ends (up to 8 hours). Impact After the admin executes the rescue, the contract becomes non-functional for the remainder of the vesting period ( VESTING_PERIOD, default 8 hours). During this time, no users can deposit funds. 49 Code Snippet function rescueOrphanFunds(address to) external onlyRole(DEFAULT_ADMIN_ROLE) { if (totalSupply() != 0) revert OperationNotAllowed(); if (to == address(0)) revert InvalidZeroAddress(); uint256 balance = IERC20(asset()).balanceOf(address(this)); if (balance == 0) revert NoOrphanFunds(); IERC20(asset()).safeTransfer(to, balance); // @audit-issue Asset removed but vestingAmount not reset,→ emit OrphanFundsRescued(to, balance); } Tool Used Manual Review Recommendation In the rescueOrphanFunds function, both vestingAmount and lastDistributionTimestamp should be reset to ensure consistency between the state and the asset balance. 50
+
+### 修補方式（實際）
+Status: Fixed/Resolved in report.
