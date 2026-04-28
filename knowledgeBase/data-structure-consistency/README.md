@@ -1,4 +1,4 @@
-# other/data-structure-consistency - Issues
+# data-structure-consistency - Issues
 
 - Count: 16
 
