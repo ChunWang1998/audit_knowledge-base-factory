@@ -48,3 +48,84 @@ Amount causing temporary DoS [RESOLVED] Source: https://github.com/sherlock-audi
 
 ### 修補方式（實際）
 Status: Fixed/Resolved in report.
+
+## Cyfrin Fixed Issues (Merged)
+- Count: `3`
+- Filter: `Severity in {Critical, Medium}` and explicit `Fixed/Resolved markers`
+- Source: `cyfrin/*.md`
+
+## [M-1] Use named mappings to explicitly denote the purpose of keys and values
+- Severity: `Medium`
+- Source report: `predeposit.md`
+
+### Detailed Content (from source)
+**Description:** Use named mappings to explicitly denote the purpose of keys and values:
+```solidity
+predeposit/MetaVault.sol
+23:    // Track the assets in the mapping for easier access
+24:    mapping(address => TAsset) public assetsMap;
+
+predeposit/pUSDeDepositor.sol
+35:    mapping (address => TAutoSwap) autoSwaps;
+
+test/MockStakedUSDe.sol
+20:  mapping(address => UserCooldown) public cooldowns;
+```
+
+**Strata:** Fixed in commit [ab231d9](https://github.com/Strata-Money/contracts/commit/ab231d99e4ba6c7c82c4928515775a39dc008808).
+
+**Cyfrin:** Verified.
+
+## [M-2] Consider using `SafeCast` when downcasting amounts
+- Severity: `Medium`
+- Source report: `syntetika.md`
+
+### Detailed Content (from source)
+**Description:** Consider using [SafeCast](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/math/SafeCast.sol) when downcasting amounts:
+* `StakingVault.sol`:
+```solidity
+144:        cooldowns[msg.sender].underlyingAmount += uint152(assetsRedeemed);
+165:        cooldowns[msg.sender].underlyingAmount += uint152(assets);
+```
+
+**Syntetika:**
+Fixed in commit [8d7987c](https://github.com/SyntetikaLabs/monorepo/commit/8d7987cfe72ab33c51b486fd3ac5fe2670292a30).
+
+**Cyfrin:** Verified.
+
+## [M-3] Guardian can override owner's emergency pause
+- Severity: `Medium`
+- Source report: `wlf.md`
+
+### Detailed Content (from source)
+**Description:** The contract implements symmetric `pause/unpause` powers between the owner and guardians, allowing guardians to unpause the contract even when the owner intentionally paused it for security or operational reasons. This creates an authority hierarchy conflict where guardians can override the owner's emergency decisions, potentially undermining security responses and operational control.
+
+```solidity
+function guardianUnpause() external onlyGuardian whenPaused {
+    // @audit - do you think only the owner should be able to unpause?
+    _unpause();
+}
+```
+Note: The comment in the code indicates the dev team flagged this design choice from a security viewpoint.
+
+During periods of emergency or security breach, owner should have ultimate control over contract state. While pausing a contract is low-risk, unpausing it is higher-risk operation that needs to have a hierarchical access. Common security practice is:
+
+```text
+Multiple parties can pause (defensive action, low risk)
+Only highest authority can unpause (requires careful consideration)
+```
+
+**Impact:** Guardian override can undermine owner's authority on contract pause/unpause status.
+
+
+**Recommended Mitigation:** Consider removing `unpause` option for guardians.
+
+**WLFI:**
+Fixed in commit [b567696](https://github.com/worldliberty/usd1-protocol/blob/b56769613b6438b62b8b4133a63fca727fdbc631/contracts/wlfi/WorldLibertyFinancialV2.sol#L214)
+
+**Cyfrin:** Verified.
+
+\clearpage
+
+<!-- /Cyfrin Fixed Issues (Merged) -->
+

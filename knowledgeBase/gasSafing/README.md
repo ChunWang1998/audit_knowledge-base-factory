@@ -120,3 +120,481 @@ The contract incorrectly reduces a validator's effective stake twice for thesame
 
 ### 修補方式（實際）
 The Finding is addressed in the b601538 commit. Checks in the unstake and `_delegate` functions are updated to prevent effective stake reduction in 32 case exit was requested via the requestDelegationExit function. if ( (currentValidatorStatus == `VALIDATOR_STATUS_EXITED` && !`_hasRequestedExit`($, `_tokenId`)) || delegation.status == DelegationStatus .`PENDING` ) …
+
+## Cyfrin Fixed Issues (Merged)
+- Count: `8`
+- Filter: `Severity in {Critical, Medium}` and explicit `Fixed/Resolved markers`
+- Source: `cyfrin/*.md`
+
+## [M-1] State changes without events
+- Severity: `Medium`
+- Source report: `accountable.md`
+
+### Detailed Content (from source)
+There are state variable changes in this function but no event is emitted. Consider emitting an event to enable offchain indexers to track the changes.
+
+- [Line: 47](https://github.com/Accountable-Protocol/audit-2025-09-accountable/blob/fc43546fe67183235c0725f6214ee2b876b1aac6/src/modules/GlobalRegistry.sol#L47)
+
+	```solidity
+	    function setSecurityAdmin(address securityAdmin_) external onlyOwner {
+	```
+
+- [Line: 53](https://github.com/Accountable-Protocol/audit-2025-09-accountable/blob/fc43546fe67183235c0725f6214ee2b876b1aac6/src/modules/GlobalRegistry.sol#L53)
+
+	```solidity
+	    function setOperationsAdmin(address operationsAdmin_) external onlyOwner {
+	```
+
+- [Line: 59](https://github.com/Accountable-Protocol/audit-2025-09-accountable/blob/fc43546fe67183235c0725f6214ee2b876b1aac6/src/modules/GlobalRegistry.sol#L59)
+
+	```solidity
+	    function setTreasury(address treasury_) external onlyOwner {
+	```
+
+- [Line: 65](https://github.com/Accountable-Protocol/audit-2025-09-accountable/blob/fc43546fe67183235c0725f6214ee2b876b1aac6/src/modules/GlobalRegistry.sol#L65)
+
+	```solidity
+	    function setVaultFactory(address vaultFactory_) external onlyOwner {
+	```
+
+- [Line: 71](https://github.com/Accountable-Protocol/audit-2025-09-accountable/blob/fc43546fe67183235c0725f6214ee2b876b1aac6/src/modules/GlobalRegistry.sol#L71)
+
+	```solidity
+	    function setRewardsFactory(address rewardsFactory_) external onlyOwner {
+	```
+
+**Accountable:** Fixed in commit [`13600f4`](https://github.com/Accountable-Protocol/credit-vaults-internal/commit/13600f460f9796f16d151d19dc4a1d5c35c1475d)
+
+**Cyfrin:** Verified.
+
+\clearpage
+## Gas Optimization
+
+## [M-2] ERC 1155 `safeTransferFrom` callbacks forward unbounded gas to EIP 7702 EOAs
+- Severity: `Medium`
+- Source report: `clob.md`
+
+### Detailed Content (from source)
+**Description:** When the exchange distributes outcome tokens to traders, every transfer goes through ERC-1155 `safeTransferFrom`, which checks whether the recipient has code and, if so, invokes `onERC1155Received` with no explicit gas cap. Historically this was safe for EOA recipients because `to.code.length` returned zero, skipping the callback entirely. With EIP-7702, however, an EOA can set a delegation designator in its code field, causing `to.code.length > 0` to evaluate to `true` and triggering the full acceptance check:
+
+```solidity
+// ERC1155Utils.sol:33-49
+if (to.code.length > 0) {
+    try IERC1155Receiver(to).onERC1155Received(operator, from, id, value, data) returns (bytes4 response) {
+        if (response != IERC1155Receiver.onERC1155Received.selector) {
+            revert IERC1155Errors.ERC1155InvalidReceiver(to);
+        }
+    } catch ...
+}
+```
+
+The `try` call forwards all available gas minus the 1/64 retained by EIP-150. This means the callback recipient receives approximately `(63/64)^2 ≈ 96.9%` of the remaining gas at that point in execution, an enormous budget paid for entirely by the operator.
+
+This affects three settlement paths inside `MyriadCTFExchange`:
+
+- `MyriadCTFExchange::matchCrossMarketOrders` — the most dangerous path. We iterate over every order in a loop and call `ConditionalTokens::safeTransferFrom` for each one. An attacker placed at index `i=0` receives the callback first and can burn enough gas to starve all subsequent iterations, reverting the entire batch.
+- `MyriadCTFExchange::_settleMintMatch` — two sequential `safeTransferFrom` calls distribute outcome-0 and outcome-1 tokens. The first trader's callback fires before the second transfer, creating the same gas-draining window.
+- `MyriadCTFExchange::_settleDirectMatch` — a single `safeTransferFrom` from seller to buyer fires the callback on the buyer.
+
+For each of the above paths the attacker can approach this in two different ways.
+
+1) Siphon enough gas to execute their own logic without causing the transaction to later revert. This could be simple arbitrage swaps or other actions that are typically unprofitable due to gas cost but with that cost removed for the attacker it is now a viable strategy.
+
+2) Consume gas in the callback so that it doesn't revert on their `safeTransfer`, but instead reverts on a later traders `safeTransfer` with an Out Of Gas revert reason. Depending on the off chain gas griefing mitigation logic, this can result in the later traders order being blacklisted since it technically caused the OOG revert. With the real attackers order not being properly blacklisted repeated attempts at `matchCrossMarketOrders` will cause many honest orders to not be executed.
+
+An attack would go as follows:
+
+1. Attacker EOA sets a delegation designator via EIP-7702 pointing to a contract whose `onERC1155Received` performs expensive storage writes, then returns the correct selector.
+2. Attacker signs a valid cross-market buy order and submits it to the operator's order book.
+3. The operator batches the attacker's order with honest traders' orders and calls `MyriadCTFExchange::matchCrossMarketOrders`.
+4. During the distribution loop, the attacker at index 0 receives the `onERC1155Received` callback with ~90% of remaining gas and burns it writing to attacker-controlled storage.
+5. When the loop advances to index 3, insufficient gas remains for the next `safeTransferFrom`. The call reverts OOG, rolling back the entire transaction including all honest traders' fills.
+6. The operator's error-tracing logic sees the OOG at index 3 and may incorrectly flag the honest trader at that index as the source of the grief.
+
+**Impact:** An EIP-7702-enabled EOA placed in a cross-market or mint-match batch siphons the operator's gas to subsidize its own on-chain operations, or burns enough gas to revert the entire settlement transaction. In `matchCrossMarketOrders`, this causes honest traders' fills to fail with an out-of-gas error that off-chain tracing may attribute to the wrong trader, risking incorrect blacklisting of innocent addresses.
+
+
+**Recommended Mitigation:** Wrap each `safeTransferFrom` where the `to` address is an arbitrary trader in a low-level call with an explicit gas cap so that no single callback can consume the gas budget needed for subsequent iterations. This will prevent users from consuming more than allowed gas as well as allow for direct traces to malicious traders who's order should be blacklisted.
+
+**Myriad:** Fixed in commit [`c820bcf`](https://github.com/Polkamarkets/polkamarkets-js/commit/c820bcfbd28347c161529e0d89fab11eff9ee87f)
+
+**Cyfrin:** Verified.
+
+\clearpage
+
+## [M-3] Remove unused constant `CryptoartNFT::ROYALTY_BASE`
+- Severity: `Medium`
+- Source report: `cryptoart.md`
+
+### Detailed Content (from source)
+**Description:** The `CryptoartNFT` contract defines a constant `ROYALTY_BASE` with a value of 10,000 that is never used in the contract. This constant is intended to represent the denominator for royalty percentage calculations (where 10,000 = 100%), but it's not referenced anywhere in the contract's implementation.
+
+**Recommended Mitigation:** Remove the unused constant to improve code clarity and reduce deployment gas costs.
+
+**Cryptoart:**
+Fixed in commit [0c0dd8c](https://github.com/cryptoartcom/cryptoart-smart-contracts/commit/0c0dd8c8d01e1b5b396852d38faceee007b37891).
+
+**Cyfrin:** Verified.
+
+\clearpage
+## Gas Optimization
+
+## [M-4] Remove unnecessary imports and inheritance
+- Severity: `Medium`
+- Source report: `pledge.md`
+
+### Detailed Content (from source)
+**Description:** Remove unnecessary imports and inheritance:
+* `BurnStateManager` should only import and inherit from `Initializable`
+
+**Remora:** Fixed in commit [8419903](https://github.com/remora-projects/remora-smart-contracts/commit/84199034d7255cfc90cd6eef502616a874f26908).
+
+**Cyfrin:** Verified.
+
+\clearpage
+## Gas Optimization
+
+## [M-5] `SessionManager::cancelGameIfCreatorMissing, endGame` could revert due to out of gas if there are too many question in a game
+- Severity: `Medium`
+- Source report: `protocol.md`
+
+### Detailed Content (from source)
+**Description:** Since there are no restrictions on the number of questions a game can support, a game could have so many questions that it causes `SessionManager::cancelGameIfCreatorMissing, endGame` to revert due to out-of-gas errors.
+
+* `endGame` iterates over all questions:
+```solidity
+ function endGame(uint256 _gameId) external onlyState(_gameId, SessionState.Ongoing) {
+        require(block.timestamp >= games[_gameId].endTime, GameIsNotEnded(games[_gameId].endTime, block.timestamp));
+        uint256[] storage questions = gameQuestions[_gameId];
+        for (uint256 i = 0; i < questions.length; i++) {
+            require(_isRevealed(questions[i]), QuestionNotRevealed(_gameId, questions[i]));
+        } <-----------
+        games[_gameId].state = SessionState.Ended;
+        emit GameEnded(_gameId);
+    }
+```
+
+* so does `cancelGameIfCreatorMissing`:
+```solidity
+  function cancelGameIfCreatorMissing(uint256 _gameId) external {
+        require(
+            games[_gameId].state != SessionState.Cancelled,
+            InvalidGameState(SessionState.Cancelled, games[_gameId].state)
+        );
+        require(
+            games[_gameId].state != SessionState.Concluded,
+            InvalidGameState(SessionState.Concluded, games[_gameId].state)
+        );
+        require(block.timestamp >= games[_gameId].endTime, GameIsNotEnded(games[_gameId].endTime, block.timestamp));
+        uint256[] storage questions = gameQuestions[_gameId];
+        for (uint256 i = 0; i < questions.length; i++) { <-------
+
+            if (!_isRevealed(questions[i])) {
+                games[_gameId].state = SessionState.Cancelled;
+                emit GameCancelled(_gameId);
+                return;
+            }
+        }
+        revert GameWaitingForConclusion(_gameId);
+    }
+```
+
+**Impact:** `SessionManager::cancelGameIfCreatorMissing, endGame` could revert if there are too many questions in a game.
+
+* If `endGame` cannot complete, users and the creator lose their funds and fees
+* If `cancelGameIfCreatorMissing` reverts, users lose their funds if the creator is missing
+
+**Recommended Mitigation:** Limit the number of questions in a game.
+
+**Majority Games:**
+Fixed in commit [cb88233](https://github.com/Engage-Protocol/engage-protocol/commit/cb8823378ef74d688ff15eefb7b6ac0d2b0e5bc2).
+
+**Cyfrin:** Verified.
+
+## [M-6] Excessive amount `maximumContestants` could make games to revert in `DefaultSession::recordResults` due to out of gas
+- Severity: `Medium`
+- Source report: `protocol.md`
+
+### Detailed Content (from source)
+**Description:** `SessionManager::maximumContestants` is initially set to 1 million so potentially a large number of contestants can join each game:
+```solidity
+/**
+ * @notice Maximum number of contestants allowed in a game
+ */
+ uint256 public maximumContestants = 1_000_000;
+```
+
+`DefaultSession::recordResults` iterates over all the winners to record the result for each question in the respective strategies:
+```solidity
+ function recordResults(uint256 sessionId, bytes32 assertionId) public {
+     ...
+        for (uint256 i = 0; i < assertion.winners.length; ++i) { <------
+            address winner = assertion.winners[i]; //@audit how many winners could be?
+            for (uint256 j = 0; j < questionIds.length; ++j) {
+                (, address promptStrategy) = SessionManager(sessionManager).questionCommitment(questionIds[j]);
+                IPromptStrategy(promptStrategy).recordResult(
+                    questionIds[j], winner, assertion.totalXPs[i], assertion.totalTimes[i]
+                );
+            }
+         ...
+    }
+```
+
+If there are many winners this loop iteration could revert due to out-of-gas.
+
+**Impact:** Games may not finish due to out of gas.
+
+**Proof of Concept:** Taking in consideration that the block gas limit in base is around 30M and if we call ` forge test --mt test_RecordResults_Success --gas-report `  we could see that the `assertionResolvedCallback` is costing an avg 280587 for just two winners if we divide 30M /  280587  we get approximately 100 winner maximum.
+
+**Assumptions:**
+Block gas limit: 30,000,000 gas
+Function overhead: ~50,000 gas
+
+**Average questions per game: 5-10 questions
+Conservative Estimate (10 questions per game):**
+Gas per winner: 25,000 + (7,600 × 10) = 101,000 gas
+Available gas: 30,000,000 - 50,000 = 29,950,000 gas
+Maximum winners: 29,950,000 ÷ 101,000 ≈ 296 winners
+
+**Optimistic Estimate (5 questions per game):**
+Gas per winner: 25,000 + (7,600 × 5) = 63,000 gas
+Maximum winners: 29,950,000 ÷ 63,000 ≈ 475 winners
+
+**Realistic Maximum: ~300-400 winners**
+
+**Recommended Mitigation:** Consider set a realistic `maximumContestants` to approx. 1000 participants. Alternatively another approach is just keep the winners in the array and create another function where user can `recordResult` by chunks.
+
+**Majority Games:**
+Fixed in commit [a2e353e](https://github.com/Engage-Protocol/engage-protocol/commit/a2e353e664f7707d49a3ca9ca2bea792d731711c).
+
+**Cyfrin:** Verified.
+
+## [M-7] use fixed length array for `reSDLTokenIds`
+- Severity: `Medium`
+- Source report: `vesting.md`
+
+### Detailed Content (from source)
+**Description:** The contract currently declares
+
+```solidity
+uint256[] private reSDLTokenIds;
+```
+
+and in the constructor uses a `for`-loop with `.push(0)` to initialize it to length `MAX_LOCK_TIME + 1`. This incurs:
+
+* A dynamic‐array length slot in storage
+* A pointer slot for the array data
+* Multiple storage writes (one per `.push`)
+
+Since the array’s length is always exactly `MAX_LOCK_TIME + 1` (5), a static array:
+
+```solidity
+uint256[MAX_LOCK_TIME + 1] private reSDLTokenIds;
+```
+
+removes the dynamic‐array overhead and eliminates the initialization loop.
+
+Consider replacing the dynamic array with a fixed-length array and remove the constructor loop:
+
+```diff
+-   // list of reSDL token ids for each lock time
+-   uint256[] private reSDLTokenIds;
+
++   // list of reSDL token ids for each lock time (0–4 years)
++   uint256[MAX_LOCK_TIME + 1] private reSDLTokenIds;
+
+    constructor(…) {
+        ...
+-       for (uint256 i = 0; i <= MAX_LOCK_TIME; ++i) {
+-           reSDLTokenIds.push(0);
+-       }
+     }
+```
+
+This change collapses two storage slots (length + data pointer) into one and removes the costly initialization loop, reducing both deployment and per-read gas costs.
+
+**Stake.Link:** Fixed in commit [`128c335`](https://github.com/stakedotlink/contracts/commit/128c33560d8f43057c5d10d822b4904d0762d0fd)
+
+**Cyfrin:** Verified. `reSDLTokenIds` now static.
+
+\clearpage
+
+## [M-8] `ownerSetVotingPowerExcludedStatus()` applies onlyOwner modifier twice
+- Severity: `Medium`
+- Source report: `wlf.md`
+
+### Detailed Content (from source)
+**Description:** In WLF V2 contract, the function `ownerSetVotingPowerExcludedStatus()` applies `onlyOwner` modifier twice :
+- First in the external `ownerSetVotingPowerExcludedStatus()` function
+- Again in the internal  `_ownerSetVotingPowerExcludedStatus()` function in the same call flow.
+
+The second onlyOwner modifier on `_ownerSetVotingPowerExcludedStatus()` is unnecessary.
+
+
+**Recommended Mitigation:** Remove onlyOwner modifier from `_ownerSetVotingPowerExcludedStatus()` function.
+
+**WLFI:**
+Fixed in commit [b567696](https://github.com/worldliberty/usd1-protocol/blob/b56769613b6438b62b8b4133a63fca727fdbc631/contracts/wlfi/WorldLibertyFinancialV2.sol#L387)
+
+**Cyfrin:** Verified.
+
+\clearpage
+## Gas Optimization
+
+<!-- /Cyfrin Fixed Issues (Merged) -->
+
+## [M-34] Cache storage to prevent identical storage reads
+- Severity: `Medium`
+- Source report: `ramp.md`
+
+### Detailed Content (from source)
+**Description:** Reading from storage is expensive, cache storage to prevent identical storage reads:
+
+* `SecuritizeAmmNavProvider::_pricingFromCurveBuy, _pricingFromCurveSell` - cache `priceScaleFactor`
+* `SecuritizeAmmNavProvider::_checkAndResetBaseline` - cache `lastAnchorPriceWad, lastMarketStatus` prior to first `if` statement
+* `AllowanceLiquidityProvider::_availableLiquidity` - cache `liquidityToken, liquidityProviderWallet`
+* `BaseOffRamp::_redeem` - cache `asset`
+* `BaseOnRamp::_executeLiquidityTransfer` - cache `liquidityToken, feeManager, bridgeChainId, USDCBridge`
+
+**Securitize:** Fixed in commits [e631361](https://bitbucket.org/securitize_dev/bc-nav-provider-sc/commits/e631361371ccaabceabd8ba1a200f4fd1200e54f), [ea883b9](https://github.com/securitize-io/bc-on-off-ramp-sc/commit/ea883b99af2eb802ffe49c7338379b1e31cd76de), [d32d6a0](https://bitbucket.org/securitize_dev/bc-nav-provider-sc/commits/d32d6a0d6cf9a4215360deb11711740450d1db48).
+
+**Cyfrin:** Verified.
+
+## [M-24] Cache storage to prevent identical storage reads
+- Severity: `Medium`
+- Source report: `escrow.md`
+
+### Detailed Content (from source)
+**Description:** Reading from storage is expensive; cache storage to prevent identical storage reads:
+* `SablierBob::exitWithinGracePeriod, redeem` - `vault.shareToken`, potentially also `vault.adapter` if the most likely case is non-zero
+* `SablierBob::redeem` - `comptroller` in the branch where no vault adapter exists if `minFeeWei` is likely to be > 0
+* `SablierBob::unstakeTokensViaAdapter` - `vault.adapter`
+* `SablierBob::onShareTransfer` - `_vaults[vaultId].adapter` if the most likely case is non-zero
+
+**Sablier:** Fixed in commit [7d9ac86](https://github.com/sablier-labs/lockup/commit/7d9ac86a6edc85383b1fc9b58fdfbaf78a8f1cb1).
+
+**Cyfrin:** Verified.
+
+## [M-6] Cache storage to prevent identical storage reads
+- Severity: `Medium`
+- Source report: `harbor.md`
+
+### Detailed Content (from source)
+**Description:** Cache storage to prevent identical storage reads:
+
+* `Agreement.sol`
+```solidity
+// cache `accts.length` in `getDetails`
+320:            _details.chains[i].accounts = new Account[](accts.length);
+321:            for (uint256 j = 0; j < accts.length; ++j) {
+
+// cache `chainAccounts.length` in `_findAccountIndex`
+398:        for (uint256 i = 0; i < chainAccounts.length; i++) {
+```
+
+**SafeHarbor:**
+Fixed in commit [eb51eb0](https://github.com/PatrickAlphaC/safe-harbor/commit/eb51eb04669c5c48ca6fa692b2215593f7eae11b).
+
+**Cyfrin:** Verified.
+
+## [M-19] Cache storage slots to prevent identical storage reads
+- Severity: `Medium`
+- Source report: `wannabetv2.md`
+
+### Detailed Content (from source)
+**Description:** Cache storage slots to prevent identical storage reads if the values don't change during execution.
+
+For example, `Bet::accept,cancel,resolve` should cache `_aavePool` if it is likely to be non-zero since this saves 1 storage read in `accept` and 2 storage reads in `resolve,cancel`.
+
+**WannaBet:** Fixed in commit [b8b4863](https://github.com/gskril/wannabet-v2/commit/b8b4863960cc3eeee3ccf017e4ac3d26f65959fe).
+
+**Cyfrin:** Verified.
+
+## [M-38] Cache storage to prevent identical storage reads
+- Severity: `Medium`
+- Source report: `syntetika.md`
+
+### Detailed Content (from source)
+**Description:** Reading from storage is expensive; cache storage to prevent identical storage reads:
+* `ComplianceChecker.sol`:
+```solidity
+// cache `for` loop storage lengths in `isCompliant`
+59:            optionIndex < _complianceOptions.length;
+66:                sbtIndex < _complianceOptions[optionIndex].requiredSBTs.length;
+```
+
+* `CompliantDepositRegistry.sol`:
+```solidity
+// cache `investorDepositMap[investor]` in `getDepositAddress`
+60:        require(investorDepositMap[investor] > 0, UnregisteredInvestor());
+64:        return depositAddresses[investorDepositMap[investor]];
+
+// cache `nextDepositAddressIndex` in `registerDepositAddress`
+93:                nextDepositAddressIndex < depositAddresses.length &&
+102:        investorDepositMap[msg.sender] = nextDepositAddressIndex;
+
+// cache `getDepositAddress(msg.sender)` in `registerDepositAddress`
+// ideally do this by using a named return variable, assigning straight to it,
+// using the named return variable to emit the event then deleting the obsolete
+// `return` statement
+104:        emit DepositAddressSet(msg.sender, getDepositAddress(msg.sender));
+106:        return getDepositAddress(msg.sender);
+
+// cache `depositAddresses.length` in `getDepositAddresses`
+128:        if (startIndex + count > depositAddresses.length) {
+129:            returnLength = depositAddresses.length - startIndex;
+134:            i < count && startIndex + i < depositAddresses.length;
+
+// cache `depositAddresses.length` in `addDepositAddresses`
+// just invert the order of these two statements then use `startIndex`
+// to set `finalizedAddressesLength`
+154:        finalizedAddressesLength = depositAddresses.length;
+156:        uint startIndex = depositAddresses.length;
+
+// cache `block.timestamp + batchChallengePeriod` in `addDepositAddresses`
+// and use it to set `latestBatchUnlockTime` and also to emit the event
+161:        latestBatchUnlockTime = block.timestamp + batchChallengePeriod;
+165:            latestBatchUnlockTime,
+
+// cache `finalizedAddressesLength` and use `block.timestamp` instead of
+// `latestBatchUnlockTime` when emitting event in `challengeLatestBatch`
+199:        uint batchLength = depositAddresses.length - finalizedAddressesLength;
+208:            finalizedAddressesLength,
+209:            latestBatchUnlockTime,
+```
+
+* `Blacklistable.sol`:
+```solidity
+// use input `_newBlacklister` when emitting event in `updateBlackLister`
+74:        emit BlacklisterChanged(blacklister);
+```
+
+* `Minter.sol`:
+```solidity
+// cache `custodian` in `transferToCustody`
+135:        baseAsset.safeTransfer(custodian, amount);
+136:        emit FundsTransferredToCustody(amount, custodian);
+```
+
+* `StakingVault.sol`:
+```solidity
+// cache `cooldownDuration` in `redeem, withdraw`
+137:        if (cooldownDuration == 0) {
+142:            cooldownDuration;
+159:        if (cooldownDuration == 0) {
+164:            cooldownDuration;
+
+// use input `duration` when emitting event in `setCooldownDuration`
+220:        cooldownDuration = duration;
+221:        emit CooldownDurationUpdated(previousDuration, cooldownDuration);
+
+// cache `lastDistributionTimestamp` in `getUnvestedAmount` if first `return`
+// statement is unlikely to be frequently triggered
+271:        if (lastDistributionTimestamp > block.timestamp) {
+275:            lastDistributionTimestamp;
+```
+
+**Syntetika:**
+Fixed in commits [bc24502](https://github.com/SyntetikaLabs/monorepo/commit/bc245024d7a3d4773661a2eb82284653bfa7f46b), [8560039](https://github.com/SyntetikaLabs/monorepo/commit/8560039b80334a3ad234f7f90ff0a55e50d13edd), [bfad835](https://github.com/SyntetikaLabs/monorepo/commit/bfad8350a4b6b843c47bea023237271c198bfa84).
+
+**Cyfrin:** Verified though ideally `StakingVault::withdraw` would also [cache](https://github.com/SyntetikaLabs/monorepo/blob/audit/issuance/src/vault/StakingVault.sol#L190-L195) `cooldownDuration` similar to the fix made inside `redeem`.

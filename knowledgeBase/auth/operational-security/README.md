@@ -25,3 +25,184 @@ The InclusionQueue contract enables the creation of forced withdrawalrequests or
 ### 修補方式（實際）
 The BullBit team implemented upper bounds for feeAmount and minWithdrawAmount and a time-lock mechanism is integrated to reflectchanges in commit 322258e. 32
 
+## Cyfrin Fixed Issues (Merged)
+- Count: `2`
+- Filter: `Severity in {Critical, Medium}` and explicit `Fixed/Resolved markers`
+- Source: `cyfrin/*.md`
+
+## [M-1] Market pause flag not enforced by `ConditionalTokens::splitPosition`
+- Severity: `Medium`
+- Source report: `clob.md`
+
+### Detailed Content (from source)
+**Description:** `PredictionMarketV3ManagerCLOB::pauseMarket` sets a per-market `paused` flag. The exchange respects this via `_requireMarketOpen` -> `manager.isMarketPaused`. However, `ConditionalTokens::splitPosition` checks only the market state, not the pause flag:
+
+```solidity
+// ConditionalTokens.sol:34
+require(manager.getMarketState(marketId) == IMyriadMarketManager.MarketState.open, "market not open");
+// isMarketPaused is never checked
+```
+
+Any user can call `ConditionalTokens::splitPosition` directly to acquire fresh YES/NO tokens on a market the admin intended to freeze, bypassing the pause entirely. During an incident pause (e.g. ahead of an emergency void), new exposure can still be created.
+
+**Recommended Mitigation:** Add a pause guard to `ConditionalTokens::splitPosition`:
+
+```solidity
+require(!manager.isMarketPaused(marketId), "market paused");
+```
+
+**Myriad:** Fixed in commit [`8be2650`](https://github.com/Polkamarkets/polkamarkets-js/commit/8be265059802e5e1e79bca4286d17616be90c47f)
+
+**Cyfrin:** Verified.
+
+## [M-2] Inconsistent pause functionality allows certain state-changing operations when contract is paused
+- Severity: `Medium`
+- Source report: `cryptoart.md`
+
+### Detailed Content (from source)
+**Description:** The `CryptoartNFT` contract implements a pause mechanism using OpenZeppelin's `PausableUpgradeable` contract. However, the pause functionality is inconsistently applied across the contract's functions. While minting and burning operations are properly protected with the `whenNotPaused` modifier, several other state-changing functions remain accessible even when the contract is paused, including token transfers, metadata management, and story-related functions.
+
+The following state-changing functions lack the `whenNotPaused` modifier:
+
+1. Token transfers and approvals (inherited from ERC721)
+2. Metadata management functions:
+   - `updateMetadata`
+   - `pinTokenURI`
+   - `markAsRedeemable`
+3. Story-related functions:
+   - `addCollectionStory`
+   - `addCreatorStory`
+   - `addStory`
+   - `toggleStoryVisibility`
+
+**Impact:** When the contract is paused (typically during emergencies or upgrades), users can still perform various state-changing operations that might be undesirable during a pause period. It could lead to unexpected state changes during contract upgrades or emergency situations.
+
+**Recommended Mitigation:** Add the `whenNotPaused` modifier to all state-changing functions to ensure consistent behavior when the contract is paused. For example:
+
+**Cryptoart:**
+Fixed in commit [e7d7e5b](https://github.com/cryptoartcom/cryptoart-smart-contracts/commit/e7d7e5b3b1c8976a11d49f889b4168ce649be2ee).
+
+**Cyfrin:** Verified.
+
+\clearpage
+
+<!-- /Cyfrin Fixed Issues (Merged) -->
+
+## [M-46] Deployment script requires unencrypted private keys
+- Severity: `Medium`
+- Source report: `trade.md`
+
+### Detailed Content (from source)
+**Description:** Several deployment/ops scripts require private keys to be loaded from environment variables and used directly inside the script, e.g.:
+
+```solidity
+// DeployBasisTradeTailor.s.sol
+uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
+uint256 adminPrivateKey    = vm.envUint("ADMIN_PRIVATE_KEY");
+...
+vm.startBroadcast(deployerPrivateKey);
+...
+vm.startBroadcast(adminPrivateKey);
+
+// DeployBasisTradeVault.s.sol
+uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
+...
+vm.startBroadcast(deployerPrivateKey);
+
+// DeployMockPocketOracle.s.sol
+uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
+...
+vm.startBroadcast(deployerPrivateKey);
+
+// DeployMocks.s.sol
+uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
+...
+vm.startBroadcast(deployerPrivateKey);
+```
+
+Storing and loading raw private keys via `.env` (plain text) is an operational security risk: keys can be leaked through version control, logs, shell history, misconfigured backups, or compromised developer machines/CI runners.
+
+A safer approach is to avoid embedding keys in scripts and use Foundry’s [wallet management](https://getfoundry.sh/forge/reference/script/) and keystore support. Recommended pattern:
+
+1. Import keys into an encrypted local keystore (once per machine) using [`cast`](https://getfoundry.sh/cast/reference/wallet/import/):
+
+```bash
+cast wallet import deployerKey --interactive
+cast wallet import adminKey --interactive
+cast wallet import agentKey --interactive   # if needed
+```
+
+2. Change scripts to use parameterless broadcasting so the signer is supplied by CLI:
+
+```solidity
+// before: vm.startBroadcast(deployerPrivateKey);
+vm.startBroadcast();
+// ...
+vm.stopBroadcast();
+```
+
+3. Run each role-sensitive phase as the appropriate account (split into separate runs or separate scripts if different signers are required):
+
+```bash
+# Deployer phase
+forge script script/DeployBasisTradeTailor.s.sol:DeployBasisTradeTailor \
+  --rpc-url "$RPC_URL" --broadcast --account deployerKey --sender <deployer_addr> -vvv
+
+# Admin phase (grants/approvals)
+forge script script/ConfigureBasisTradeTailor.s.sol:ConfigureBasisTradeTailor \
+  --rpc-url "$RPC_URL" --broadcast --account adminKey --sender <admin_addr> -vvv
+```
+
+This keeps private keys encrypted at rest and never exposes them via plaintext environment variables. As alternatives, consider hardware wallets (`--ledger`), and ensure `.env` never contains raw keys in shared environments.
+
+For additional guidance, see [this explanation video](https://www.youtube.com/watch?v=VQe7cIpaE54) by Patrick.
+
+**Button:** Fixed in commit [`c89bce0`](https://github.com/buttonxyz/button-protocol/commit/c89bce0f88770f473524e997eb47fca7dccae0e0)
+
+**Cyfrin:** Verified. Keystores are now used for the keys.
+
+## [M-5] Deployment script requires unencrypted private key
+- Severity: `Medium`
+- Source report: `accountable.md`
+
+### Detailed Content (from source)
+**Description:** The deployment scripts [`FactoryScript.s.sol`](https://github.com/Accountable-Protocol/audit-2025-09-accountable/blob/fc43546fe67183235c0725f6214ee2b876b1aac6/script/FactoryScript.s.sol) and [`FeeManagerScript.s.sol`](https://github.com/Accountable-Protocol/audit-2025-09-accountable/blob/fc43546fe67183235c0725f6214ee2b876b1aac6/script/FeeManagerScript.s.sol) requires a private key to be stored in clear text as an environment variable:
+
+```solidity
+uint256 deployerPk = vm.envUint("DEPLOYER_TESTNET_PK");
+```
+
+Storing private keys in plain text represents an operational security risk, as it increases the chance of accidental exposure through version control, misconfigured backups, or compromised developer machines.
+
+A more secure approach is to use Foundry’s [wallet management features](https://getfoundry.sh/forge/reference/script/), which allow encrypted key storage. For example, a private key can be imported into a local keystore using [`cast`](https://getfoundry.sh/cast/reference/wallet/import/):
+
+```bash
+cast wallet import deployerKey --interactive
+```
+
+This key can then be referenced securely during deployment:
+
+```bash
+forge script script/Deploy.s.sol:DeployScript \
+    --rpc-url "$RPC_URL" \
+    --broadcast \
+    --account deployerKey \
+    --sender <address associated with deployerKey> \
+    -vvv
+```
+And used just with `vm.startBroadcast()`:
+```solidity
+vm.startBroadcast();
+
+...
+
+vm.stopBroadcast();
+```
+
+For additional guidance, see [this explanation video](https://www.youtube.com/watch?v=VQe7cIpaE54) by Patrick.
+
+**Accountable:** Fixed in commit [`79d8cfd`](https://github.com/Accountable-Protocol/credit-vaults-internal/commit/79d8cfd8dee652adb0964ade05280a745cedb3b3)
+
+**Cyfrin:** Verified. Deploy scripts now don't require a private key in clear text.
+
+\clearpage
