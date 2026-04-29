@@ -11,7 +11,7 @@
 將這些issue 進行分類, 分類最多三層, 每個子類型放5~20 個issue, 如果太多太少就進行調整
 例如:
 knowledgeBase/auth/access-control
-knowledgeBase/auth/policy
+knowledgeBase/auth/policy3
 用這些issue依照上述層級來分類, 並將各層的數量寫在旁邊, 如果發現有明顯過大的分類層, 試著拆成更細子類, 並給出更新後的層級
 
 (agent)
@@ -22,4 +22,11 @@ knowledgeBase/auth/policy
 整理完後double check 該readme 的issue 數量和上面整理的issue 數量是否相同, 確保沒有漏掉
 
 (agent)
-根據 @knowledgeBase/readme 的分類, 將對應的issue 內容整理進去, 參考原本的內容來進行分類, 架構也參考原本的內容, 內容整理要完全參考pdf 內容, 要詳細, 不包括程式碼, 
+根據@knowledgeBase/readme 的分類創建資料夾, 每個資料夾放一個readme file 即可
+
+(agent)
+先試著整理access-control/role-model/owner-admin 給我看 確認是否正確
+
+(agent)
+根據 @knowledgeBase/readme 的分類, 將所有對應的issue 內容整理進去相對應的readme file, 內容整理要完全參考原本資料的內容, 要詳細, 不要包括程式碼 中英文都要 整理方式參考access-control/role-model/owner-admin 
+
