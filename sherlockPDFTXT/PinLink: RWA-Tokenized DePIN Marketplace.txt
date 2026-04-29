@@ -1,0 +1,72 @@
+﻿/burl@stx null def /BU.S /burl@stx null def def /BU.SS currentpoint /burl@lly exch def /burl@llx exch def burl@stx null ne burl@endx burl@llx ne BU.FL BU.S if if burl@stx null eq burl@llx dup /burl@stx exch def /burl@endx exch def burl@lly dup /burl@boty exch def /burl@topy exch def if burl@lly burl@boty gt /burl@boty burl@lly def if def /BU.SE currentpoint /burl@ury exch def dup /burl@urx exch def /burl@endx exch def burl@ury burl@topy lt /burl@topy burl@ury def if def /BU.E BU.FL def /BU.FL burl@stx null ne BU.DF if def /BU.DF BU.BB [ /H /I /Border [burl@border] /Color [burl@bordercolor] /Action « /Subtype /URI /URI BU.L » /Subtype /Link BU.B /ANN pdfmark /burl@stx null def def /BU.BB burl@stx HyperBorder sub /burl@stx exch def burl@endx HyperBorder add /burl@endx exch def burl@boty HyperBorder add /burl@boty exch def burl@topy HyperBorder sub /burl@topy exch def def /BU.B /Rect[burl@stx burl@boty burl@endx burl@topy] def /eop where begin /@ldeopburl /eop load def /eop SDict begin BU.FL end @ldeopburl def end /eop SDict begin BU.FL end def ifelse
+
+Security Review For
+PinLink
+
+Public Audit Contest Prepared For: PinLink
+Lead Security Expert: IllIllI
+Date Audited: March 11 - March 14, 2025
+Final Commit: aad68a5
+
+1
+
+
+
+Introduction
+PinLink is the first RWA-Tokenized DePIN platform, empowering users with fractionalized
+ownership of DePIN assets. This contest focuses on the PinlinkShop, a marketplace for
+buying/selling fractions of mining DePIN assets, to give everyone access to yield from
+crypto mining assets
+
+Scope
+Repository: PinLinkNetwork/marketplace-contracts
+Audited Commit: f4d5261b82e21ce8d42dcb737489ac0e2ead45d6
+Final Commit: aad68a5c296abfe52d56dc9037ea5c3830af7031
+Files:
+
+• src/fractional/FractionalAssets.sol
+• src/fractional/IFractionalAssets.sol
+• src/marketplaces/pinlinkShop.sol
+• src/marketplaces/streams.sol
+• src/oracles/CentralizedOracle.sol
+• src/oracles/IPinlinkOracle.sol
+
+Final Commit Hash
+aad68a5c296abfe52d56dc9037ea5c3830af7031
+
+Findings
+Each issue has an assigned severity:
+
+• Medium issues are security vulnerabilities that may not be directly exploitable or
+may require certain conditions in order to be exploited. All major issues should be
+addressed.
+
+• High issues are directly exploitable security vulnerabilities that need to be fixed.
+
+Issues Found
+
+High Medium
+
+0 0
+
+2
+
+
+
+Issues Not Fixed and Not Acknowledged
+
+High Medium
+
+0 0
+
+3
+
+
+
+Disclaimers
+Sherlock does not provide guarantees nor warranties relating to the security of the
+project.
+Usage of all smart contract software is at the respective users’ sole risk and is the users’
+responsibility.
+
+4

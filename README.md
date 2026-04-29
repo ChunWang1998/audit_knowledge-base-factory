@@ -21,11 +21,6 @@ scope:
 resouce: https://github.com/peckshield/publications/tree/master/audit_reports
 scope: 
 
-## PDF to knowledgebase
-prompt:
-`PDF` rename: 根據pdf report 的標題重新命名pdf file, 以Customer 命名即可，例如Dlicom
-pdf to knowledgeBase: 將 PDF folder 中被fixed 的issue 整理出來放入 @knowledgeBase/ 中, 參考原本的內容來進行分類, 架構也參考原本的內容, 內容整理要完全參考pdf 內容, 要詳細
-
 ## Bug bounty platform rank
 1. code4rena (可以提交兩次)
 https://code4rena.com/bounties

@@ -1,0 +1,335 @@
+﻿/burl@stx null def /BU.S /burl@stx null def def /BU.SS currentpoint /burl@lly exch def /burl@llx exch def burl@stx null ne burl@endx burl@llx ne BU.FL BU.S if if burl@stx null eq burl@llx dup /burl@stx exch def /burl@endx exch def burl@lly dup /burl@boty exch def /burl@topy exch def if burl@lly burl@boty gt /burl@boty burl@lly def if def /BU.SE currentpoint /burl@ury exch def dup /burl@urx exch def /burl@endx exch def burl@ury burl@topy lt /burl@topy burl@ury def if def /BU.E BU.FL def /BU.FL burl@stx null ne BU.DF if def /BU.DF BU.BB [ /H /I /Border [burl@border] /Color [burl@bordercolor] /Action « /Subtype /URI /URI BU.L » /Subtype /Link BU.B /ANN pdfmark /burl@stx null def def /BU.BB burl@stx HyperBorder sub /burl@stx exch def burl@endx HyperBorder add /burl@endx exch def burl@boty HyperBorder add /burl@boty exch def burl@topy HyperBorder sub /burl@topy exch def def /BU.B /Rect[burl@stx burl@boty burl@endx burl@topy] def /eop where begin /@ldeopburl /eop load def /eop SDict begin BU.FL end @ldeopburl def end /eop SDict begin BU.FL end def ifelse
+
+Security Review For
+Rain
+
+Private Best Efforts Audit Contest Prepared For: Rain
+Lead Security Expert: hash
+Date Audited: December 2 - December 8, 2024
+Final Commit: 6f578d5
+
+1
+
+
+
+Introduction
+Rain, a Visa Network issuer, provides solutions for card programs tailored to various
+regions and use cases. Users can leverage their collateral contract balance to use Visa
+credit cards. This contest focuses on how Rain and its users can efficiently manage
+collateral and on-chain statements.
+
+Scope
+Repository: SignifyHQ/collateral-contract-evm-v2
+Audited Commit: b432939abb6b322545a71f448f69b6db73d4df44
+Final Commit: 6f578d5b9c9fa35bbe857959a50fa5aab4fa611a
+Files:
+
+• contracts/Beacon.sol
+• contracts/Collateral.sol
+• contracts/Coordinator.sol
+• contracts/Factory.sol
+• contracts/interfaces/ICollateral.sol
+• contracts/interfaces/IERC20Decimals.sol
+• contracts/interfaces/IFactory.sol
+
+Final Commit Hash
+6f578d5b9c9fa35bbe857959a50fa5aab4fa611a
+
+Findings
+Each issue has an assigned severity:
+
+• Medium issues are security vulnerabilities that may not be directly exploitable or
+may require certain conditions in order to be exploited. All major issues should be
+addressed.
+
+• High issues are directly exploitable security vulnerabilities that need to be fixed.
+
+2
+
+
+
+Issues Found
+
+High Medium
+
+0 2
+
+Issues Not Fixed and Not Acknowledged
+
+High Medium
+
+0 0
+
+Security experts who found valid issues
+0xc0ffEE aslanbek hash
+
+3
+
+
+
+Issue M-1: Users can pay off statements by just us-
+ing 50% of the owed value
+Source: https://github.com/sherlock-audit/2024-11-rain-judging/issues/9
+
+Found by
+0xc0ffEE, aslanbek
+
+Summary
+The rounding half up in the function Coordinator::getAssetAmountCents() can allow
+users to pay off all owed value by just using 50% of that value
+
+Root Cause
+• The function Coordinator::getAssetAmountCents() converts the asset amount to
+cents, which rounds half up the result. By this, the amountCents could be deviated by
+maximum 0.5 cents from the actual amount.
+
+function getAssetAmountCents(
+address _asset,
+uint256 _amountNative
+
+) public view returns (uint256 amountCents, uint8 assetDecimals) {
+// Check if asset is supported
+if (!isSupportedAsset(_asset)) {
+
+revert UnsupportedAsset(_asset);
+}
+
+SupportedAsset memory asset = supportedAssets[_asset];
+assetDecimals = _asset == address(0)
+
+? 18 // All EVM chains should implement 18 decimals in its native asset
+: IERC20Decimals(_asset).decimals();
+
+if (asset.oracle == address(0)) {
+// asset is considered to be stable to USD
+uint256 divisor = 10 ** (assetDecimals - 2);
+// Add half of the divisor to round
+
+@> amountCents = (_amountNative + (divisor / 2)) / divisor;
+} else {
+
+(int256 price, uint8 priceDecimals) = _getCurrentAssetPrice(asset);
+uint256 divisor = 10 **
+
+(uint256(priceDecimals) - 2 + assetDecimals);
+@> amountCents =
+
+// Add half of the divisor to round
+((_amountNative * uint256(price)) + (divisor / 2)) /
+
+4
+
+
+
+divisor;
+}
+
+}
+
+• The function Coordinator::makePaymentFromUserAccountForStatement() allows
+an arbitrary user to pay for a statement given that the asset is supported. The asset
+amount is converted to cents using the function getAssetAmountCents() above.
+
+function makePaymentFromUserAccountForStatement(
+address _asset,
+uint256 _amountNative,
+string calldata _statementId
+
+) external payable {
+// Transfer asset from user account to treasury
+(
+
+uint256 amountCents,
+uint256 feeNative,
+uint8 assetDecimals
+
+@> ) = _makePaymentFromUserAccount(_asset, _amountNative);
+@> _markStatementPaid(statements[_statementId], amountCents);
+
+emit PaymentFromUserAccountForStatement(
+msg.sender,
+_asset,
+_amountNative,
+amountCents,
+feeNative,
+assetDecimals,
+statements[_statementId].teamId,
+_statementId
+
+);
+}
+
+function _makePaymentFromUserAccount(
+address _asset,
+uint256 _amountNative
+
+)
+internal
+nonReentrant
+onlySupportedAsset(_asset)
+returns (uint256 amountCents, uint256 feeNative, uint8 assetDecimals)
+
+{
+// Calculate fee with proper rounding
+feeNative =
+
+((_amountNative * supportedAssets[_asset].feeBps) + 5000) /
+10000;
+
+uint256 amountWithFeeNative = _amountNative + feeNative;
+
+// Convert amount to cents
+
+5
+
+
+
+@> (amountCents, assetDecimals) = getAssetAmountCents(
+_asset,
+_amountNative
+
+);
+...
+}
+
+So far, by paying 0.5 cents value of the asset, there will be 1 cent owed amount is
+deducted from the statement => the users can pay the full owed amount by paying 0.5
+cents each time. Even though the gas needed to pay for the full owed amount is high but
+it is affordable for many networks with cheap gas fee. Note that, the same issue also
+happens with the function makePaymentFromCollateralForStatement(),
+makePaymentFromCollateral(), makePaymentFromUserAccount()
+
+Internal pre-conditions
+No response
+
+External pre-conditions
+No response
+
+Attack Path
+1. A statement is created with 100 USD owed amount, equivalent 10000 cents
+2. A user makes 10000 calls to function makePaymentFromUserAccountForStatement(), in
+
+each call the asset value equals to 0.5 cents. As a result, the user only pays 5000
+cents
+
+Impact
+• 50% of statements values is loss
+
+PoC
+Add this test to the file test/payments.ts
+
+it.only("pay half cent", async function () {
+// @audit pay half cent
+const oneHourAfter = Math.floor(new Date().getTime() / 1000) + 60 * 60;
+await coordinator.connect(publisher).updateStatement(
+
+statementId,
+teamId,
+10000n, // 100 usd
+
+6
+
+
+
+collateralProxyAddress,
+oneHourAfter,
+
+);
+let statement = await coordinator.statements(statementId);
+
+const user1BalanceBefore = await stableAsset1.balanceOf(user1Address);
+
+await stableAsset1
+.connect(user1)
+.approve(coordinatorAddress, user1BalanceBefore);
+
+for (let i = 0; i < 10000; ++i) {
+await coordinator.connect(user1).makePaymentFromUserAccountForStatement(
+stableAsset1Address,
+oneDollarStableAsset / 200n, // 0.5 cent
+statementId,
+
+);
+}
+
+statement = await coordinator.statements(statementId);
+expect(statement[3]).to.eq(10000n); // equal to 10000 cents
+
+});
+
+Run the test and it succeeds.
+
+Mitigation
+No response
+
+Discussion
+sherlock-admin2
+The protocol team fixed this issue in the following PRs/commits:
+https://github.com/SignifyHQ/collateral-contract-evm-v2/pull/26
+
+7
+
+
+
+Issue M-2: min/maxAnswer check is not done in for
+Chainlink oracles
+Source: https://github.com/sherlock-audit/2024-11-rain-judging/issues/47
+
+Found by
+hash
+
+Summary
+Not validating for min/max answer on chainlink feeds can cause loss of funds for the
+credit issuer
+
+Root Cause
+When reading from Chainlink feeds validation is not done for min/max answers even
+though such oracles are used.
+Eg: ETH/USD chainlink feed in optimism has min and max value set
+
+Internal pre-conditions
+No response
+
+External pre-conditions
+Huge crash in price of tokens should occur
+
+Attack Path
+1. Price of token A drops below the minAnswer set on the feed (eg: 100 is the
+minAnswer and the token price goes to 1)
+
+2. A statement is published with amount == 100
+3. Attacker pays the statement balance by transferring 1 token A (incorrectly priced
+
+at 100 instead of 1) and the statement is settled
+4. Loss for the credit issuer since they only receive 1 value compared to 100
+
+Impact
+Loss of funds for the credit issuer
+
+8
+
+
+
+PoC
+No response
+
+Mitigation
+Check for the min/maxAnswer on the feeds and disallow payments using that token if
+the these thresholds are met
+
+Discussion
+sherlock-admin2
+The protocol team fixed this issue in the following PRs/commits:
+https://github.com/SignifyHQ/collateral-contract-evm-v2/pull/29
+
+9
+
+
+
+Disclaimers
+Sherlock does not provide guarantees nor warranties relating to the security of the
+project.
+Usage of all smart contract software is at the respective users’ sole risk and is the users’
+responsibility.
+
+10

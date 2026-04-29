@@ -1,0 +1,92 @@
+﻿/burl@stx null def /BU.S /burl@stx null def def /BU.SS currentpoint /burl@lly exch def /burl@llx exch def burl@stx null ne burl@endx burl@llx ne BU.FL BU.S if if burl@stx null eq burl@llx dup /burl@stx exch def /burl@endx exch def burl@lly dup /burl@boty exch def /burl@topy exch def if burl@lly burl@boty gt /burl@boty burl@lly def if def /BU.SE currentpoint /burl@ury exch def dup /burl@urx exch def /burl@endx exch def burl@ury burl@topy lt /burl@topy burl@ury def if def /BU.E BU.FL def /BU.FL burl@stx null ne BU.DF if def /BU.DF BU.BB [ /H /I /Border [burl@border] /Color [burl@bordercolor] /Action « /Subtype /URI /URI BU.L » /Subtype /Link BU.B /ANN pdfmark /burl@stx null def def /BU.BB burl@stx HyperBorder sub /burl@stx exch def burl@endx HyperBorder add /burl@endx exch def burl@boty HyperBorder add /burl@boty exch def burl@topy HyperBorder sub /burl@topy exch def def /BU.B /Rect[burl@stx burl@boty burl@endx burl@topy] def /eop where begin /@ldeopburl /eop load def /eop SDict begin BU.FL end @ldeopburl def end /eop SDict begin BU.FL end def ifelse
+
+Security Review For
+Notional
+
+Collaborative Audit Prepared For: Notional
+Lead Security Expert(s): mstpr-brainbot
+Date Audited: March 3 - March 5, 2026
+
+1
+
+
+
+Introduction
+This audit covers two minor changes to the Notional Exponent core code in addition to
+an integration with the Inifnifi protocol.
+
+• Adding enterWithYieldToken to AbstractLendingRouter.sol. Allows a user to swap a
+leveraged position on the yieldToken from a non-Notional Morpho market into the
+Notional version of that Morpho market. Callable only by whitelisted
+positionSwapContract.
+
+• Adding enterWithYieldTokenAndLeverage to AbstractLendingRouter.sol. Allows
+users to enter a position by depositing the yieldToken instead of the borrow asset.
+
+• Adds an Infinifi withdraw request manager. This contract enables siUSD and liUSD
+yieldTokens.
+
+Scope
+Repository: notional-finance/notional-exponent
+Audited Commit: eb32a88cfad5efdf5f3a2719e1ff3581a37e3d59
+Final Commit: 3190fa037978f9bf81c4ac193143c182ea9c3375
+Files:
+
+• src/AbstractYieldStrategy.sol
+• src/routers/AbstractLendingRouter.sol
+• src/routers/MorphoLendingRouter.sol
+• src/withdraws/InfiniFi.sol
+
+Final Commit Hash
+3190fa037978f9bf81c4ac193143c182ea9c3375
+
+Findings
+Each issue has an assigned severity:
+
+• High issues are directly exploitable security vulnerabilities that need to be fixed.
+• Medium issues are security vulnerabilities that may not be directly exploitable or
+may require certain conditions in order to be exploited. All major issues should be
+addressed.
+
+• Low/Info issues are non-exploitable, informational findings that do not pose a
+security risk or impact the system’s integrity. These issues are typically cosmetic or
+
+2
+
+
+
+related to compliance requirements, and are not considered a priority for
+remediation.
+
+Issues Found
+
+High Medium Low/Info
+
+0 0 0
+
+Issues Not Fixed and Not Acknowledged
+
+High Medium Low/Info
+
+0 0 0
+
+3
+
+
+
+No issues have been uncovered during the security review of
+the minor changes to the protocol specified in the introduc-
+tion of the report. The final commit has been signed off on by
+the Security Researcher.
+
+4
+
+
+
+Disclaimers
+Sherlock does not provide guarantees nor warranties relating to the security of the
+project.
+Usage of all smart contract software is at the respective users’ sole risk and is the users’
+responsibility.
+
+5
