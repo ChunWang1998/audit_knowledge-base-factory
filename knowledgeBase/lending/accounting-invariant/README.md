@@ -3,7 +3,7 @@
 - Count: `6`
 - Definition: invariant mismatch between accounting model and real balances, or wrong financial formula basis.
 
-## [Beraborrow][M-10] InternalizeDonations fails for asset token
+## [Beraborrow][M-10] Internalize Donations fails for asset token
 - Severity: `Medium`
 - Source: [Issue #43](https://github.com/sherlock-audit/2025-01-boyco-judging/issues/43)
 - Impact: `locked-funds`, `functional-break`
@@ -92,7 +92,7 @@
 - Filter: `Severity in {Critical, Medium}` and explicit `Fixed/Resolved markers`
 - Source: `cyfrin/*.md`
 
-## [C-1] `AccountableOpenTerm` loan interest cannot be repaid once principal hits zero
+## [C-1] `Accountable Open Term` loan interest cannot be repaid once principal hits zero
 - Severity: `Critical`
 - Source report: `accountable.md`
 
@@ -187,7 +187,7 @@ This guarantees interest can always be repaid at the current price, prevents the
 
 \clearpage
 
-## [C-2] Accounting on `PaymentSettler` will be corrupted when changing `stablecoin` that is used to process payments
+## [C-2] Accounting on `Payment Settler` will be corrupted when changing `stablecoin` that is used to process payments
 - Severity: `Critical`
 - Source report: `pledge.md`
 
@@ -207,7 +207,7 @@ For example, 100 USD of fees that were generated while the stablecoin had 6 deci
 
 **Cyfrin:** Verified.
 
-## [C-3] Fees can be stolen from partially unwrapped `UniswapV4Wrapper` positions
+## [C-3] Fees can be stolen from partially unwrapped `Uniswap V4Wrapper` positions
 - Severity: `Critical`
 - Source report: `vii.md`
 
@@ -595,7 +595,7 @@ function _unwrap(address to, uint256 tokenId, uint256 amount, bytes calldata ext
 
 **Cyfrin:** Verified. The `tokensOwed` state is now decremented following partial unwrap. Note that to strictly conform to the Checks-Effects-Interactions pattern this should occur before the external transfer calls (modified in commit [88c9eec](https://github.com/kankodu/vii-finance-smart-contracts/commit/88c9eec6af4db1aaf7ddbd6d5fdd8a0cc0b65d93)).
 
-## [C-4] More value can be extracted by liquidations than expected due to incorrect transfer calculations when the violator does not own the total ERC-6909 supply for each `tokenId` enabled as collateral
+## [C-4] More value can be extracted by liquidations than expected due to incorrect transfer calculations when the violator does not own the total ERC-6909 supply for each `token Id` enabled as collateral
 - Severity: `Critical`
 - Source report: `vii.md`
 
@@ -1251,7 +1251,7 @@ Example: The seat price from 249,995 to 250,000, the value becomes zero when `cr
 
 **Cyfrin:** Verified.
 
-## [M-8] Negative yield never accounted in `YieldManager::_getTotalSystemBalance` can result in temporary DoS
+## [M-8] Negative yield never accounted in `Yield Manager::_get Total System Balance` can result in temporary Do S
 - Severity: `Medium`
 - Source report: `manager.md`
 
@@ -1300,7 +1300,7 @@ What is more difficult is that `YieldManager::_getTotalSystemBalance` should ide
 
 **Cyfrin:** Verified. Outstanding Negative Yield is stored for each Yield Provider and used to tighten the minting of `stETH` to process user withdrawal requests. Negative Yield is not accounted on the total system balance to prevent DoS because of using outdated data as is possible to repay liabilities and obligations asynchronously.
 
-## [M-9] User can set their answer's probability value to `uint16.max`, manipulating `result.probabilityAverage` in their favor
+## [M-9] User can set their answer's probability value to `uint16.max`, manipulating `result.probability Average` in their favor
 - Severity: `Medium`
 - Source report: `protocol.md`
 
@@ -1515,7 +1515,7 @@ function adjustInvestorCountsAfterCountryChange(
 
 **Cyfrin:** Verified.
 
-## [M-11] `SherpaUSD::consumeTotalStakedApproval` and `SherpaUSD::consumeAccountingApproval` callable by anyone
+## [M-11] `Sherpa USD::consume Total Staked Approval` and `Sherpa USD::consume Accounting Approval` callable by anyone
 - Severity: `Medium`
 - Source report: `sherpa.md`
 
@@ -1539,7 +1539,7 @@ Consider removing the `vault` parameter and only allow the actual vault to call 
 
 **Cyfrin:** Verified. Both functions now have the `vault` parameter removed and the `onlyKeeper` modifier.
 
-## [M-12] Direct amount assignment in `SherpaUSD::ownerMint`/`ownerBurn` can break accounting for totalStaked and accountingSupply
+## [M-12] Direct amount assignment in `Sherpa USD::owner Mint`/`owner Burn` can break accounting for total Staked and accounting Supply
 - Severity: `Medium`
 - Source report: `sherpa.md`
 
@@ -1651,7 +1651,7 @@ In addition to this, if `SherpaVault::adjustAccountingSupply` was called on chai
 
 \clearpage
 
-## [M-15] `Accounting::setMinimumJrtSrtRatio` sets `reserveBps` instead of `minimumJrtSrtRatio` making ratio configuration impossible
+## [M-15] `Accounting::set Minimum Jrt Srt Ratio` sets `reserve Bps` instead of `minimum Jrt Srt Ratio` making ratio configuration impossible
 - Severity: `Medium`
 - Source report: `tranches.md`
 
@@ -1812,7 +1812,7 @@ Fixed in commit [31d9b72](https://github.com/Strata-Money/contracts-tranches/com
 
 **Cyfrin:** Verified.
 
-## [M-17] Unused Import of `OwnableUpgradeable` in `Accounting.sol`
+## [M-17] Unused Import of `Ownable Upgradeable` in `Accounting.sol`
 - Severity: `Medium`
 - Source report: `tranches.md`
 

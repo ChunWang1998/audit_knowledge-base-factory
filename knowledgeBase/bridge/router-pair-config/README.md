@@ -2,7 +2,7 @@
 
 - Count: 10
 
-## F-2026-15975 - transferOwnership Does Not Update PrivilegedExemptions and Router Allowances After Ownership Transfer
+## F-2026-15975 - transfer Ownership Does Not Update Privileged Exemptions and Router Allowances After Ownership Transfer
 - 嚴重度：Medium
 - Report source：Knoxnet.pdf
 
@@ -15,7 +15,7 @@ Owner-specific exemptions and approvals should be migrated duringownership trans
 ### 修補方式（實際）
 Fixed in c20e980: In KnoxNet, ownership transfer now migrates owner-specific privilegesand approvals atomically. The overridden `_transferOwnership` functionrevokes tax, liquidity-creator, transaction-limit, and wallet-limit exemptionsfrom the previous owner, clears the previous ownerʼs router allowance,and assigns the same privileges and approval to the new owner. The priormismatch between recorded ownership and effective privileged state istherefore resolved. function `_transferOwnership`(address newOwner) internal override { address oldOwner = `owner()`; if (oldOwner != `address(0)`) { isTaxExempt[oldOwner] = false; isLiquidityCreator[oldOwner] = false; isTxLimitExempt[oldOwner] = false; isWalletLimitExempt[oldOwner] = false; `_allowances`[oldOwner][routerAddress] = 0; } super.`_transferOwnership`(newOwner); if (newOwner != `address(0)`) { isTaxExempt[newOwner] = true; isLiquidityCreator[newOwner] = true; 33 isTxLimitExempt[newOwner] = true; isWalletLimitExempt[newOwner] = true; `_allowances`[newOwner][routerAddress] = `type(uint256)`.max; } } 34
 
-## F-2026-14988 - pancakeRouter and pancakePair Initialization Can BeSkipped in Constructor With No Recovery Mechanism
+## F-2026-14988 - pancake Router and pancake Pair Initialization Can Be Skipped in Constructor With No Recovery Mechanism
 - 嚴重度：Medium
 - Report source：Node Meta.pdf
 
@@ -28,7 +28,7 @@ Consider one of the following approaches: Enforce a non-zero `_pancakeRouter` ad
 ### 修補方式（實際）
 Fixed in 0fed2ea, the additional setter for pancakeRouter and pancakePair wasadded to setup this value after the contract deployment - `setPancakeRouter()` and `setPancakePair()`. 20
 
-## F-2026-15004 - Hardcoded Primary Pair In _calculatePriceImpact()Leads To Price Impact Limit Bypass On Secondary DEX Pairs
+## F-2026-15004 - Hardcoded Primary Pair In _calculate Price Impact()Leads To Price Impact Limit Bypass On Secondary DEX Pairs
 - 嚴重度：Medium
 - Report source：Node Meta.pdf
 
@@ -41,7 +41,7 @@ Modify `_calculatePriceImpact`() to accept the destination pair address asa para
 ### 修補方式（實際）
 Fixed in a5b8fec. The `_calculatePriceImpact`() function now accepts anadditional pancakePair parameter, which is used to perform the requiredpair-specific price impact validation.
 
-## F-2025-13503 - Native Balance Sweep via Absolute Balance onNATIVE Legs - High
+## F-2025-13503 - Native Balance Sweep via Absolute Balance on NATIVE Legs - High
 - 嚴重度：High
 - Report source：Dirol.pdf
 
@@ -52,7 +52,7 @@ swap() wraps the user’s msg.value into WETH immediately, but _executeSwap late
 The Finding was ﬁxed in commit 4688ddad by adding proper snapshotmechanics for initial balances of the route tokens. (bool hasSnapshot, uint256 snapshot) = _findTokenInSnapshot( uniqueTokensIn, tokenInSnapshots, uniqueTokenInCount, tokenTo Find ); if (!hasSnapshot) { // Failsafe: should never happen after pre-scan, but use curr entBalance as snapshot // This means tokenInBalance will be 0 for this route, preven ting unexpected behavior snapshot = currentBalance; tokenInSnapshots[uniqueTokenInCount] = snapshot; uniqueTokensIn[uniqueTokenInCount] = tokenToFind; unchecked {++uniqueTokenInCount;} } uint256 tokenInBalance = currentBalance - snapshot; Evidences POC 15
 
 
-## F-2025-13529 - Missing Check for Residual Input Tokens WhenRoute Weights Are Incomplete - High
+## F-2025-13529 - Missing Check for Residual Input Tokens When Route Weights Are Incomplete - High
 - 嚴重度：High
 - Report source：Dirol.pdf
 
@@ -63,7 +63,7 @@ The CoreAggregator._executeSwap function splits a swap across multipleroutes bas
 The Finding was ﬁxed in commit 39b76a13 by adding if (weightSum != MAX_WEIGHT) revert WeightNotFullyAllocated(); this if statement after the routes loop. Evidences POC
 
 
-## F-2025-13548 - Improper Weight Reset on tokenIn Change AllowsBypassing MAX_WEIGHT Cap - High
+## F-2025-13548 - Improper Weight Reset on token In Change Allows Bypassing MAX_WEIGHT Cap - High
 - 嚴重度：High
 - Report source：Dirol.pdf
 
@@ -74,7 +74,7 @@ The _executeSwap() function in CoreAggregator is intended to limit thetotal rout
 The Finding was ﬁxed in commit d2cb1962 by adding _validateTokenInGrouping control under the _executeSwap function. function _validateTokenInGrouping(address[] memory seenTokensIn, uint256 seenCount, address newTokenIn) private pure { for (uint256 i; i < seenCount;) { if (seenTokensIn[i] == newTokenIn) revert TokenInNotGrouped(); unchecked {++i;} } } Evidences
 
 
-## F-2025-13566 - Weights Misapplied When Routes Are NotGrouped By TokenIn - High
+## F-2025-13566 - Weights Misapplied When Routes Are Not Grouped By Token In - High
 - 嚴重度：High
 - Report source：Dirol.pdf
 
@@ -85,7 +85,7 @@ In the _executeSwap functionhe splitter renormalizes weights everytime tokenIn c
 The Finding is ﬁxed in commit 1532bc2. The tokens grouping wasenforced. _validateTokenInGrouping(seenTokensIn, seenCount, routeTokenIn); seenTokensIn[seenCount] = currentTokenIn; unchecked {++seenCount;} Evidences
 
 
-## F-2025-13594 - ZkSwap Router Mismatch: Calls Non-ExistentexactInputSingle On Monad - High
+## F-2025-13594 - Zk Swap Router Mismatch: Calls Non-Existentexact Input Single On Monad - High
 - 嚴重度：High
 - Report source：Dirol.pdf
 
@@ -96,7 +96,7 @@ The adapter assumes a Uniswap V3-style SwapRouter with exactInputSingle, but zkS
 The Finding was ﬁxed in commit 408c3d8. The router was switched tozkSwap’s Universal Router ABI: IUniversalRouter(router).execute(commands, inputs, deadline); 31 Evidences
 
 
-## F-2025-8551 - Rounding Issue in ﬁllOrder and partiallyFillOrderAllows Free Token Transfer - Medium
+## F-2025-8551 - Rounding Issue in ﬁll Order and partially Fill Order Allows Free Token Transfer - Medium
 - 嚴重度：Medium
 - Report source：EverValue Coin.pdf
 
@@ -107,7 +107,7 @@ The fillOrder() and partiallyFillOrder() functions in PairLib.sol suﬀerfrom an
 The EverValue Coin team introduced necessary checks to ﬁx theissue. When takerSendAmount or takerReceiveAmount is zero, the fillOrder() function now reverts, and the partiallyFillOrder() function skips orderﬁlling and ﬁnalizes the taker's order. Lastly, the addOrder() functionreverts when takerSendAmount is zero (Revised commit: ef39ea0). 20
 
 
-## F-2025-8721 - Exploitable Order Quantity Leading to Fund Loss -High
+## F-2025-8721 - Exploitable Order Quantity Leading to Fund Loss - High
 - 嚴重度：High
 - Report source：EverValue Coin.pdf
 
@@ -122,7 +122,7 @@ The EverValue Coin team ﬁxed the issue by updating the availableQuantity in or
 - Filter: `Severity in {Critical, Medium}` and explicit `Fixed/Resolved markers`
 - Source: `cyfrin/*.md`
 
-## [M-1] Fees never deducted in `AccountableOpenTerm` loan
+## [M-1] Fees never deducted in `Accountable Open Term` loan
 - Severity: `Medium`
 - Source report: `accountable.md`
 
@@ -137,7 +137,7 @@ The EverValue Coin team ﬁxed the issue by updating the availableQuantity in or
 
 **Cyfrin:** Verified. `performanceFee` and `establishmentFee` are now deducted for open term loans.
 
-## [M-2] `TickIterator::_advanceToNextUp` sets uninitialized end tick as the current tick which causes `TickIterator::hasNext` to return true when this is not actually the case
+## [M-2] `Tick Iterator::_advance To Next Up` sets uninitialized end tick as the current tick which causes `Tick Iterator::has Next` to return true when this is not actually the case
 - Severity: `Medium`
 - Source report: `angstrom.md`
 
@@ -238,7 +238,7 @@ function test_tickIteration() public {
 
 **Cyfrin:** Verified. The do-while loop is now inclusive of the end tick such that the current tick advances beyond the end and `hasNext()` returns false.
 
-## [M-3] `MyriadCTFExchange::_requireMarketOpen` makes two external calls to `manager`
+## [M-3] `Myriad CTFExchange::_require Market Open` makes two external calls to `manager`
 - Severity: `Medium`
 - Source report: `clob.md`
 
@@ -275,7 +275,7 @@ function _requireMarketOpen(uint256 marketId) internal view {
 
 **Cyfrin:** Verified.
 
-## [M-4] `NegRiskAdapter::createEvent` allows different `closesAt` across outcome markets
+## [M-4] `Neg Risk Adapter::create Event` allows different `closes At` across outcome markets
 - Severity: `Medium`
 - Source report: `clob.md`
 
@@ -360,7 +360,7 @@ _ct.mergePositions(...);
 
 **Cyfrin:** Verified.
 
-## [M-6] Consider switching to `ReentrancyGuardTransient`
+## [M-6] Consider switching to `Reentrancy Guard Transient`
 - Severity: `Medium`
 - Source report: `clob.md`
 
@@ -458,7 +458,7 @@ Neither option is a fair cancellation.
 
 **Cyfrin:** Verified.
 
-## [M-9] NegRisk market creator is set to adapter address instead of the initiator
+## [M-9] Neg Risk market creator is set to adapter address instead of the initiator
 - Severity: `Medium`
 - Source report: `clob.md`
 
@@ -713,7 +713,7 @@ Fixed in commit [867acb](https://github.com/MetaMask/metamask-mobile/commit/867a
 
 **Cyfrin:** Verified.
 
-## [M-12] Internal origin allowlist bypass via unnormalized URL matching in ConnectionRegistry
+## [M-12] Internal origin allowlist bypass via unnormalized URL matching in Connection Registry
 - Severity: `Medium`
 - Source report: `connect.md`
 
@@ -877,7 +877,7 @@ function safeSessionLog(session: Session) {
 
 **Cyfrin:** Verified.
 
-## [M-15] Weak structural validation of connectionRequest from deeplink
+## [M-15] Weak structural validation of connection Request from deeplink
 - Severity: `Medium`
 - Source report: `connect.md`
 
@@ -1221,7 +1221,7 @@ The bailout is correct: the code later calls `spl_token_2022::instruction::trans
 
 **Cyfrin:** Verified.
 
-## [M-20] `ExitWithinGracePeriod` event emits inaccurate `amountReceived` for adapter vaults
+## [M-20] `Exit Within Grace Period` event emits inaccurate `amount Received` for adapter vaults
 - Severity: `Medium`
 - Source report: `escrow.md`
 
@@ -1259,7 +1259,7 @@ if (address(vault.adapter) != address(0)) {
 
 **Cyfrin:** Verified.
 
-## [M-21] `feeAmount` never set when no vault adapter used in `SablierBob::redeem`
+## [M-21] `fee Amount` never set when no vault adapter used in `Sablier Bob::redeem`
 - Severity: `Medium`
 - Source report: `escrow.md`
 
@@ -1272,7 +1272,7 @@ if (address(vault.adapter) != address(0)) {
 
 **Cyfrin:** Verified.
 
-## [M-22] `SablierBob::_unstakeFullAmountViaAdapter` should take `vault.adapter` as input parameter
+## [M-22] `Sablier Bob::_unstake Full Amount Via Adapter` should take `vault.adapter` as input parameter
 - Severity: `Medium`
 - Source report: `escrow.md`
 
@@ -1283,7 +1283,7 @@ if (address(vault.adapter) != address(0)) {
 
 **Cyfrin:** Verified.
 
-## [M-23] `SablierLidoAdapter::unstakeFullAmount` should return `totalWstETH`
+## [M-23] `Sablier Lido Adapter::unstake Full Amount` should return `total Wst ETH`
 - Severity: `Medium`
 - Source report: `escrow.md`
 
@@ -1329,7 +1329,7 @@ Then change `SablierBob::_unstakeFullAmountViaAdapter` to use it:
 
 **Cyfrin:** Verified.
 
-## [M-25] ETH sent with adapter vault redemption is trapped in `SablierBob`
+## [M-25] ETH sent with adapter vault redemption is trapped in `Sablier Bob`
 - Severity: `Medium`
 - Source report: `escrow.md`
 
@@ -1365,7 +1365,7 @@ if (address(vault.adapter) != address(0)) {
 
 **Cyfrin:** Verified.
 
-## [M-26] Floor division in `SablierLidoAdapter::updateStakedTokenBalance` allows transferring `BobVaultShares` without moving wstETH backing
+## [M-26] Floor division in `Sablier Lido Adapter::update Staked Token Balance` allows transferring `Bob Vault Shares` without moving wst ETH backing
 - Severity: `Medium`
 - Source report: `escrow.md`
 
@@ -1484,7 +1484,7 @@ Run with: `forge test --match-test test_PoC_SmallTransfersMakeSharesWorthless -v
 
 **Cyfrin:** Verified.
 
-## [M-27] Missing getter function for `SablierBobState::isStakedInAdapter`
+## [M-27] Missing getter function for `Sablier Bob State::is Staked In Adapter`
 - Severity: `Medium`
 - Source report: `escrow.md`
 
@@ -1528,7 +1528,7 @@ struct Vault {
 
 **Cyfrin:** Verified.
 
-## [M-29] `collatInfo.stablecoinCap` hardcap can be bypassed via `SettersGovernor::adjustStablecoins`
+## [M-29] `collat Info.stablecoin Cap` hardcap can be bypassed via `Setters Governor::adjust Stablecoins`
 - Severity: `Medium`
 - Source report: `parallel3.1.md`
 
@@ -1567,7 +1567,7 @@ Fixed in commit [7df01b8](https://github.com/parallel-protocol/parallel-parallel
 
 **Cyfrin:** Verified. Implemented a check to validate that `stablecoinCap` is not bypassed.
 
-## [M-30] `AccountableOpenTerm` manual interest rate proposal is unbounded
+## [M-30] `Accountable Open Term` manual interest rate proposal is unbounded
 - Severity: `Medium`
 - Source report: `pr50.md`
 
@@ -1583,7 +1583,7 @@ Fixed in commit [7df01b8](https://github.com/parallel-protocol/parallel-parallel
 
 **Cyfrin:** Verified.
 
-## [M-31] Superfluous vault support validation can be removed from `pUSDeDepositor::deposit`
+## [M-31] Superfluous vault support validation can be removed from `p USDe Depositor::deposit`
 - Severity: `Medium`
 - Source report: `predeposit.md`
 
@@ -1643,7 +1643,7 @@ function deposit(IERC20 asset, uint256 amount, address receiver) external return
 
 **Cyfrin:** Verified.
 
-## [M-32] Use `SafeERC20::forceApprove` instead of standard `IERC20::approve`
+## [M-32] Use `Safe ERC20::force Approve` instead of standard `IERC20::approve`
 - Severity: `Medium`
 - Source report: `predeposit.md`
 
@@ -1667,7 +1667,7 @@ predeposit/pUSDeDepositor.sol
 
 **Cyfrin:** Verified.
 
-## [M-33] `SecuritizeAmmNavProvider` violates core AMM invariant that `k` should never decrease
+## [M-33] `Securitize Amm Nav Provider` violates core AMM invariant that `k` should never decrease
 - Severity: `Medium`
 - Source report: `ramp.md`
 
@@ -1694,7 +1694,7 @@ Best practice is to have an invariant that `k` never decreases (as can be seen i
 
 **Cyfrin:** Verified.
 
-## [M-34] Missing zero output validation in `SecuritizeAmmNavProvider` quote and buy functions
+## [M-34] Missing zero output validation in `Securitize Amm Nav Provider` quote and buy functions
 - Severity: `Medium`
 - Source report: `ramp.md`
 
@@ -2388,7 +2388,7 @@ BeaconProxy proxy = new BeaconProxy(
 
 \clearpage
 
-## [M-37] Enforce minimum transaction amounts in `StakingVault`
+## [M-37] Enforce minimum transaction amounts in `Staking Vault`
 - Severity: `Medium`
 - Source report: `syntetika.md`
 
@@ -2435,7 +2435,7 @@ function previewDeposit(uint256 assets) public view virtual override returns (ui
 
 \clearpage
 
-## [M-40] `AprPairFeed::getRoundData` can return data for a different round than the specified
+## [M-40] `Apr Pair Feed::get Round Data` can return data for a different round than the specified
 - Severity: `Medium`
 - Source report: `tranches.md`
 
@@ -2485,7 +2485,7 @@ Fixed in commit [233e3d](https://github.com/Strata-Money/contracts-tranches/comm
 
 **Cyfrin:** Verified.
 
-## [M-41] Missing Validation of Fallback APR Values in `AprPairFeed::latestRoundData`
+## [M-41] Missing Validation of Fallback APR Values in `Apr Pair Feed::latest Round Data`
 - Severity: `Medium`
 - Source report: `tranches.md`
 
@@ -2534,7 +2534,7 @@ Fixed in commit [1c4009a](https://github.com/Strata-Money/contracts-tranches/com
 
 **Cyfrin:** Verified.
 
-## [M-42] `BasisTradeTailor::coreDepositWallet` is not blocked for adapters calls
+## [M-42] `Basis Trade Tailor::core Deposit Wallet` is not blocked for adapters calls
 - Severity: `Medium`
 - Source report: `update.md`
 

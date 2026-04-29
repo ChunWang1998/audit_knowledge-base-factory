@@ -31,7 +31,7 @@
 ### Fix Status
 - `Fixed/Resolved in report`
 
-## [Notional][M-10] Incorrect ETH/WETH matching can DoS exit flow
+## [Notional][M-10] Incorrect ETH/WETH matching can Do S exit flow
 - Severity: `Medium`
 - Source: [Issue #581](https://github.com/sherlock-audit/2025-06-notional-exponent-judging/issues/581)
 - Impact: `dos`
@@ -134,7 +134,7 @@
 - Filter: `Severity in {Critical, Medium}` and explicit `Fixed/Resolved markers`
 - Source: `cyfrin/*.md`
 
-## [C-1] Withdrawers of `sUSDe` always incur a loss because parameters passed from `Tranche::_withdraw` to `CDO::withdraw` are inverted
+## [C-1] Withdrawers of `s USDe` always incur a loss because parameters passed from `Tranche::_withdraw` to `CDO::withdraw` are inverted
 - Severity: `Critical`
 - Source report: `tranches.md`
 
@@ -291,7 +291,7 @@ Fixed in commit [31d9b72](https://github.com/Strata-Money/contracts-tranches/com
 \clearpage
 ## High Risk
 
-## [M-2] Withdrawal queue `RequestPrice` can be front run in case of defaults
+## [M-2] Withdrawal queue `Request Price` can be front run in case of defaults
 - Severity: `Medium`
 - Source report: `accountable.md`
 
@@ -340,7 +340,7 @@ function adminVoidMarket(
 
 **Cyfrin:** Verified.
 
-## [M-4] Increase in coverage can lead to a grief attack causing a DoS for previous withdrawal requests
+## [M-4] Increase in coverage can lead to a grief attack causing a Do S for previous withdrawal requests
 - Severity: `Medium`
 - Source report: `cooldown.md`
 
@@ -728,7 +728,7 @@ The instruction expects `system_program (accounts[3])` to be the Solana system p
 
 **Cyfrin:** Verified.
 
-## [M-13] Missing Validation for `order_type` in NewSpotOrderData
+## [M-13] Missing Validation for `order_type` in New Spot Order Data
 - Severity: `Medium`
 - Source report: `dex.md`
 
@@ -1064,7 +1064,7 @@ Fixed in commit: [a5194d]9https://github.com/deriverse/protocol-v1/commit/a5194d
 
 **Cyfrin:** verified.
 
-## [M-20] Delinquency status update in `AccountableOpenTerm` hooks uses pre-queue state
+## [M-20] Delinquency status update in `Accountable Open Term` hooks uses pre-queue state
 - Severity: `Medium`
 - Source report: `pr50.md`
 
@@ -1091,7 +1091,7 @@ This is primarily a correctness / timing issue unless delinquency gating is expe
 
 **Cyfrin:** Verified. Delinquency update removed from the strategy hooks and each vault function now calls `trategy.updateLateStatus`.
 
-## [M-21] Function `execute` overwrites seenSigner values irrespective of request age
+## [M-21] Function `execute` overwrites seen Signer values irrespective of request age
 - Severity: `Medium`
 - Source report: `pr50.md`
 
@@ -1121,7 +1121,7 @@ When an authorized executor calls the `execute` function, this for loop will ove
 
 **Cyfrin:** Verified. Only updates if timestamp is later.
 
-## [M-22] Immediate withdrawals possible even when NAV is stale through `AccountableYield::accrueAndProcess`
+## [M-22] Immediate withdrawals possible even when NAV is stale through `Accountable Yield::accrue And Process`
 - Severity: `Medium`
 - Source report: `pr50.md`
 
@@ -1153,7 +1153,7 @@ As a result, a user can queue a redeem request and then immediately call `accrue
 
 **Cyfrin:** Verified. Both `repay` and `accrueAndProcess` now have the `whenNotStale` modifier.
 
-## [M-23] Scaling `winningThreshold` incorrectly reduces randomness distribution
+## [M-23] Scaling `winning Threshold` incorrectly reduces randomness distribution
 - Severity: `Medium`
 - Source report: `spingame.md`
 
@@ -1235,7 +1235,7 @@ This preserves the full randomness range and ensures a more uniform distribution
 
 <!-- /Cyfrin Fixed Issues (Merged) -->
 
-## [M-14] Incorrect event emission is possible in `AccountableAsyncRedeemVault::cancelRedeemRequest` flows
+## [M-14] Incorrect event emission is possible in `Accountable Async Redeem Vault::cancel Redeem Request` flows
 - Severity: `Medium`
 - Source report: `accountable.md`
 
@@ -1254,7 +1254,7 @@ Because this is never verified, caller can input any requestID and have it emitt
 
 **Cyfrin:** Verified. The redeem request of the controller is now used.
 
-## [C-1] `AccountableAsyncRedeemVault::fulfillCancelRedeemRequest` can de-sync request data causing permanent DOS for queue processing
+## [C-1] `Accountable Async Redeem Vault::fulfill Cancel Redeem Request` can de-sync request data causing permanent DOS for queue processing
 - Severity: `Critical`
 - Source report: `accountable.md`
 

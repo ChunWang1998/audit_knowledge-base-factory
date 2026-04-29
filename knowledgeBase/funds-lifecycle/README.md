@@ -2,7 +2,7 @@
 
 - Count: 15
 
-## F-2026-14861 - Front-Running DoS on Batch Se lement via RollingHash Invalidation
+## F-2026-14861 - Front-Running Do S on Batch Settlement via Rolling Hash Invalidation
 - 嚴重度：Medium
 - Report source：Dexalot.pdf
 
@@ -15,7 +15,7 @@ Option 1 Per-Request Settlement Isolation: Decouple individualrequests from a sh
 ### 修補方式（實際）
 Fixed in cf300d7: OmniVaultManager now separates request intake from settlement usingbatch finalization: finalizeBatch stores rollingDepositHash and rollingWithdrawalHash in completedBatches[batchId], then starts a new batch via `_resetBatch`. bulkSettleState settles only the finalized previous batch (currentBatchId - 1) and verifies settlement data against stored batch hashes.New requestDeposit and requestWithdrawal calls update only current-batch rolling hashes, so finalized-batch settlement no longer revertsfrom concurrent request activity. 23
 
-## F-2026-14898 - Refund Failure Prevents Host Payment and LocksSession Funds
+## F-2026-14898 - Refund Failure Prevents Host Payment and Locks Session Funds
 - 嚴重度：Medium
 - Report source：Fabstir.pdf
 
@@ -41,7 +41,7 @@ Track rejected proposal fees with a dedicated accumulator and add anowner-callab
 ### 修補方式（實際）
 Fixed in 2d7256c: ModelRegistryUpgradeable now tracks fees from rejected proposalsthrough accumulatedRejectedFees.During executeProposal, approved proposals return `PROPOSAL_FEE` to proposer,while rejected proposals increase accumulatedRejectedFees instead of leavingassets unaccounted. if (approved) { governanceToken.safeTransfer(proposal.proposer, `PROPOSAL_FEE`); } else { accumulatedRejectedFees += `PROPOSAL_FEE`; } An owner-controlled withdrawal path is present via `withdrawRejectedFees(uint256 amount)`, enabling recovery of accumulatedrejected fees and removing permanent lock risk for proposal-fee assets. function `withdrawRejectedFees(uint256 amount)` external onlyOwner nonReentrant { uint256 toWithdraw = amount == 0 ? accumulatedRejectedFees : amount; `require(toWithdraw > 0, "No fees to withdraw")`; `require(toWithdraw <= accumulatedRejectedFees, "Insufficient accumulated fees")`; accumulatedRejectedFees -= toWithdraw; governanceToken.safeTransfer(`msg.sender`, toWithdraw); emit RejectedFeesWithdrawn(`msg.sender`, toWithdraw);
 
-## F-2026-14799 - Funds Loss via Direct Transfer in CustodyVault
+## F-2026-14799 - Funds Loss via Direct Transfer in Custody Vault
 - 嚴重度：High
 - Report source：S3 Markets.pdf
 
@@ -67,7 +67,7 @@ Remove the `require(!token.isExpired(id)`) check from the retire family offuncti
 ### 修補方式（實際）
 In commitee718b2, the retire (or withdrawToExternal) function still enforces adirect restriction based on token expiration, but new functions have beenintroduced to handle expired token utilization. The `resolveExpired()` and `resolveExpiredBatch()` functions allow the `OPS_ROLE` to burn expired tokenswithout accounting for them in retiredBalance, totalRetiredByTokenId, or the 12 `_retiredBuyersForTokenmappings`. This effectively serves as a cleanupmechanism for expired tokens.
 
-## F-2026-14811 - Expired Tokens Permanently Locked Due to BurnRestriction
+## F-2026-14811 - Expired Tokens Permanently Locked Due to Burn Restriction
 - 嚴重度：Medium
 - Report source：S3 Markets.pdf
 
@@ -80,7 +80,7 @@ Remove the `_checkExpiry`(id) check from the `burn()` and `burnBatch()` function
 ### 修補方式（實際）
 In commit 3b40377, the burn functions perform a validation to check if the RetirementReason is set as Expired; if so, the `_checkExpiry`(ids[i]) step isskipped, meaning the burning is now allowed for the expired tokens.
 
-## F-2025-14448 - Uncoordinated Escape Hatch Mechanisms CausePermanent forcedWithdrawalRequests Lock When InclusionQueueExecutes First - Medium
+## F-2025-14448 - Uncoordinated Escape Hatch Mechanisms Cause Permanent `forced Withdrawal Requests` Lock When Inclusion Queue Executes First - Medium
 - 嚴重度：Medium
 - Report source：BullBit.pdf
 
@@ -91,7 +91,7 @@ The protocol implements two separate escape hatch mechanisms to allowusers to wi
 This issue is implicitly resolved by removing the Pool-level forcewithdrawal mechanism (initiateForceWithdrawal() and finalizeForceWithdrawal()), leaving only the InclusionQueue-based escapehatch, which handles insufficient balances gracefully without creatingstuck user state. Revised commit: 322258e. 27
 
 
-## F-2026-14523 - Pending Force Withdrawal Requests Removed OnBalance Update - Medium
+## F-2026-14523 - Pending Force Withdrawal Requests Removed On Balance Update - Medium
 - 嚴重度：Medium
 - Report source：BullBit.pdf
 
@@ -102,7 +102,7 @@ The Pool and Vault contracts implement a force withdrawal flow thatenables withd
 The issue was fixed in commit e665fb628fd70fc9dd01b04067f7977ec08874e4. The initiateForceWithdrawal() and finalizeForceWithdrawal() functions wereremoved, along with the deletion of the forcedWithdrawalRequests mapping inthe applyStateChanges() function, removing the root cause. 49
 
 
-## F-2025-13424 - Payout Distribution Delays due to Invalid LastClaimed Timestamp Update - High
+## F-2025-13424 - Payout Distribution Delays due to Invalid `last Claimed` Timestamp Update - High
 - 嚴重度：High
 - Report source：Digital Oro International.pdf
 
@@ -113,7 +113,7 @@ The claimUserPayout function of the DOI_PayoutManager contract aims todistribute
 The Finding is ﬁxed in the commits 2a5f4e4 and 8190ccc. The lastPayoutTime state variable is updated according to the numberof periods passed. Evidences PoC
 
 
-## F-2024-7645 - Potential Front-Running When DOIToken Is Sold inSecondary Market - Medium
+## F-2024-7645 - Potential Front-Running When DOIToken Is Sold in Secondary Market - Medium
 - 嚴重度：Medium
 - Report source：Digital Oro.pdf
 
@@ -124,7 +124,7 @@ The ERC721-compliant DOIToken can be purchased for 100 USDT eachand used for par
 The Finding was ﬁxed in commit 8ffa5a2df927a8a024fc3dc5eb4a752337dcc3e8.A block token mechanism was introduced to prevent transfers whenthe token is blocked. The corresponding check was added to the _update() function of the ERC20 contract. 18
 
 
-## F-2025-13501 - Output Accounting Uses Absolute Balance -Medium
+## F-2025-13501 - Output Accounting Uses Absolute Balance - Medium
 - 嚴重度：Medium
 - Report source：Dirol.pdf
 
@@ -135,7 +135,7 @@ _executeSwap determines the swap’s total output by reading the entirecurrent b
 The Finding was ﬁxed in commit 4688ddad by adding proper snapshotmechanics for initial balances of the route tokens. 34 (bool hasSnapshot, uint256 snapshot) = _findTokenInSnapshot( uniqueTokensIn, tokenInSnapshots, uniqueTokenInCount, tokenTo Find ); if (!hasSnapshot) { // Failsafe: should never happen after pre-scan, but use curr entBalance as snapshot // This means tokenInBalance will be 0 for this route, preven ting unexpected behavior snapshot = currentBalance; tokenInSnapshots[uniqueTokenInCount] = snapshot; uniqueTokensIn[uniqueTokenInCount] = tokenToFind; unchecked {++uniqueTokenInCount;} } uint256 tokenInBalance = currentBalance - snapshot; Evidences POC
 
 
-## F-2025-14250 - Winner-Selection Logic Flaw Allows The GroupCreator To Capture All Contributed Funds - High
+## F-2025-14250 - Winner-Selection Logic Flaw Allows The Group Creator To Capture All Contributed Funds - High
 - 嚴重度：High
 - Report source：RYT.pdf
 
@@ -146,7 +146,7 @@ The distributeFunds() function iterates through all group members, startingfrom 
 In commit 1829f31, the winner == address(0) condition is removed from theloop, ensuring the winner is selected strictly by matching their assigned s_payoutPositions index rather than automatically defaulting to the firstmember (Admin) found in the list. Evidences POC
 
 
-## F-2025-14273 - Excess Contributions Become Permanently LockedDue to Non-Exact Deposit Enforcement - Medium
+## F-2025-14273 - Excess Contributions Become Permanently Locked Due to Non-Exact Deposit Enforcement - Medium
 - 嚴重度：Medium
 - Report source：RYT.pdf
 
@@ -170,7 +170,7 @@ draw Ra without decreasing the amount locked, which will lead to stolen funds wh
 ### 修補方式（實際）
 Status: Fixed/Resolved in report.
 
-## H-11 - VaultPoolLib::reserve() will
+## H-11 - Vault Pool Lib::reserve() will
 - 嚴重度：High
 - Report source：Cork.pdf
 
@@ -378,7 +378,7 @@ This issue exists only when processingMode == RequestPrice, as only then the req
 \clearpage
 ## High Risk
 
-## [C-3] Dust limit attack on `forceUpdateNodes` allows DoS of rebalancing and potential vault insolvency
+## [C-3] Dust limit attack on `force Update Nodes` allows Do S of rebalancing and potential vault insolvency
 - Severity: `Critical`
 - Source report: `core.md`
 
@@ -518,7 +518,7 @@ Fixed in commit [ee2bdd5](https://github.com/suzaku-network/suzaku-core/pull/155
 
 **Cyfrin:** Verified.
 
-## [C-4] Future epoch cache manipulation via `calcAndCacheStakes` allows reward manipulation
+## [C-4] Future epoch cache manipulation via `calc And Cache Stakes` allows reward manipulation
 - Severity: `Critical`
 - Source report: `core.md`
 
@@ -717,7 +717,7 @@ Alternatively another potential fix is to not allow supported vaults to be added
 
 \clearpage
 
-## [C-6] `DepositManager::_refundEntryFee` doesn't deduct referral rewards allowing users to join then leave games to drain tokens via inflated referral rewards they aren't entitled to
+## [C-6] `Deposit Manager::_refund Entry Fee` doesn't deduct referral rewards allowing users to join then leave games to drain tokens via inflated referral rewards they aren't entitled to
 - Severity: `Critical`
 - Source report: `protocol.md`
 
@@ -740,7 +740,7 @@ Fixed in commit [50a1e6b](https://github.com/Engage-Protocol/engage-protocol/com
 
 **Cyfrin:** Verified.
 
-## [C-7] `DepositManager::getRewards` always includes `REFERRER_FEE` resulting in 2 percent of every games' rewards not being distributed to winners when there were no referrers
+## [C-7] `Deposit Manager::get Rewards` always includes `REFERRER_FEE` resulting in 2 percent of every games' rewards not being distributed to winners when there were no referrers
 - Severity: `Critical`
 - Source report: `protocol.md`
 
@@ -766,7 +766,7 @@ Fixed in commit [e090f2e](https://github.com/Engage-Protocol/engage-protocol/com
 
 **Cyfrin:** Verified. We note that `AccessControl::grantRole` has not been overridden such that a referrer could be granted `CLAIMER_ROLE` which would prevent them from claiming referrals associated with their address.
 
-## [C-8] Attacker can drain all tokens from cancelled game since `SessionManager::refundCancelledGame` doesn't validate caller actually joined the game
+## [C-8] Attacker can drain all tokens from cancelled game since `Session Manager::refund Cancelled Game` doesn't validate caller actually joined the game
 - Severity: `Critical`
 - Source report: `protocol.md`
 
@@ -825,7 +825,7 @@ Fixed in commit [7692203](https://github.com/Engage-Protocol/engage-protocol/com
 
 **Cyfrin:** Verified.
 
-## [C-9] Investors can steal tokens from other investors since `StandardToken::transferFrom` never checks spending approvals
+## [C-9] Investors can steal tokens from other investors since `Standard Token::transfer From` never checks spending approvals
 - Severity: `Critical`
 - Source report: `rebasing.md`
 
@@ -871,7 +871,7 @@ Run with: `npx hardhat test --grep "Investors can steal tokens from other invest
 
 \clearpage
 
-## [C-10] Consider wiping slot 177 on Linea `L2MessageService` after upgrade
+## [C-10] Consider wiping slot 177 on Linea `L2Message Service` after upgrade
 - Severity: `Critical`
 - Source report: `upgrade.md`
 
@@ -886,7 +886,7 @@ Using `cast storage 0x508Ca82Df566dCD1B0DE8296e70a96332cD644ec 177 --rpc-url htt
 
 \clearpage
 
-## [M-11] `AccountableFixedTerm::claimInterest` unpredictable due to share burn mechanics
+## [M-11] `Accountable Fixed Term::claim Interest` unpredictable due to share burn mechanics
 - Severity: `Medium`
 - Source report: `accountable.md`
 
@@ -1096,7 +1096,7 @@ Fixed in commit [`be75091`](https://github.com/Accountable-Protocol/credit-vault
 
 **Cyfrin:** Verified.
 
-## [M-13] Frequent `AccountableOpenTerm::accrueInterest` calls reduce interest accrual
+## [M-13] Frequent `Accountable Open Term::accrue Interest` calls reduce interest accrual
 - Severity: `Medium`
 - Source report: `accountable.md`
 
@@ -1192,7 +1192,7 @@ function test_interest_rounding_from_frequent_accrue_calls() public {
 
 **Cyfrin:** Verified. `_linearInterest` now scales with `PRECISION`.
 
-## [M-15] Manual/Instant `fulfillRedeemRequest` doesn’t reserve liquidity
+## [M-15] Manual/Instant `fulfill Redeem Request` doesn’t reserve liquidity
 - Severity: `Medium`
 - Source report: `accountable.md`
 
@@ -1287,7 +1287,7 @@ function test_manualFulfill_vsQueuedFulfill_mismatch() public {
 
 **Cyfrin:** Verified. Recommended mitigation implemented. `reservedLiquidity` is tracked in `_fulfillRedeemRequest` and removed form the "process" functions.
 
-## [M-16] Missing controller validation in `AccountableAsyncRedeemVault::requestRedeem` allows zero address state
+## [M-16] Missing controller validation in `Accountable Async Redeem Vault::request Redeem` allows zero address state
 - Severity: `Medium`
 - Source report: `accountable.md`
 
@@ -1444,7 +1444,7 @@ Without using one of the above two techniques storage collision can occur during
 
 **Cyfrin:** Verified. Namespaced storage now used in `AccountableStrategy`.
 
-## [M-20] `IBeforeInitializeHook` should be added to the `AngstromL2` inheritance chain
+## [M-20] `IBefore Initialize Hook` should be added to the `Angstrom L2` inheritance chain
 - Severity: `Medium`
 - Source report: `angstrom.md`
 
@@ -1469,7 +1469,7 @@ contract AngstromL2 is
 
 **Cyfrin:** Verified.
 
-## [M-21] Consider burning `ERC-6909` claim tokens within `AngstromL2::withdrawProtocolRevenue` and transferring the underlying asset instead
+## [M-21] Consider burning `ERC-6909` claim tokens within `Angstrom L2::withdraw Protocol Revenue` and transferring the underlying asset instead
 - Severity: `Medium`
 - Source report: `angstrom.md`
 
@@ -1484,7 +1484,7 @@ UNI_V4.transfer(to, assetId, amount);
 
 **Cyfrin:** Verified. The underlying currency is now transferred directly.
 
-## [M-22] Unnecessary arithmetic validation within `AngstromL2::withdrawProtocolRevenue` can be removed
+## [M-22] Unnecessary arithmetic validation within `Angstrom L2::withdraw Protocol Revenue` can be removed
 - Severity: `Medium`
 - Source report: `angstrom.md`
 
@@ -1557,7 +1557,7 @@ require(
 
 **Cyfrin:** Verified.
 
-## [M-24] eciesjs major version mismatch between dApp SDK and mobile wallet creates untested cryptographic interoperability risk
+## [M-24] eciesjs major version mismatch between d App SDK and mobile wallet creates untested cryptographic interoperability risk
 - Severity: `Medium`
 - Source report: `connect.md`
 
@@ -1588,7 +1588,7 @@ Fixed in commit [f262f7](https://github.com/MetaMask/metamask-mobile/commit/f262
 
 **Cyfrin:** Verified.
 
-## [M-25] `SharesCooldown` instant finalization can be DoSed because of the `UnstakeCooldown` request limits
+## [M-25] `Shares Cooldown` instant finalization can be Do Sed because of the `Unstake Cooldown` request limits
 - Severity: `Medium`
 - Source report: `cooldown.md`
 
@@ -1723,7 +1723,7 @@ contract JrtSrtRatioViolationTest is CDOTest {
 
 **Cyfrin:** Verified. Users are now able to select the `token` to receive when instantly finalizing requests on the `SharesCooldown`
 
-## [M-26] `Tranche::maxWithdraw` can understate the max withdrawal for the `SharesCooldown` contract
+## [M-26] `Tranche::max Withdraw` can understate the max withdrawal for the `Shares Cooldown` contract
 - Severity: `Medium`
 - Source report: `cooldown.md`
 
@@ -1790,7 +1790,7 @@ This behavior is non-obvious and not enforced at the allowance-checking level, c
 
 **Cyfrin:** Verified. Now, when the `receiver` is either the `caller` or the `owner`, `initialFrom` is set as the `receiver`, which treats the withdrawal request as a `Private Request` and does not count toward the `Public Limit Cap`.
 
-## [M-28] APR Targets are not updated when withdrawal requests are sent to the `SharesCooldown` to reflect the change on NAVs caused by the charged fees for the withdrawal
+## [M-28] APR Targets are not updated when withdrawal requests are sent to the `Shares Cooldown` to reflect the change on NAVs caused by the charged fees for the withdrawal
 - Severity: `Medium`
 - Source report: `cooldown.md`
 
@@ -1836,7 +1836,7 @@ The problem is that the APR Targets for the Tranches are not recalculated to ref
 
 **Cyfrin:** Verified. `Tranche::burnSharesAsFee` now extends the full accounting flow, updating APRs as needed.
 
-## [M-29] Finalizing withdrawal requests on the `SharesCooldown` contract allows for third-parties to override user’s chosen output token
+## [M-29] Finalizing withdrawal requests on the `Shares Cooldown` contract allows for third-parties to override user’s chosen output token
 - Severity: `Medium`
 - Source report: `cooldown.md`
 
@@ -1867,7 +1867,7 @@ This is problematic because the final time it takes for the withdrawers to recei
 
 **Cyfrin:** Verified. Permissionless finalizations can't override the user's original choice; only the user can override the redeemable token via a permissioned function. Now it is possible to finalize only requests for a specific token at a time.
 
-## [M-30] Misleading owner field in OnMetaWithdraw event
+## [M-30] Misleading owner field in On Meta Withdraw event
 - Severity: `Medium`
 - Source report: `cooldown.md`
 
@@ -1883,7 +1883,7 @@ This is problematic because the final time it takes for the withdrawers to recei
 \clearpage
 ## Gas Optimization
 
-## [M-31] Skip call to `CDO::accrueFee` when there are no fees to charge
+## [M-31] Skip call to `CDO::accrue Fee` when there are no fees to charge
 - Severity: `Medium`
 - Source report: `cooldown.md`
 
@@ -1917,7 +1917,7 @@ This is problematic because the final time it takes for the withdrawers to recei
 
 **Cyfrin:** Verified.
 
-## [M-32] Overpayment vulnerability in `registerL1`
+## [M-32] Overpayment vulnerability in `register L1`
 - Severity: `Medium`
 - Source report: `core.md`
 
@@ -1935,7 +1935,7 @@ Fixed in commit [1c4cfe6](https://github.com/suzaku-network/suzaku-core/pull/155
 
 \clearpage
 
-## [M-33] Unnecessary `onlyRegisteredOperatorNode` on `completeStakeUpdate` function
+## [M-33] Unnecessary `only Registered Operator Node` on `complete Stake Update` function
 - Severity: `Medium`
 - Source report: `core.md`
 
@@ -1950,7 +1950,7 @@ Fixed in commit [f9946ef](https://github.com/suzaku-network/suzaku-core/commit/f
 
 **Cyfrin:** Verified.
 
-## [M-34] `burn` should delete `tokenURI` related data and emit `TokenUriUnpinned` event
+## [M-34] `burn` should delete `token URI` related data and emit `Token Uri Unpinned` event
 - Severity: `Medium`
 - Source report: `cryptoart.md`
 
@@ -1976,7 +1976,7 @@ Fixed in commit [b554763](https://github.com/cryptoartcom/cryptoart-smart-contra
 
 **Cyfrin:** Verified.
 
-## [M-35] Collector can add `CreatorStory`, corrupting the provenance of an artwork
+## [M-35] Collector can add `Creator Story`, corrupting the provenance of an artwork
 - Severity: `Medium`
 - Source report: `cryptoart.md`
 
@@ -2041,7 +2041,7 @@ Fixed in commit [bdd28fa](https://github.com/cryptoartcom/cryptoart-smart-contra
 
 **Cyfrin:** Verified.
 
-## [M-37] Remove obsolete `onlyTokenOwner` from `_transferToNftReceiver`
+## [M-37] Remove obsolete `only Token Owner` from `_transfer To Nft Receiver`
 - Severity: `Medium`
 - Source report: `cryptoart.md`
 
@@ -2080,7 +2080,7 @@ According to the [official documentation](https://docs.berachain.com/developers/
 
 **Cyfrin:** Verified.
 
-## [M-39] `ClientCommunityState::update` function does not update the `rate` before calculating new `dividends_value`
+## [M-39] `Client Community State::update` function does not update the `rate` before calculating new `dividends_value`
 - Severity: `Medium`
 - Source report: `dex.md`
 
@@ -2421,7 +2421,7 @@ Here: https://github.com/solana-program/token/blob/main/program/src/processor.rs
 
 **Cyfrin:** Verified.
 
-## [M-45] Incorrect Amount Logged in `PerpWithdrawReport`
+## [M-45] Incorrect Amount Logged in `Perp Withdraw Report`
 - Severity: `Medium`
 - Source report: `dex.md`
 
@@ -3195,7 +3195,7 @@ function setCurvePool(address newPool) external onlyComptroller {
 
 **Cyfrin:** Verified.
 
-## [M-62] Unnecessary usage of `nonReentrant` modifier on `ReferralManager::completeFirstPurchase`
+## [M-62] Unnecessary usage of `non Reentrant` modifier on `Referral Manager::complete First Purchase`
 - Severity: `Medium`
 - Source report: `final.md`
 
@@ -3298,7 +3298,7 @@ Fixed in commit [220e5fb](https://github.com/PatrickAlphaC/safe-harbor/commit/22
 
 **Cyfrin:** Verified.
 
-## [M-66] Insufficient clamping in `HookletLib::hookletBeforeSwap` can result in unexpected reverts
+## [M-66] Insufficient clamping in `Hooklet Lib::hooklet Before Swap` can result in unexpected reverts
 - Severity: `Medium`
 - Source report: `hooklet.md`
 
@@ -3496,7 +3496,7 @@ Additionally prevent the overridden price from being specified as corresponding 
 
 \clearpage
 
-## [M-67] Outdated reference to rebalance in `IHooklet::afterSwap` should be removed
+## [M-67] Outdated reference to rebalance in `IHooklet::after Swap` should be removed
 - Severity: `Medium`
 - Source report: `hooklet.md`
 
@@ -3523,7 +3523,7 @@ Additionally prevent the overridden price from being specified as corresponding 
 
 **Cyfrin:** Verified. The reference has been removed.
 
-## [M-68] Missing revert of LST withdrawal when `L1MessageService` balance is exactly equal to required value
+## [M-68] Missing revert of LST withdrawal when `L1Message Service` balance is exactly equal to required value
 - Severity: `Medium`
 - Source report: `manager.md`
 
@@ -3676,7 +3676,7 @@ In code, the fix would looks something along the lines of:
 
 **Cyfrin:** Verified. Positive yield is now reported only when the total value held by the underlying `stVault` exceeds all liabilities, obligations, and fees. When no positive yield is generated, `outstandingNegativeYield` is accumulated on the system. Payment of liabilities, obligations and fees is attempted each time `reportYield` is executed.
 
-## [M-71] Automation DoS via blacklisted or reverting fee recipients
+## [M-71] Automation Do S via blacklisted or reverting fee recipients
 - Severity: `Medium`
 - Source report: `octodefi.md`
 
@@ -3724,7 +3724,7 @@ if (burnAmount > 0) {
 
 **Cyfrin:** Verified. The Solady `SafeTransferLib` is now used for all token transfers.
 
-## [M-72] `AllowList::hasTradeRestriction` mutability should be set to `view`
+## [M-72] `Allow List::has Trade Restriction` mutability should be set to `view`
 - Severity: `Medium`
 - Source report: `pledge.md`
 
@@ -3737,7 +3737,7 @@ if (burnAmount > 0) {
 
 **Cyfrin:** Verified.
 
-## [M-73] `LockUpManager::LockUpStorage::_regLockUpTime` is never used
+## [M-73] `Lock Up Manager::Lock Up Storage::_reg Lock Up Time` is never used
 - Severity: `Medium`
 - Source report: `pledge.md`
 
@@ -3755,7 +3755,7 @@ Either remove it or add a comment noting it will be used in the future but is cu
 
 **Cyfrin:** Verified.
 
-## [M-74] `TokenBank::removeToken` reverts when token balance is zero, making it impossible to remove tokens from the `developments` array
+## [M-74] `Token Bank::remove Token` reverts when token balance is zero, making it impossible to remove tokens from the `developments` array
 - Severity: `Medium`
 - Source report: `pledge.md`
 
@@ -3778,7 +3778,7 @@ Either remove it or add a comment noting it will be used in the future but is cu
 
 **Cyfrin:** Verified.
 
-## [M-75] `TokenBank::withdrawFunds` resets `memory` not `storage` fee and sale amounts allowing multiple withdraws for the same token
+## [M-75] `Token Bank::withdraw Funds` resets `memory` not `storage` fee and sale amounts allowing multiple withdraws for the same token
 - Severity: `Medium`
 - Source report: `pledge.md`
 
@@ -3908,7 +3908,7 @@ Either remove it or add a comment noting it will be used in the future but is cu
 
 **Cyfrin:** Verified.
 
-## [M-79] Rename `isAllowed` to `wasAllowed` in `Allowlist::allowUser`, `disallowUser`
+## [M-79] Rename `is Allowed` to `was Allowed` in `Allowlist::allow User`, `disallow User`
 - Severity: `Medium`
 - Source report: `pledge.md`
 
@@ -3921,7 +3921,7 @@ Since these functions can modify the `allowed` status, the named return variable
 
 **Cyfrin:** Verified.
 
-## [M-80] Use `EIP712Upgradeable` library to simplify `DocumentManager`
+## [M-80] Use `EIP712Upgradeable` library to simplify `Document Manager`
 - Severity: `Medium`
 - Source report: `pledge.md`
 
@@ -3940,7 +3940,7 @@ Inherit from `EIP712Upgradeable`, remove all the duplicate code which it provide
 
 **Cyfrin:** Verified.
 
-## [M-81] Use `SafeERC20` functions instead of standard `ERC20` transfer functions
+## [M-81] Use `Safe ERC20` functions instead of standard `ERC20` transfer functions
 - Severity: `Medium`
 - Source report: `pledge.md`
 
@@ -3998,7 +3998,7 @@ PledgeManager.sol
 
 **Cyfrin:** Verified.
 
-## [M-82] Zero token transfers record receiving user as a holder in `DividendManager::HolderStatus` even if they have zero token balance
+## [M-82] Zero token transfers record receiving user as a holder in `Dividend Manager::Holder Status` even if they have zero token balance
 - Severity: `Medium`
 - Source report: `pledge.md`
 
@@ -4126,7 +4126,7 @@ contract RemoraTokenTest is UnitTestBase {
 
 **Cyfrin:** Verified.
 
-## [M-83] Only update `deployedAssets` when `remaining > 0` in `AccountableYield::repay`
+## [M-83] Only update `deployed Assets` when `remaining > 0` in `Accountable Yield::repay`
 - Severity: `Medium`
 - Source report: `pr50.md`
 
@@ -4164,7 +4164,7 @@ if (remaining > 0) {
 
 **Cyfrin:** Verified.
 
-## [M-84] `MetaVault::redeem` erroneously calls `ERC4626Upgradeable::withdraw` when attempting to redeem `USDe` from `pUSDeVault`
+## [M-84] `Meta Vault::redeem` erroneously calls `ERC4626Upgradeable::withdraw` when attempting to redeem `USDe` from `p USDe Vault`
 - Severity: `Medium`
 - Source report: `predeposit.md`
 
@@ -4197,7 +4197,7 @@ function redeem(address token, uint256 shares, address receiver, address owner) 
 
 **Cyfrin:** Verified.
 
-## [M-85] `MetaVault::redeemRequiredBaseAssets` should be able to redeem small amounts from each vault to fill requested amount and avoid redeeming more than requested
+## [M-85] `Meta Vault::redeem Required Base Assets` should be able to redeem small amounts from each vault to fill requested amount and avoid redeeming more than requested
 - Severity: `Medium`
 - Source report: `predeposit.md`
 
@@ -4240,7 +4240,7 @@ The above strategy ensures that:
 
 **Cyfrin:** Verified.
 
-## [M-86] `PreDepositVault::initialize` should not be exposed as public
+## [M-86] `Pre Deposit Vault::initialize` should not be exposed as public
 - Severity: `Medium`
 - Source report: `predeposit.md`
 
@@ -4270,7 +4270,7 @@ The above strategy ensures that:
 
 **Cyfrin:** Verified. `PreDepositVault::initialize` is now marked as internal and uses the `onlyInitializing` modifier.
 
-## [M-87] `pUSDeVault::maxRedeem` doesn't account for redemption pausing, in violation of EIP-4626 which can break protocols integrating with `pUSDeVault`
+## [M-87] `p USDe Vault::max Redeem` doesn't account for redemption pausing, in violation of EIP-4626 which can break protocols integrating with `p USDe Vault`
 - Severity: `Medium`
 - Source report: `predeposit.md`
 
@@ -4315,7 +4315,7 @@ function test_maxRedeem_WhenWithdrawalsPaused() external {
 
 **Cyfrin:** Verified.
 
-## [M-88] `pUSDeVault::maxWithdraw` doesn't account for withdrawal pausing, in violation of EIP-4626 which can break protocols integrating with `pUSDeVault`
+## [M-88] `p USDe Vault::max Withdraw` doesn't account for withdrawal pausing, in violation of EIP-4626 which can break protocols integrating with `p USDe Vault`
 - Severity: `Medium`
 - Source report: `predeposit.md`
 
@@ -4356,7 +4356,7 @@ function test_maxWithdraw_WhenWithdrawalsPaused() external {
 
 **Cyfrin:** Verified.
 
-## [M-89] `yUSDeVault` inherits from `PreDepositVault` but doesn't call `onAfterDepositChecks` or `onAfterWithdrawalChecks`
+## [M-89] `y USDe Vault` inherits from `Pre Deposit Vault` but doesn't call `on After Deposit Checks` or `on After Withdrawal Checks`
 - Severity: `Medium`
 - Source report: `predeposit.md`
 
@@ -4464,7 +4464,7 @@ A similar case is present when comparing `yUSDeDepositor::deposit_pUSDeDepositor
 
 **Cyfrin:** Verified.
 
-## [M-94] No way to compound deposited supported vault assets into `sUSDe` stake during yield phase
+## [M-94] No way to compound deposited supported vault assets into `s USDe` stake during yield phase
 - Severity: `Medium`
 - Source report: `predeposit.md`
 
@@ -4573,7 +4573,7 @@ Fixed in commit [def7d36](https://github.com/Strata-Money/contracts/commit/def7d
 
 **Cyfrin:** Verified.
 
-## [M-99] `DefaultSession::assertResults` should verify input `sessionId` belongs to a game associated with its instance
+## [M-99] `Default Session::assert Results` should verify input `session Id` belongs to a game associated with its instance
 - Severity: `Medium`
 - Source report: `protocol.md`
 
@@ -4598,7 +4598,7 @@ Fixed in commit [462c01a](https://github.com/Engage-Protocol/engage-protocol/com
 
 **Cyfrin:** Verified.
 
-## [M-100] `SessionManager::revealGameQuestion` doesn't validate that input `_questionId` belongs to input `_gameId`
+## [M-100] `Session Manager::reveal Game Question` doesn't validate that input `_question Id` belongs to input `_game Id`
 - Severity: `Medium`
 - Source report: `protocol.md`
 
@@ -4626,7 +4626,7 @@ Fixed in commit [15a2459](https://github.com/Engage-Protocol/engage-protocol/com
 
 \clearpage
 
-## [M-101] Array length checks in `FixedRanksReward::getRewards`, `getReward` check against the wrong comparator
+## [M-101] Array length checks in `Fixed Ranks Reward::get Rewards`, `get Reward` check against the wrong comparator
 - Severity: `Medium`
 - Source report: `protocol.md`
 
@@ -4650,7 +4650,7 @@ Fixed in commit [6717163](https://github.com/Engage-Protocol/engage-protocol/com
 
 **Cyfrin:** Verified.
 
-## [M-102] Don't copy entire `Assertion` struct from `storage` to `memory` in `DefaultSession::assertionResolvedCallback`
+## [M-102] Don't copy entire `Assertion` struct from `storage` to `memory` in `Default Session::assertion Resolved Callback`
 - Severity: `Medium`
 - Source report: `protocol.md`
 
@@ -4706,7 +4706,7 @@ Fixed in commit [fc5e0fa](https://github.com/Engage-Protocol/engage-protocol/com
 
 \clearpage
 
-## [M-103] Fix comment in `revealSolution`
+## [M-103] Fix comment in `reveal Solution`
 - Severity: `Medium`
 - Source report: `protocol.md`
 
@@ -4765,7 +4765,7 @@ Fixed in commit [6686df5](https://github.com/Engage-Protocol/engage-protocol/com
 
 **Cyfrin:** Verified.
 
-## [M-105] No validation on `reactionDeadline` allows multiple griefing scenarios
+## [M-105] No validation on `reaction Deadline` allows multiple griefing scenarios
 - Severity: `Medium`
 - Source report: `protocol.md`
 
@@ -4981,7 +4981,7 @@ Fixed in commit [6ec205f](https://github.com/Engage-Protocol/engage-protocol/com
 
 **Cyfrin:** Verified.
 
-## [M-111] `SecuritizeAmmNavProvider` quote functions don't reflect execution behavior due to missing baseline reset logic
+## [M-111] `Securitize Amm Nav Provider` quote functions don't reflect execution behavior due to missing baseline reset logic
 - Severity: `Medium`
 - Source report: `ramp.md`
 
@@ -5060,7 +5060,7 @@ The ideal mitigation is that all upgradeable contracts use ERC7201 namespaced st
 
 **Cyfrin:** Verified.
 
-## [M-116] `TransactionRelayer` and `SecuritizeSwap` should use `CommonUtils::encodeString`
+## [M-116] `Transaction Relayer` and `Securitize Swap` should use `Common Utils::encode String`
 - Severity: `Medium`
 - Source report: `rebasing.md`
 
@@ -5081,7 +5081,7 @@ L178:                        keccak256(abi.encodePacked(senderInvestor)),
 
 **Cyfrin:** Verified.
 
-## [M-117] More efficient way of checking for empty string in `CommonUtils::isEmptyString`
+## [M-117] More efficient way of checking for empty string in `Common Utils::is Empty String`
 - Severity: `Medium`
 - Source report: `rebasing.md`
 
@@ -5118,7 +5118,7 @@ function isEmptyString(string memory _str) internal pure returns (bool) {
 
 **Cyfrin:** Verified.
 
-## [M-119] Remove return value from `DSToken::updateInvestorBalance` as it is never checked
+## [M-119] Remove return value from `DSToken::update Investor Balance` as it is never checked
 - Severity: `Medium`
 - Source report: `rebasing.md`
 
@@ -5177,7 +5177,7 @@ So it seems simpler to just remove the `bool` return value as it isn't ever read
 
 \clearpage
 
-## [M-120] Remove setting deprecated `lastUpdatedBy` in RegistryService
+## [M-120] Remove setting deprecated `last Updated By` in Registry Service
 - Severity: `Medium`
 - Source report: `rebasing.md`
 
@@ -5239,7 +5239,7 @@ registry/GlobalRegistryService.sol
 
 **Cyfrin:** Verified.
 
-## [M-124] `SherpaVault::redeem` naming ambiguous
+## [M-124] `Sherpa Vault::redeem` naming ambiguous
 - Severity: `Medium`
 - Source report: `sherpa.md`
 
@@ -5285,7 +5285,7 @@ Fixed in commit [`15e2706`](https://github.com/hedgemonyxyz/sherpa-vault-smartco
 
 **Cyfrin:** Verified. Both `stableWrapper` and `keeper` now locked after initial assignment which will effectively make them immutable. Operator concern acknowledged.
 
-## [M-126] Some SherpaUSD can never be unstaked due to minimumSupply check
+## [M-126] Some Sherpa USD can never be unstaked due to minimum Supply check
 - Severity: `Medium`
 - Source report: `sherpa.md`
 
@@ -5356,7 +5356,7 @@ receive() external payable {}
 
 \clearpage
 
-## [M-128] Arithmetic underflow in `withdrawERC20` when there is a negative rebasing of asset tokens
+## [M-128] Arithmetic underflow in `withdraw ERC20` when there is a negative rebasing of asset tokens
 - Severity: `Medium`
 - Source report: `stbl.md`
 
@@ -5567,7 +5567,7 @@ function withdrawERC20(address _to, YLD_Metadata memory MetaData) external isVal
 
 \clearpage
 
-## [M-129] Insufficient duration validation in `STBL_Register::setupAsset` can lock user withdrawals
+## [M-129] Insufficient duration validation in `STBL_Register::setup Asset` can lock user withdrawals
 - Severity: `Medium`
 - Source report: `stbl.md`
 
@@ -5651,7 +5651,7 @@ function claim(uint256 id) external returns (uint256) {
 
 \clearpage
 
-## [M-131] `StakingVault::claimWithdraw` should revert if `assets` are zero
+## [M-131] `Staking Vault::claim Withdraw` should revert if `assets` are zero
 - Severity: `Medium`
 - Source report: `syntetika.md`
 
@@ -5663,7 +5663,7 @@ Fixed in commit [2fe18df](https://github.com/SyntetikaLabs/monorepo/commit/2fe18
 
 **Cyfrin:** Verified.
 
-## [M-132] Missing  `redeem` convenience function in the `StakingVault.sol`
+## [M-132] Missing  `redeem` convenience function in the `Staking Vault.sol`
 - Severity: `Medium`
 - Source report: `syntetika.md`
 
@@ -5721,7 +5721,7 @@ Fixed in commit [86384fe](https://github.com/SyntetikaLabs/monorepo/commit/86384
 
 **Cyfrin:** Verified.
 
-## [M-134] Remove `from` parameter from `Minter:redeem` and `_onlySender` function
+## [M-134] Remove `from` parameter from `Minter:redeem` and `_only Sender` function
 - Severity: `Medium`
 - Source report: `syntetika.md`
 
@@ -5748,7 +5748,7 @@ Fixed in commit [bd4bb12](https://github.com/SyntetikaLabs/monorepo/commit/bd4bb
 
 **Cyfrin:** Verified.
 
-## [M-136] Use `ReentrancyGuardTransient` for faster `nonReentrant` modifiers
+## [M-136] Use `Reentrancy Guard Transient` for faster `non Reentrant` modifiers
 - Severity: `Medium`
 - Source report: `syntetika.md`
 
@@ -6071,7 +6071,7 @@ Fixed in commits [1625c09](https://github.com/SyntetikaLabs/monorepo/commit/1625
 
 \clearpage
 
-## [M-139] Redundant `approve(0)` in `BasisTradeVault::depositToTailor`
+## [M-139] Redundant `approve(0)` in `Basis Trade Vault::deposit To Tailor`
 - Severity: `Medium`
 - Source report: `trade.md`
 
@@ -6220,7 +6220,7 @@ Fixed in commit [2d7f5a17](https://github.com/Strata-Money/contracts-tranches/co
 
 **Cyfrin:** Verified.
 
-## [M-144] Missing `Unstaked` event for immediate unstake in `UnstakeCooldown::transfer`
+## [M-144] Missing `Unstaked` event for immediate unstake in `Unstake Cooldown::transfer`
 - Severity: `Medium`
 - Source report: `tranches.md`
 
@@ -6236,7 +6236,7 @@ Fixed in commit [c08784](https://github.com/Strata-Money/contracts-tranches/comm
 
 **Cyfrin:** Verified.
 
-## [M-145] `BasisTradeTailor::transferPerp` comment mismatch
+## [M-145] `Basis Trade Tailor::transfer Perp` comment mismatch
 - Severity: `Medium`
 - Source report: `update.md`
 
@@ -6271,7 +6271,7 @@ function transferPerp(address pocket, uint64 amount, bool toPerp) external onlyE
 
 **Cyfrin:** Verified.
 
-## [M-146] `BasisTradeTailor` withdrawal request overwrite enables race conditions
+## [M-146] `Basis Trade Tailor` withdrawal request overwrite enables race conditions
 - Severity: `Medium`
 - Source report: `update.md`
 
@@ -6352,7 +6352,7 @@ This prevents overwrites (cannot go from 100 → 50 directly) and makes cancella
 
 \clearpage
 
-## [M-147] `PoketFactory` is ERC-165 non compilant
+## [M-147] `Poket Factory` is ERC-165 non compilant
 - Severity: `Medium`
 - Source report: `update.md`
 
@@ -6418,7 +6418,7 @@ The script logs "Tailor Upgraded" but the proxy still points to the old implemen
 
 **Cyfrin:** Verified.
 
-## [M-149] `SDLVesting::claimRESDLRewards()` can be used to drain the entire vesting contract balance in edge case
+## [M-149] `SDLVesting::claim RESDLRewards()` can be used to drain the entire vesting contract balance in edge case
 - Severity: `Medium`
 - Source report: `vesting.md`
 
@@ -6463,7 +6463,7 @@ function claimRESDLRewards(address[] calldata _tokens) external onlyBeneficiary 
 
 **Cyfrin:** Verified. `_tokens[i]` now checked to not be equal to `sdlToken`.
 
-## [M-150] Missing access control in `SDLVesting::stakeReleasableTokens`
+## [M-150] Missing access control in `SDLVesting::stake Releasable Tokens`
 - Severity: `Medium`
 - Source report: `vesting.md`
 
@@ -6595,7 +6595,7 @@ With these changes, only the designated bot (and the beneficiary themselves, if 
 
 \clearpage
 
-## [M-151] Duplicated `Math` import should be removed from `ERC721WrapperBase`
+## [M-151] Duplicated `Math` import should be removed from `ERC721Wrapper Base`
 - Severity: `Medium`
 - Source report: `vii.md`
 
@@ -6779,7 +6779,7 @@ Consider whether:
 
 **Cyfrin:** Verified.
 
-## [M-158] Unused error `IBet::InvalidAmount`
+## [M-158] Unused error `IBet::Invalid Amount`
 - Severity: `Medium`
 - Source report: `wannabetv2.md`
 
@@ -6848,7 +6848,7 @@ Fixed in commit [b567696](https://github.com/worldliberty/usd1-protocol/blob/b56
 
 **Cyfrin:** Fixed.
 
-## [M-163] Use `SafeCast` to safely downcast amounts
+## [M-163] Use `Safe Cast` to safely downcast amounts
 - Severity: `Medium`
 - Source report: `wlf.md`
 
@@ -6864,7 +6864,7 @@ Fixed in commit [b567696](https://github.com/worldliberty/usd1-protocol/blob/b56
 
 **Cyfrin:** Verified.
 
-## [M-164] `YtokenL2::previewMint` and `YTokenL2::previewWithdraw` round in favor of user
+## [M-164] `Ytoken L2::preview Mint` and `YToken L2::preview Withdraw` round in favor of user
 - Severity: `Medium`
 - Source report: `yieldfi.md`
 
@@ -6896,7 +6896,7 @@ This behavior contradicts the [security recommendations in EIP-4626](https://eip
 
 **Cyfrin:** Verified. the preview functions now utilizes `_convertToShares` and `_convertToAssets` with the correct rounding direction.
 
-## [M-165] Balance check for yield claims in `PerpetualBond::_validate` can be easily bypassed
+## [M-165] Balance check for yield claims in `Perpetual Bond::_validate` can be easily bypassed
 - Severity: `Medium`
 - Source report: `yieldfi.md`
 
@@ -6972,7 +6972,7 @@ As a result, a user could deposit an amount that results in fewer shares than `m
 
 \clearpage
 
-## [M-167] Lack of `_disableInitializers` in upgradeable contracts
+## [M-167] Lack of `_disable Initializers` in upgradeable contracts
 - Severity: `Medium`
 - Source report: `yieldfi.md`
 
@@ -7008,7 +7008,7 @@ Consider removing these.
 
 <!-- /Cyfrin Fixed Issues (Merged) -->
 
-## [M-49] In `RemoraToken::adminClaimPayout`, `adminTransferFrom` don't call `hasSignedDocs` when `checkTC == false`
+## [M-49] In `Remora Token::admin Claim Payout`, `admin Transfer From` don't call `has Signed Docs` when `check TC == false`
 - Severity: `Medium`
 - Source report: `pledge.md`
 
@@ -7037,7 +7037,7 @@ Apply similar fix to `adminTransferFrom`.
 
 **Cyfrin:** Verified.
 
-## [M-38] Revert if `StakingVault::deposit, mint, redeem, withdraw` would return zero
+## [M-38] Revert if `Staking Vault::deposit, mint, redeem, withdraw` would return zero
 - Severity: `Medium`
 - Source report: `syntetika.md`
 

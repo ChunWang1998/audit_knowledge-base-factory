@@ -3,7 +3,7 @@
 - Count: `2`
 - Definition: oracle values from different feeds/scales are compared or consumed without normalization.
 
-## [Malda][M-14] MixedPriceOracleV4 decimal mismatch
+## [Malda][M-14] Mixed Price Oracle V4 decimal mismatch
 - Severity: `Medium`
 - Source: [Issue #945](https://github.com/sherlock-audit/2025-07-malda-judging/issues/945)
 - Impact: `dos`, `value-mispricing`
@@ -17,7 +17,7 @@
 ### Fix Status
 - `Fixed/Resolved in report`
 
-## [Notional][M-12] `PendlePTOracle._getPTRate` decimal assumption invalid
+## [Notional][M-12] `Pendle PTOracle._get PTRate` decimal assumption invalid
 - Severity: `Medium`
 - Source: [Issue #623](https://github.com/sherlock-audit/2025-06-notional-exponent-judging/issues/623)
 - Impact: `value-mispricing`
@@ -264,7 +264,7 @@ Given the negligible impact and the fact that rounding errors are unavoidable (t
 
 **Cyfrin:** Verified. Added documents.
 
-## [M-4] `LibHelpers.convertDecimalsTo` favours the user on a exact-out mint and burn for certain collateral decimals
+## [M-4] `Lib Helpers.convert Decimals To` favours the user on a exact-out mint and burn for certain collateral decimals
 - Severity: `Medium`
 - Source report: `parallel3.1.md`
 
@@ -522,7 +522,7 @@ Logs:
 
 **Cyfrin:** Verified. `LibHelpers.convertDecimalsTo` now rounds towards the specified direction when converting from higher decimals to lower decimals.
 
-## [M-5] `LibSurplus::_computeCollateralSurplus` doesn't account for `surplusBufferRatio > 100%`
+## [M-5] `Lib Surplus::_compute Collateral Surplus` doesn't account for `surplus Buffer Ratio > 100%`
 - Severity: `Medium`
 - Source report: `parallel3.1.md`
 
@@ -1239,7 +1239,7 @@ Attack:
 
 **Cyfrin:** Verified. `LibHelpers.convertDecimalsTo` now rounds towards the specified direction when converting from higher decimals to lower decimals.
 
-## [M-7] Missing validation allows `userDeviation > burnRatioDeviation`, silently disabling burn ratio protection
+## [M-7] Missing validation allows `user Deviation > burn Ratio Deviation`, silently disabling burn ratio protection
 - Severity: `Medium`
 - Source report: `parallel3.1.md`
 
@@ -1267,7 +1267,7 @@ if (userDeviation > burnRatioDeviation) revert InvalidParams();
 
 **Cyfrin:** Verified. Remediated by implementing the recommended mitigation.
 
-## [M-8] `MetaVault::addVault` should enforce identical underlying base asset
+## [M-8] `Meta Vault::add Vault` should enforce identical underlying base asset
 - Severity: `Medium`
 - Source report: `predeposit.md`
 
@@ -1305,7 +1305,7 @@ function test_vaultSupportedWithDifferentUnderlyingAsset() external {
 
 **Cyfrin:** Verified.
 
-## [M-9] Incorrect `recordResult` recorded for each question in `recordResults`
+## [M-9] Incorrect `record Result` recorded for each question in `record Results`
 - Severity: `Medium`
 - Source report: `protocol.md`
 
@@ -1352,7 +1352,7 @@ Fixed in commit [a3bcfb6](https://github.com/Engage-Protocol/engage-protocol/com
 
 **Cyfrin:** Verified.
 
-## [M-10] Prevent negative assertion following previous truthful assertion in `DefaultSession::assertionResolvedCallback`
+## [M-10] Prevent negative assertion following previous truthful assertion in `Default Session::assertion Resolved Callback`
 - Severity: `Medium`
 - Source report: `protocol.md`
 
@@ -1375,7 +1375,7 @@ Fixed in commit [99ec735](https://github.com/Engage-Protocol/engage-protocol/com
 
 **Cyfrin:** Verified.
 
-## [M-11] `RedStoneNavProvider::rate` can return zero for non-zero oracle input due to rounding in `Helper::normalizeRate`
+## [M-11] `Red Stone Nav Provider::rate` can return zero for non-zero oracle input due to rounding in `Helper::normalize Rate`
 - Severity: `Medium`
 - Source report: `ramp.md`
 
@@ -1445,7 +1445,7 @@ function rate() external view override returns (uint256 normalizedRate) {
 
 **Cyfrin:** Verified.
 
-## [M-12] `RedStoneNavProvider::rate` will return massively inflated value if underlying oracle returns a negative value and lacks common oracle validations
+## [M-12] `Red Stone Nav Provider::rate` will return massively inflated value if underlying oracle returns a negative value and lacks common oracle validations
 - Severity: `Medium`
 - Source report: `ramp.md`
 
@@ -1479,7 +1479,7 @@ Also consider adding other common oracle-related checks such as:
 
 **Cyfrin:** Verified.
 
-## [M-13] `SecuritizeAmmNavProvider` virtual reserve rounding erosion can lead to denial of service
+## [M-13] `Securitize Amm Nav Provider` virtual reserve rounding erosion can lead to denial of service
 - Severity: `Medium`
 - Source report: `ramp.md`
 
@@ -1600,7 +1600,7 @@ Another benefit of enforcing minimum reserves is a consistent pattern of high-pr
 
 **Cyfrin:** Verified.
 
-## [M-14] Incorrect rounding direction in `SecuritizeAmmNavProvider::executeBuyBase` when scaling down `execPrice`
+## [M-14] Incorrect rounding direction in `Securitize Amm Nav Provider::execute Buy Base` when scaling down `exec Price`
 - Severity: `Medium`
 - Source report: `ramp.md`
 
@@ -1660,7 +1660,7 @@ These operations produce prices with deep fractional precision that almost never
 
 **Cyfrin:** Verified.
 
-## [M-15] Lack of Price Feed Update Function in `RedStoneNavProvider`
+## [M-15] Lack of Price Feed Update Function in `Red Stone Nav Provider`
 - Severity: `Medium`
 - Source report: `ramp.md`
 
@@ -1731,7 +1731,7 @@ Similar optimizations can be made in:
 
 **Cyfrin:** Verified.
 
-## [M-17] `SherpaVault::_rollInternal` price calculation comment and math inconsistent
+## [M-17] `Sherpa Vault::_roll Internal` price calculation comment and math inconsistent
 - Severity: `Medium`
 - Source report: `sherpa.md`
 
@@ -1843,7 +1843,7 @@ Following admin functions modify critical parameters but do not emit events:
 
 **Cyfrin:** Verified.
 
-## [M-21] Missing zero address checks in `STBL_Register::setupAsset`
+## [M-21] Missing zero address checks in `STBL_Register::setup Asset`
 - Severity: `Medium`
 - Source report: `stbl.md`
 
@@ -1864,7 +1864,7 @@ Notably, the same variables when set via their respective setter functions, eg,.
 
 **Cyfrin:** Verified.
 
-## [M-22] Enforce that `StakingVault::decimals` is greater or equal to the underlying asset decimals
+## [M-22] Enforce that `Staking Vault::decimals` is greater or equal to the underlying asset decimals
 - Severity: `Medium`
 - Source report: `syntetika.md`
 
@@ -1899,7 +1899,7 @@ Fixed in commit [ac97972](https://github.com/SyntetikaLabs/monorepo/commit/ac979
 
 **Cyfrin:** Verified.
 
-## [M-24] Missing L2 sequencer uptime check in `OracleAdapter`
+## [M-24] Missing L2 sequencer uptime check in `Oracle Adapter`
 - Severity: `Medium`
 - Source report: `yieldfi.md`
 

@@ -3,7 +3,7 @@
 - Count: `5`
 - Definition: required checks are absent or insufficient before critical state transitions or external calls.
 
-## [Beraborrow][M-11] InfraredCollateralVault::rebalance() can DoS protocol
+## [Beraborrow][M-11] Infrared Collateral Vault::rebalance() can Do S protocol
 - Severity: `Medium`
 - Source: [Issue #56](https://github.com/sherlock-audit/2025-01-boyco-judging/issues/56)
 - Impact: `dos`
@@ -17,7 +17,7 @@
 ### Fix Status
 - `Fixed/Resolved in report`
 
-## [Malda][M-10] Unenforced `maxFee` and `ttl` in `sendMsg`
+## [Malda][M-10] Unenforced `max Fee` and `ttl` in `send Msg`
 - Severity: `Medium`
 - Source: [Issue #317](https://github.com/sherlock-audit/2025-07-malda-judging/issues/317)
 - Impact: `functional-break`
@@ -59,7 +59,7 @@
 ### Fix Status
 - `Fixed/Resolved in report`
 
-## [Notional][H-10] Malicious user can alter `TradeType` to steal funds
+## [Notional][H-10] Malicious user can alter `Trade Type` to steal funds
 - Severity: `High`
 - Source: [Issue #715](https://github.com/sherlock-audit/2025-06-notional-exponent-judging/issues/715)
 - Impact: `fund-loss`
@@ -202,7 +202,7 @@ function executePreApprovedTransaction(
 
 \clearpage
 
-## [M-2] Optimize `_getStakerVaults` to Avoid Redundant External Calls to `activeBalanceOfAt`
+## [M-2] Optimize `_get Staker Vaults` to Avoid Redundant External Calls to `active Balance Of At`
 - Severity: `Medium`
 - Source report: `core.md`
 
@@ -359,7 +359,7 @@ Fixed in commit: [9a5678](https://github.com/deriverse/protocol-v1/commit/9a5678
 
 **Cyfrin:** Verified.
 
-## [M-5] Precompute `baseSlot` in `AtomicBatcher::_getNonceSlot`
+## [M-5] Precompute `base Slot` in `Atomic Batcher::_get Nonce Slot`
 - Severity: `Medium`
 - Source report: `pr50.md`
 
@@ -608,7 +608,7 @@ Fixed in commit [b567696](https://github.com/worldliberty/usd1-protocol/blob/b56
 
 **Cyfrin:** Verified. Moved to percentage allocation from a fixed cap per user.
 
-## [M-10] `PerpetualBond.epoch` not updated after yield distribution
+## [M-10] `Perpetual Bond.epoch` not updated after yield distribution
 - Severity: `Medium`
 - Source report: `yieldfi.md`
 

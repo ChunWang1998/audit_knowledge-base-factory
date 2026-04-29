@@ -3,7 +3,7 @@
 - Count: `4`
 - Definition: bridge adapter assumptions do not match actual bridge behavior/constraints.
 
-## [Malda][M-10] Unenforced `maxFee` and `ttl` in `sendMsg`
+## [Malda][M-10] Unenforced `max Fee` and `ttl` in `send Msg`
 - Severity: `Medium`
 - Source: [Issue #317](https://github.com/sherlock-audit/2025-07-malda-judging/issues/317)
 - Impact: `functional-break`
@@ -411,7 +411,7 @@ Fixed in commit [fd3a66](https://github.com/MetaMask/mobile-wallet-protocol/comm
 
 **Cyfrin:** Verified.
 
-## [M-3] Inconsistent stake calculation due to mutable `vaultManager` reference in `AvalancheL1Middleware`
+## [M-3] Inconsistent stake calculation due to mutable `vault Manager` reference in `Avalanche L1Middleware`
 - Severity: `Medium`
 - Source report: `core.md`
 
@@ -477,7 +477,7 @@ Fixed in commit [35f6e56](https://github.com/suzaku-network/suzaku-core/pull/155
 
 **Cyfrin:** Verified.
 
-## [M-4] Uptime loss due to integer division in `UptimeTracker::computeValidatorUptime` can make validator lose entire rewards for an epoch
+## [M-4] Uptime loss due to integer division in `Uptime Tracker::compute Validator Uptime` can make validator lose entire rewards for an epoch
 - Severity: `Medium`
 - Source report: `core.md`
 
@@ -641,7 +641,7 @@ As a result, a total of 9 + 10 = 19 margin calls are executed, which exceeds the
 
 **Parallel:** Fixed in commit [08bc292](https://github.com/parallel-protocol/parallel-parallelizer/commit/08bc292d52bee8505e6f67883b3059e8faf1696f).
 
-## [M-8] `AtomicBatcher` uses placeholder ERC-7201 namespace
+## [M-8] `Atomic Batcher` uses placeholder ERC-7201 namespace
 - Severity: `Medium`
 - Source report: `pr50.md`
 
@@ -687,7 +687,7 @@ While the current implementation would still revert if the contract lacks the re
 
 **Cyfrin:** Verified.
 
-## [M-11] Proxy reuse without implementation check inside `UnstakeCooldown` leads to execution on outdated/vulnerable logic
+## [M-11] Proxy reuse without implementation check inside `Unstake Cooldown` leads to execution on outdated/vulnerable logic
 - Severity: `Medium`
 - Source report: `tranches.md`
 

@@ -15,7 +15,7 @@ The initial tax configuration should be aligned with the same boundsenforced for
 ### 修補方式（實際）
 Fixed inc20e980: In the current KnoxNet implementation, the initial sell tax has beenreduced from 9000 basis points to 500 basis points, which removes the90% sell-side deduction present in the original deployment configuration.The initial values now remain within the same 65% bound enforced by setTaxConfig, so the deployment state is consistent with the administrativetax cap. uint256 public marketingBuyTaxBps = 500; uint256 public marketingSellTaxBps = 500;
 
-## F-2026-15969 - Unvalidated taxDenominator Breaks Tax CapInvariants and Causes Hardcoded Limits to Misapply in BothDirections
+## F-2026-15969 - Unvalidated tax Denominator Breaks Tax Cap Invariants and Causes Hardcoded Limits to Misapply in Both Directions
 - 嚴重度：High
 - Report source：Knoxnet.pdf
 
@@ -28,7 +28,7 @@ taxDenominator should either be fixed to 10000 or validated so that all tax capc
 ### 修補方式（實際）
 Fixed inc20e980: In KnoxNet, the previously mutable taxDenominator has been replaced withthe fixed constant `BPS_DENOMINATOR` = 10000, and the `_taxDenominator` parameterhas been removed from setTaxConfig. The tax cap checks in setTaxConfig are now evaluated against the same denominator used by `_applyTax`,eliminating the prior mismatch between validation and effective taxcalculation. uint256 constant `BPS_DENOMINATOR` = 10000; uint256 public constant taxDenominator = `BPS_DENOMINATOR`; function setTaxConfig( uint256 `_liquidityBuyTaxBps`, uint256 `_liquiditySellTaxBps`, uint256 `_marketingBuyTaxBps`, uint256 `_marketingSellTaxBps` ) external onlyOwner { require( `_liquidityBuyTaxBps` + `_marketingBuyTaxBps` <= 6500, "Buy tax cannot exceed 65%" ); require( `_liquiditySellTaxBps` + `_marketingSellTaxBps` <= 6500, "Sell tax cannot exceed 65%" );
 
-## F-2026-15980 - Fee Distribution in _autoSwapBack Uses Con guredTax Rates as Proxy for Actual Fee Composition, Causing SystematicMisallocation Between Marketing and Liquidity
+## F-2026-15980 - Fee Distribution in _auto Swap Back Uses Con gured Tax Rates as Proxy for Actual Fee Composition, Causing Systematic Misallocation Between Marketing and Liquidity
 - 嚴重度：Medium
 - Report source：Knoxnet.pdf
 
@@ -41,7 +41,7 @@ Fee accrual should be tracked separately by purpose instead ofaggregating all ta
 ### 修補方式（實際）
 Fixed inc20e980: In KnoxNet, fee accrual has been replaced with per-purpose trackingusing dedicated accumulatedMarketingTokens and accumulatedLiquidityTokens counters. The `_applyTax` function now splits each taxed amount at the pointof collection based on the actual buy/sell direction and its configured taxcomposition, rather than deferring the split to distribution time. The `_autoSwapBack` function consumes these tracked amounts directly anddistributes proportionally to the real accumulated balances, eliminating theprior dependency on a static rate-based formula that ignored actualtrading volumes. function `_applyTax`( address sender, address recipient, uint256 amount ) internal returns (uint256) { bool selling = `_classifyTransfer`(sender, recipient) == TransferType.Sell; uint256 totalTaxBps = selling ? totalSellTaxBps : totalBuyTaxBps; uint256 liquidityTaxBps = selling ? liquiditySellTaxBps : liquidityBuyTaxB ps; uint256 liquidityTokens = (taxAmount * liquidityTaxBps) / totalTaxBps; uint256 marketingTokens = taxAmount - liquidityTokens; accumulatedLiquidityTokens += liquidityTokens; accumulatedMarketingTokens += marketingTokens; } function `_autoSwapBack`(uint256 amount) internal swapping { // … uint256 totalAccumulatedTokens = accumulatedMarketingTokens + accumulatedL iquidityTokens; if (totalAccumulatedTokens == 0) return; if (amountToSwap > totalAccumulatedTokens) amountToSwap = totalAccumulated Tokens; uint256 liquidityPortion = (accumulatedLiquidityTokens * amountToSwap) / t otalAccumulatedTokens; uint256 marketingPortion = amountToSwap - liquidityPortion; } 37
 
-## F-2026-14942 - Incorrect maxSellAmount Calculation Allows SellingUp to Total Supply Amount
+## F-2026-14942 - Incorrect max Sell Amount Calculation Allows Selling Up to Total Supply Amount
 - 嚴重度：Medium
 - Report source：Node Meta.pdf
 
@@ -67,7 +67,7 @@ Adjust the taxation logic to ensure that liquidity removal operations aretaxed a
 ### 修補方式（實際）
 Fixed in 363459b, the regular transfer is now checked if the transfer did notcome form the router: else if (pancakeRouter != from && pancakeRouter != to) { // Just a regular P2P transfer (exclude router to prevent double taxation on liquidity removal) taxBps = transferTaxBps;
 
-## F-2026-15970 - Missing Transfer Event for Taxed Amount BreaksERC20 Compliance and Causes Balance Tracking Mismatches
+## F-2026-15970 - Missing Transfer Event for Taxed Amount Breaks ERC20 Compliance and Causes Balance Tracking Mismatches
 - 嚴重度：Medium
 - Report source：Knoxnet.pdf
 
@@ -270,7 +270,7 @@ Fixed in commit [65727de](https://github.com/Engage-Protocol/engage-protocol/com
 
 **Cyfrin:** Verified.
 
-## [M-3] `nonReentrant` is not the first modifier
+## [M-3] `non Reentrant` is not the first modifier
 - Severity: `Medium`
 - Source report: `accountable.md`
 
@@ -281,7 +281,7 @@ Fixed in commit [65727de](https://github.com/Engage-Protocol/engage-protocol/com
 
 **Cyfrin:** Verified.
 
-## [M-4] Auto-draw on `AccountableFixedTerm::pay` lets third parties force unwanted borrowing
+## [M-4] Auto-draw on `Accountable Fixed Term::pay` lets third parties force unwanted borrowing
 - Severity: `Medium`
 - Source report: `accountable.md`
 
@@ -304,7 +304,7 @@ Since `_loan.drawableFunds` increases when users deposit/mint into the vault, a 
 
 **Cyfrin:** Verified. "auto-draw" is removed from `pay`.
 
-## [M-6] `AngstromL2::_computeAndCollectProtocolSwapFee` computation can be simplified
+## [M-6] `Angstrom L2::_compute And Collect Protocol Swap Fee` computation can be simplified
 - Severity: `Medium`
 - Source report: `angstrom.md`
 
@@ -330,7 +330,7 @@ absTargetAmount * protocolFeeE6 / (FACTOR_E6 - protocolFeeE6)
 
 \clearpage
 
-## [M-7] `AngstromL2::_oneForZeroCreditRewards` should skip execution of range reward logic if there is no liquidity
+## [M-7] `Angstrom L2::_one For Zero Credit Rewards` should skip execution of range reward logic if there is no liquidity
 - Severity: `Medium`
 - Source report: `angstrom.md`
 
@@ -828,7 +828,7 @@ The property is [no longer violated](https://prover.certora.com/output/52567/615
 
 **Cyfrin:** Verified. The tax amount is only calculated for top-of-block swaps; otherwise, zero is passed as recommended.
 
-## [M-9] All swaps will revert if the dynamic protocol fee is enabled since `hook-config.sol` does not encode the `afterSwapReturnDelta` permission
+## [M-9] All swaps will revert if the dynamic protocol fee is enabled since `hook-config.sol` does not encode the `after Swap Return Delta` permission
 - Severity: `Medium`
 - Source report: `angstrom.md`
 
@@ -937,7 +937,7 @@ function test_zeroInitialLPFee() public {
 
 **Cyfrin:** Verified. Dynamic fee pools are no longer supported.
 
-## [M-11] Calculation of available liquidity in `CollateralLiquidityProvider::availableLiquidity` assumes 1:1 ratio between collateral asset and liquidity tokens
+## [M-11] Calculation of available liquidity in `Collateral Liquidity Provider::available Liquidity` assumes 1:1 ratio between collateral asset and liquidity tokens
 - Severity: `Medium`
 - Source report: `bridge.md`
 
@@ -1025,7 +1025,7 @@ Consider using `feePercentageMBPS` for even better clarity.
 
 **Cyfrin:** Verified.
 
-## [M-13] Incorrect usage of minOutputAmount in executeTwoStepRedemption can cause unnecessary reverts
+## [M-13] Incorrect usage of min Output Amount in execute Two Step Redemption can cause unnecessary reverts
 - Severity: `Medium`
 - Source report: `bridge.md`
 
@@ -1091,7 +1091,7 @@ This ensures that the post-fee amount meets the expected minimum and aligns with
 
 **Cyfrin:** Verified.
 
-## [M-15] `FeeModule::_lookupFees` returns zero fees at price = 1e18 due to strict less-than comparison
+## [M-15] `Fee Module::_lookup Fees` returns zero fees at price = 1e18 due to strict less-than comparison
 - Severity: `Medium`
 - Source report: `clob.md`
 
@@ -1125,7 +1125,7 @@ if (price <= tiers[i].maxPrice) {
 
 **Cyfrin:** Verified.
 
-## [M-16] `FeeModule::setMarketFees` permits 100% fee rates
+## [M-16] `Fee Module::set Market Fees` permits 100% fee rates
 - Severity: `Medium`
 - Source report: `clob.md`
 
@@ -1153,7 +1153,7 @@ Make `MAX_FEE_BPS` configurable only by `DEFAULT_ADMIN_ROLE` with a separate gov
 
 **Cyfrin:** Verified. Max fee of 10% (`1000`) enforced.
 
-## [M-17] finalizeWithFee lacks race conditioning protection
+## [M-17] finalize With Fee lacks race conditioning protection
 - Severity: `Medium`
 - Source report: `cooldown.md`
 
@@ -1171,7 +1171,7 @@ Additionally, reordering of requests due to `cancel/finalize` can change which r
 
 \clearpage
 
-## [M-18] Invalid validateRedemptionParams check
+## [M-18] Invalid validate Redemption Params check
 - Severity: `Medium`
 - Source report: `cooldown.md`
 
@@ -1407,7 +1407,7 @@ This violates with other parts of the code, like:
 
 **Cyfrin:** Verified.
 
-## [M-25] Incorrect Price Validation When Creating `NewInstrumentData` Struct during `NewInstrumentInstruction` instruction
+## [M-25] Incorrect Price Validation When Creating `New Instrument Data` Struct during `New Instrument Instruction` instruction
 - Severity: `Medium`
 - Source report: `dex.md`
 
@@ -1785,7 +1785,7 @@ The problem:
 
 **Cyfrin:** Verified
 
-## [M-32] Referral discount is not applied when `fees_prepayment` is zero in `PerpEngine::fill`
+## [M-32] Referral discount is not applied when `fees_prepayment` is zero in `Perp Engine::fill`
 - Severity: `Medium`
 - Source report: `dex.md`
 
@@ -2088,7 +2088,7 @@ function setTradeFee(UD60x18 newTradeFee) external override onlyComptroller {
 
 \clearpage
 
-## [M-39] Inconsistent effective swap fee calculations between `BunniQuoter::quoteSwap` and `BunniHookLogic::beforeSwap` due to incorrect application of hook and curator fees
+## [M-39] Inconsistent effective swap fee calculations between `Bunni Quoter::quote Swap` and `Bunni Hook Logic::before Swap` due to incorrect application of hook and curator fees
 - Severity: `Medium`
 - Source report: `hooklet.md`
 
@@ -2292,7 +2292,7 @@ The `outputAmount`/`swapFeeAmount` adjustments are confusing because the logic i
 
 \clearpage
 
-## [M-40] Lack of multicall support for `FeeOverrideHooklet::setFeeOverride`
+## [M-40] Lack of multicall support for `Fee Override Hooklet::set Fee Override`
 - Severity: `Medium`
 - Source report: `hooklet.md`
 
@@ -2309,7 +2309,7 @@ Given that any account is free to deploy a Bunni pool and `LibMulticaller` is us
 
 **Cyfrin:** Verified. `FeeOverrideHooklet::setFeeOverride` is now compatible with multicall invocations.
 
-## [M-41] Oracle Inconsistency between surplus computation and post-check causes `Surplus::processSurplus(collateralAddress,0)` DoS
+## [M-41] Oracle Inconsistency between surplus computation and post-check causes `Surplus::process Surplus(collateral Address,0)` Do S
 - Severity: `Medium`
 - Source report: `parallel3.1.md`
 
@@ -2441,7 +2441,7 @@ As a practical alternative, the team can use the existing maxCollateralAmount pa
 
 **Cyfrin:** Verified. Fixed by implementing the recommended mitigation.
 
-## [M-42] `DividendManager::distributePayout` will always revert after 255 payouts, preventing any future payout distributions
+## [M-42] `Dividend Manager::distribute Payout` will always revert after 255 payouts, preventing any future payout distributions
 - Severity: `Medium`
 - Source report: `pledge.md`
 
@@ -2490,7 +2490,7 @@ uint8 _currentPayoutIndex;
 
 **Cyfrin:** Verified.
 
-## [M-43] Burning ALL PropertyTokens of a frozen holder results in the holder losing the payouts distribution while he was frozen
+## [M-43] Burning ALL Property Tokens of a frozen holder results in the holder losing the payouts distribution while he was frozen
 - Severity: `Medium`
 - Source report: `pledge.md`
 
@@ -2660,7 +2660,7 @@ Alternatively, similar to the burn(), revert if the account if frozen.
 
 **Cyfrin:** Verified.
 
-## [M-45] Changing stablecoin on TokenBank can mess up fees collection
+## [M-45] Changing stablecoin on Token Bank can mess up fees collection
 - Severity: `Medium`
 - Source report: `pledge.md`
 
@@ -2791,7 +2791,7 @@ fee = userPay.fee * numTokens / userPay.tokensBought;
 
 **Cyfrin:** Verified.
 
-## [M-48] Fee should be calculated after first purchase discount is applied in `TokenBank::buy` to prevent over-charging users
+## [M-48] Fee should be calculated after first purchase discount is applied in `Token Bank::buy` to prevent over-charging users
 - Severity: `Medium`
 - Source report: `pledge.md`
 
@@ -2882,7 +2882,7 @@ The problem is that once the `overrideFees` variable is set to true, it is not p
 
 **Cyfrin:** Verified.
 
-## [M-51] Pledge can't successfully complete unless `RemoraToken` is paused
+## [M-51] Pledge can't successfully complete unless `Remora Token` is paused
 - Severity: `Medium`
 - Source report: `pledge.md`
 
@@ -2997,7 +2997,7 @@ RWAToken/RemoraToken.sol
 
 **Cyfrin:** Verified.
 
-## [M-54] `lastTotalAssets` stores stale value due to update before penalty accrual
+## [M-54] `last Total Assets` stores stale value due to update before penalty accrual
 - Severity: `Medium`
 - Source report: `pr50.md`
 
@@ -3059,7 +3059,7 @@ Since `startTime` is set once and not reset when a loan is `Repaid` or in defaul
 
 **Cyfrin:** Verified. Check changed to `loanState == LoanState.OngoingDynamic`.
 
-## [M-56] Precompute `callTypeHash` in `AtomicBatcher::_hashCallArray`
+## [M-56] Precompute `call Type Hash` in `Atomic Batcher::_hash Call Array`
 - Severity: `Medium`
 - Source report: `pr50.md`
 
@@ -3077,7 +3077,7 @@ Consider defining `bytes32 private constant _CALL_TYPEHASH = keccak256("...");` 
 
 **Cyfrin:** Verified.
 
-## [M-57] Reuse `aum_` in `_accrueFeeShares` to avoid recomputing debt
+## [M-57] Reuse `aum_` in `_accrue Fee Shares` to avoid recomputing debt
 - Severity: `Medium`
 - Source report: `pr50.md`
 
@@ -3096,7 +3096,7 @@ Consider using `aum_` directly in `_accrueFeeShares` (e.g., `uint256 debt = aum_
 
 **Cyfrin:** Verified.
 
-## [M-58] Reuse `fm` Instead of re-instantiating `IFeeManager` in `AccountableOpenTerm::_mintFeeShares`
+## [M-58] Reuse `fm` Instead of re-instantiating `IFee Manager` in `Accountable Open Term::_mint Fee Shares`
 - Severity: `Medium`
 - Source report: `pr50.md`
 
@@ -3169,7 +3169,7 @@ address treasury_ = fm.treasury();
 
 **Cyfrin:** Verified.
 
-## [M-60] Hard-coded slippage in `pUSDeDepositor::deposit_viaSwap` can lead to denial of service
+## [M-60] Hard-coded slippage in `p USDe Depositor::deposit_via Swap` can lead to denial of service
 - Severity: `Medium`
 - Source report: `predeposit.md`
 
@@ -3182,7 +3182,7 @@ address treasury_ = fm.treasury();
 
 **Cyfrin:** Verified. Callers can now override the default slippage.
 
-## [M-61] `DepositManager::sponsorGame` should revert if the game is `Cancelled` or `Concluded`
+## [M-61] `Deposit Manager::sponsor Game` should revert if the game is `Cancelled` or `Concluded`
 - Severity: `Medium`
 - Source report: `protocol.md`
 
@@ -3207,7 +3207,7 @@ Fixed in commit [e01a1df](https://github.com/Engage-Protocol/engage-protocol/com
 
 **Cyfrin:** Verified.
 
-## [M-62] `SessionManager::rescheduleGame` advances the start time but not the end time allowing for a griefing attack where the game creator can collect fees while preventing users from participating
+## [M-62] `Session Manager::reschedule Game` advances the start time but not the end time allowing for a griefing attack where the game creator can collect fees while preventing users from participating
 - Severity: `Medium`
 - Source report: `protocol.md`
 
@@ -3292,7 +3292,7 @@ Fixed in commit [dca8622](https://github.com/Engage-Protocol/engage-protocol/com
 
 **Cyfrin:** Verified.
 
-## [M-64] More efficient implementation of `SessionManager::joinGame` via better storage packing
+## [M-64] More efficient implementation of `Session Manager::join Game` via better storage packing
 - Severity: `Medium`
 - Source report: `protocol.md`
 
@@ -3393,7 +3393,7 @@ Fixed in commit [e090f2e](https://github.com/Engage-Protocol/engage-protocol/com
 
 **Cyfrin:** Verified. We note that `AccessControl::grantRole` has not been overridden such that a referrer could be granted `CLAIMER_ROLE` which would prevent them from claiming referrals associated with their address.
 
-## [M-67] Use `uint128` to pack `DepositManager::protocolFee`, `maxCreatorFee` into the same storage slot
+## [M-67] Use `uint128` to pack `Deposit Manager::protocol Fee`, `max Creator Fee` into the same storage slot
 - Severity: `Medium`
 - Source report: `protocol.md`
 
@@ -3407,7 +3407,7 @@ Fixed in commit [adedfc2](https://github.com/Engage-Protocol/engage-protocol/com
 
 **Cyfrin:** Verified.
 
-## [M-68] `SecuritizeAmmNavProvider` missing `whenNotPaused` modifier on important state-changing functions
+## [M-68] `Securitize Amm Nav Provider` missing `when Not Paused` modifier on important state-changing functions
 - Severity: `Medium`
 - Source report: `ramp.md`
 
@@ -3457,7 +3457,7 @@ Similar optimizations can be made in:
 
 **Cyfrin:** Verified.
 
-## [M-70] Signatures used in `PublicStockOnRamp` and `PublicStockOffRamp` lack investor-specified deadline and nonce parameters so can be used multiple times by operators
+## [M-70] Signatures used in `Public Stock On Ramp` and `Public Stock Off Ramp` lack investor-specified deadline and nonce parameters so can be used multiple times by operators
 - Severity: `Medium`
 - Source report: `ramp.md`
 
@@ -3502,7 +3502,7 @@ Additionally, there is no nonce mechanism in either contract to allow investors 
 
 **Cyfrin:** Verified.
 
-## [M-71] Remove unused `ExecutePreApprovedTransaction::nonce`
+## [M-71] Remove unused `Execute Pre Approved Transaction::nonce`
 - Severity: `Medium`
 - Source report: `registry.md`
 
@@ -3638,7 +3638,7 @@ For the SecuritizeVault contracts:
 
 **Cyfrin:** Verified.
 
-## [M-75] Incorrect haircut asset value conversion in `STBL_PT1_Issuer::generateMetaData`
+## [M-75] Incorrect haircut asset value conversion in `STBL_PT1_Issuer::generate Meta Data`
 - Severity: `Medium`
 - Source report: `stbl.md`
 
@@ -3761,7 +3761,7 @@ Although the contract is protected from the most severe issues by the base ERC46
 
 **Cyfrin:** Verified. A minimum deposit configurable by admin is now enforced
 
-## [M-78] Incorrect Comment and Missing Lower Bound for `minimumJrtSrtRatio` in `Accounting`
+## [M-78] Incorrect Comment and Missing Lower Bound for `minimum Jrt Srt Ratio` in `Accounting`
 - Severity: `Medium`
 - Source report: `tranches.md`
 
@@ -3787,7 +3787,7 @@ Fixed in commit [eefd73](https://github.com/Strata-Money/contracts-tranches/comm
 
 **Cyfrin:** Verified.
 
-## [M-79] Fees can become stuck in `UniswapV4Wrapper`
+## [M-79] Fees can become stuck in `Uniswap V4Wrapper`
 - Severity: `Medium`
 - Source report: `vii.md`
 
@@ -3891,7 +3891,7 @@ The first is misleading (the contract must custody funds itself, not send them d
 \clearpage
 ## Gas Optimization
 
-## [M-81] Use `SafeERC20` functions instead of standard ERC20 functions
+## [M-81] Use `Safe ERC20` functions instead of standard ERC20 functions
 - Severity: `Medium`
 - Source report: `wannabetv2.md`
 

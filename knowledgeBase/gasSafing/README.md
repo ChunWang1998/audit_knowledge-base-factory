@@ -1,10 +1,10 @@
-# gasSafing - 已修復 Medium/High Issues（完整版）
+# gas Safing - 已修復 Medium/High Issues（完整版）
 
 - 篩選：`Severity in {Medium, High}` 且 `Status = Fixed`
 - 說明：本版為完整敘述，不做刪節號截斷
 - 筆數：9
 
-## F-2025-14449 - Incorrect Assumption of USDT Decimals Leads to FeeMiscalculations
+## F-2025-14449 - Incorrect Assumption of USDT Decimals Leads to Fee Miscalculations
 - 嚴重度：Medium
 - Report source：Acecoin.pdf
 
@@ -17,7 +17,7 @@ It is recommended to: replace the incorrect hardcoded number of decimals for `US
 ### 修補方式（實際）
 Fixed in f9604f9. The incorrect 18 decimals was replaced with the correctnumber 6 to represent the appropriate decimals number of the USDTtoken. 18
 
-## F-2025-14450 - Unstake() Function Behaves Di erently ThanDocumented System Requirement
+## F-2025-14450 - Unstake() Function Behaves Di erently Than Documented System Requirement
 - 嚴重度：Medium
 - Report source：Acecoin.pdf
 
@@ -30,7 +30,7 @@ It is recommended to fix the mismatch between the documentation andimplementatio
 ### 修補方式（實際）
 Fixed in commit f9604f9. `unstake()` now explicitly validates the contractʼs aceToken balance before transferring returnAmount to the user, aligning theimplementation with the documented guarantee that balance checks occuron stake and claim/withdraw flows and preventing misleading assumptionsby integrators and reviewers. 21
 
-## F-2025-14482 - Staking Capacity Permanently Lost as StakesComplete
+## F-2025-14482 - Staking Capacity Permanently Lost as Stakes Complete
 - 嚴重度：High
 - Report source：Acecoin.pdf
 
@@ -43,7 +43,7 @@ Replace totalStaked with totalActiveStaked in the staking validation checks: fun
 ### 修補方式（實際）
 Fixed in commit f9604f9. The codebase updated `stake()` admission checksto use totalActiveStaked (live exposure) rather than totalStaked, and re-scoped totalStaked to a statistics-only metric, ensuring completed stakesno longer inflate capacity/2x-limit gating and preventing the progressivestaking lockout condition over time.
 
-## F-2026-14497 - Incorrect Referral Traversal in _addDownlines() SkipsIntermediate Uplines
+## F-2026-14497 - Incorrect Referral Traversal in _add Downlines() Skips Intermediate Uplines
 - 嚴重度：Medium
 - Report source：Acecoin.pdf
 
@@ -56,7 +56,7 @@ It is recommended to: always advance the traversal using the direct upline relat
 ### 修補方式（實際）
 Fixed in commit f9604f9. Subscription::`_addDownlines`() was corrected totraverse the upline chain step-by-step by always advancing via the directparent (current.referrers[0]) rather than jumping to current.referrers[level].
 
-## F-2026-14653 - Incorrect BeforeSwapDelta Mapping Causes Fee ToBe Applied To Wrong Swap Side
+## F-2026-14653 - Incorrect Before Swap Delta Mapping Causes Fee To Be Applied To Wrong Swap Side
 - 嚴重度：High
 - Report source：Launchly.pdf
 
@@ -69,7 +69,7 @@ The hook must return BeforeSwapDelta based on specified/unspecifiedsemantics, no
 ### 修補方式（實際）
 Fixed in commit a8f07f4. The beforeSwap fee accounting logic was updatedto correctly apply BeforeSwapDelta using Uniswap v4ʼs specified/unspecifiedsemantics rather than relying on currency0/currency1 ordering. The hooknow always applies the fee delta to the specified (input) currency forexact-input swaps, ensuring that the accounting delta matches thecurrency from which the fee is actually taken. This eliminates swapaccounting mismatches and prevents potential reverts or incorrect feeapplication caused by applying the delta to the wrong swap leg.
 
-## F-2026-14654 - AfterSwap Return Delta Applied To Unspeci edCurrency Breaks Exact-Output Fee Charging
+## F-2026-14654 - After Swap Return Delta Applied To Unspeci ed Currency Breaks Exact-Output Fee Charging
 - 嚴重度：Medium
 - Report source：Launchly.pdf
 
@@ -82,7 +82,7 @@ Ensure the fee is taken from the same leg that the afterSwap return delta isappl
 ### 修補方式（實際）
 Fixed in commit a8f07f4. The hook now explicitly disallows exact-outputswaps in afterSwap (`require(amountSpecified < 0)`), preventing the scenariowhere the returned afterSwap delta is applied to the unspecified (input)currency while the fee is taken from native output, which previously couldcause accounting mismatches and swap reverts. 14
 
-## F-2025-13516 - Storage Inconsistency in `migrateTokenManager`Function Leading to Data Corruption
+## F-2025-13516 - Storage Inconsistency in `migrate Token Manager`Function Leading to Data Corruption
 - 嚴重度：Medium
 - Report source：Vechain Foundation.pdf
 
@@ -108,7 +108,7 @@ Consider implementing additional delegation statuses to differentiatevalidator e
 ### 修補方式（實際）
 The finding is fixed in commit hash eb5b8cb after adding validator statuschecks in the `unstake()` function. The fix properly decreases delegatorsEffectiveStake when unstaking tokens with `PENDING` delegationstatus or `EXITED` validator status, preventing permanent inflation of thevalidator's effective stake accounting.
 
-## F-2026-14778 - [DualDefense] Double E ective Stake Reduction onRedelegation Leading to Arithmetic Under ow
+## F-2026-14778 - [Dual Defense] Double E ective Stake Reduction on Redelegation Leading to Arithmetic Under ow
 - 嚴重度：High
 - Report source：Vechain Foundation.pdf
 
@@ -170,7 +170,7 @@ There are state variable changes in this function but no event is emitted. Consi
 \clearpage
 ## Gas Optimization
 
-## [M-2] ERC 1155 `safeTransferFrom` callbacks forward unbounded gas to EIP 7702 EOAs
+## [M-2] ERC 1155 `safe Transfer From` callbacks forward unbounded gas to EIP 7702 EOAs
 - Severity: `Medium`
 - Source report: `clob.md`
 
@@ -222,7 +222,7 @@ An attack would go as follows:
 
 \clearpage
 
-## [M-3] Remove unused constant `CryptoartNFT::ROYALTY_BASE`
+## [M-3] Remove unused constant `Cryptoart NFT::ROYALTY_BASE`
 - Severity: `Medium`
 - Source report: `cryptoart.md`
 
@@ -254,7 +254,7 @@ Fixed in commit [0c0dd8c](https://github.com/cryptoartcom/cryptoart-smart-contra
 \clearpage
 ## Gas Optimization
 
-## [M-5] `SessionManager::cancelGameIfCreatorMissing, endGame` could revert due to out of gas if there are too many question in a game
+## [M-5] `Session Manager::cancel Game If Creator Missing, end Game` could revert due to out of gas if there are too many question in a game
 - Severity: `Medium`
 - Source report: `protocol.md`
 
@@ -311,7 +311,7 @@ Fixed in commit [cb88233](https://github.com/Engage-Protocol/engage-protocol/com
 
 **Cyfrin:** Verified.
 
-## [M-6] Excessive amount `maximumContestants` could make games to revert in `DefaultSession::recordResults` due to out of gas
+## [M-6] Excessive amount `maximum Contestants` could make games to revert in `Default Session::record Results` due to out of gas
 - Severity: `Medium`
 - Source report: `protocol.md`
 
@@ -369,7 +369,7 @@ Fixed in commit [a2e353e](https://github.com/Engage-Protocol/engage-protocol/com
 
 **Cyfrin:** Verified.
 
-## [M-7] use fixed length array for `reSDLTokenIds`
+## [M-7] use fixed length array for `re SDLToken Ids`
 - Severity: `Medium`
 - Source report: `vesting.md`
 
@@ -419,7 +419,7 @@ This change collapses two storage slots (length + data pointer) into one and rem
 
 \clearpage
 
-## [M-8] `ownerSetVotingPowerExcludedStatus()` applies onlyOwner modifier twice
+## [M-8] `owner Set Voting Power Excluded Status()` applies only Owner modifier twice
 - Severity: `Medium`
 - Source report: `wlf.md`
 

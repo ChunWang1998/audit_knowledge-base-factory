@@ -3,7 +3,7 @@
 - Count: `7`
 - Source report: `Malda.pdf`
 
-## [M-10] Unenforced `maxFee` and `ttl` in `sendMsg`
+## [M-10] Unenforced `max Fee` and `ttl` in `send Msg`
 - Severity: `Medium`
 - Root-cause: `validation-missing`, `bridge-integration`
 - Impact: `functional-break`
@@ -16,7 +16,7 @@ Non-zero values can route to unsupported solver pathway and break intended cross
 ### Actual Fix
 - Status: `Fixed/Resolved in report`
 
-## [M-11] Missing endpoint to trigger `liquidateExternal` from extension chain
+## [M-11] Missing endpoint to trigger `liquidate External` from extension chain
 - Severity: `Medium`
 - Root-cause: `state-machine-flow`
 - Impact: `functional-break`
@@ -43,7 +43,7 @@ This allows repeated value extraction via excessive bridge fees, violating trust
 ### Actual Fix
 - Status: `Fixed/Resolved in report`
 
-## [M-13] `wrapAndSupplyOnExtensionMarket` blocks host supply when gasFee set
+## [M-13] `wrap And Supply On Extension Market` blocks host supply when gas Fee set
 - Severity: `Medium`
 - Root-cause: `state-machine-flow`
 - Impact: `functional-break`
@@ -56,7 +56,7 @@ When gas fee is non-zero, flow reverts and core wrap+supply user path breaks.
 ### Actual Fix
 - Status: `Fixed/Resolved in report`
 
-## [M-14] MixedPriceOracleV4 decimal mismatch causes wrong branch / DoS risk
+## [M-14] Mixed Price Oracle V4 decimal mismatch causes wrong branch / Do S risk
 - Severity: `Medium`
 - Root-cause: `oracle-decimals`
 - Impact: `dos`, `value-mispricing`

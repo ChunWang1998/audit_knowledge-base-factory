@@ -3,7 +3,7 @@
 - Count: `11`
 - Source report: `Notional Exponent.pdf`
 
-## [H-10] Malicious user can alter `TradeType` to steal funds
+## [H-10] Malicious user can alter `Trade Type` to steal funds
 - Severity: `High`
 - Root-cause: `validation-missing`
 - Impact: `fund-loss`
@@ -29,7 +29,7 @@ No minimum output guard allows severe unfavorable execution (including MEV/slipp
 ### Actual Fix
 - Status: `Acknowledged in report (see note in source report)`
 
-## [M-10] Incorrect ETH/WETH asset matching can DoS exit flow
+## [M-10] Incorrect ETH/WETH asset matching can Do S exit flow
 - Severity: `Medium`
 - Root-cause: `state-machine-flow`
 - Impact: `dos`
@@ -56,7 +56,7 @@ Users with gauge-staked LP could not realize accrued rewards.
 - Status: `Fixed/Resolved in report`
 - PR: [notional-v4/pull/28](https://github.com/notional-finance/notional-v4/pull/28)
 
-## [M-12] `PendlePTOracle._getPTRate` decimal assumption invalid
+## [M-12] `Pendle PTOracle._get PTRate` decimal assumption invalid
 - Severity: `Medium`
 - Root-cause: `oracle-decimals`
 - Impact: `value-mispricing`
@@ -134,7 +134,7 @@ Pools containing native ETH became unsupported in certain valuation/withdraw pat
 ### Actual Fix
 - Status: `Fixed/Resolved in report`
 
-## [M-25] Revert in `getWithdrawRequestValue()` can brick account actions
+## [M-25] Revert in `get Withdraw Request Value()` can brick account actions
 - Severity: `Medium`
 - Root-cause: `error-handling`
 - Impact: `dos`

@@ -2,7 +2,7 @@
 
 - Count: 2
 
-## F-2026-14991 - depositTokenFromContract Cannot Pay Bridge Fees
+## F-2026-14991 - deposit Token From Contract Cannot Pay Bridge Fees
 - 嚴重度：Medium
 - Report source：Dexalot.pdf
 
@@ -15,7 +15,7 @@ Make depositTokenFromContractpayable and forward the value to depositToken. Reso
 ### 修補方式（實際）
 Fixed in fbe76ba: The issue has been resolved by making the following changes to the depositTokenFromContract function: Addedpayablemodifier: The function now accepts native currencyvia `msg.value`, allowing trusted contracts to include bridge fees withtheir deposit calls. Forwardmsg.valuetodepositToken: The internal call to depositToken nowincludes {value: `msg.value`}, ensuring that any native bridge fees sentby the trusted contract are properly forwarded through the depositflow to portfolioBridge.sendXChainMessage. function depositTokenFromContract(address `_from`, bytes32 `_symbol`, uint256 `_qu` antity) external payable override { require(trustedContracts[`msg.sender`], "P-`AOTC`-01"); this.depositToken{value: `msg.value`}(`_from`, `_symbol`, `_quantity`, portfolioB `ridge.getDefaultBridgeProvider()`); } 30
 
-## F-2026-15250 - Hub Chain OverLayer Supply Reduction After OFTTransfers Lead to supply() DoS
+## F-2026-15250 - Hub Chain Over Layer Supply Reduction After OFTTransfers Lead to supply() Do S
 - 嚴重度：High
 - Report source：Overlayer.pdf
 
@@ -33,7 +33,7 @@ Fixed in f55efce, the bridged supply is now stored separately in the totalBridge
 - Filter: `Severity in {Critical, Medium}` and explicit `Fixed/Resolved markers`
 - Source: `cyfrin/*.md`
 
-## [C-1] Missing `onlyInitializing` modifier on initialization functions for abstract contracts
+## [C-1] Missing `only Initializing` modifier on initialization functions for abstract contracts
 - Severity: `Critical`
 - Source report: `upgrade.md`
 
@@ -263,7 +263,7 @@ abstract contract CCTPSender is CCTPBase {
 
 **Cyfrin:** Verified.
 
-## [M-8] Unused parameter in address validation modifier SecuritizeOffRamp::addressNonZero
+## [M-8] Unused parameter in address validation modifier Securitize Off Ramp::address Non Zero
 - Severity: `Medium`
 - Source report: `bridge.md`
 
@@ -338,7 +338,7 @@ The unofficial package is declared as a dependency in `package.json` with `"worm
 
 \clearpage
 
-## [M-10] Use of `msg.sender` instead of `_msgSender()` prevents meta-transaction support
+## [M-10] Use of `msg.sender` instead of `_msg Sender()` prevents meta-transaction support
 - Severity: `Medium`
 - Source report: `bridge.md`
 
@@ -465,7 +465,7 @@ function validateLockedTokens(string memory investorId, uint256 value, IDSRegist
 
 **Cyfrin:** Verified.
 
-## [M-11] `USDCBridgeV2::_quoteBridge` hardcodes `msgValue=0` creating fee mismatch that bricks the USDC bridge when gas dropoff is configured
+## [M-11] `USDCBridge V2::_quote Bridge` hardcodes `msg Value=0` creating fee mismatch that bricks the USDC bridge when gas dropoff is configured
 - Severity: `Medium`
 - Source report: `bridgev2.md`
 
@@ -520,7 +520,7 @@ function _quoteBridge(uint16 _targetChain) private view returns (uint256 execFee
 
 **Cyfrin:** Verified. Call to `RelayInstructions::encodeGas` is now called with `msgValue` instead of hardcoding the value to`0`
 
-## [M-12] Permanent loss of DSTokens when bridging to non-EVM chains via the backward-compatible `SecuritizeBridge::bridgeDSTokens` due to missing target chain type validation
+## [M-12] Permanent loss of DSTokens when bridging to non-EVM chains via the backward-compatible `Securitize Bridge::bridge DSTokens` due to missing target chain type validation
 - Severity: `Medium`
 - Source report: `bridgev2.md`
 
@@ -557,7 +557,7 @@ No validation between steps 1 and 2 checks whether `_targetChain` corresponds to
 \clearpage
 ## Gas Optimization
 
-## [M-13] Bridging `DSToken` back-and-forth between chains causes `totalIssuance` cap to be reached, preventing further issuances and cross-chain transfers
+## [M-13] Bridging `DSToken` back-and-forth between chains causes `total Issuance` cap to be reached, preventing further issuances and cross-chain transfers
 - Severity: `Medium`
 - Source report: `cctpv2.md`
 
@@ -655,7 +655,7 @@ And in `USDCBridgeV2::sendUSDCCrossChainDeposit`
 
 **Cyfrin:** Verified.
 
-## [M-16] Follow function declaration solidity style guide in `BaseContract`
+## [M-16] Follow function declaration solidity style guide in `Base Contract`
 - Severity: `Medium`
 - Source report: `cctpv2.md`
 
@@ -746,7 +746,7 @@ At least there should be a way to change the maximum fee, it shouldn't be hard-c
 
 **Cyfrin:** Verified.
 
-## [M-18] No way to retrieve ETH sent with call to `SecuritizeBridge::receiveWormholeMessages`
+## [M-18] No way to retrieve ETH sent with call to `Securitize Bridge::receive Wormhole Messages`
 - Severity: `Medium`
 - Source report: `cctpv2.md`
 
@@ -763,7 +763,7 @@ At least there should be a way to change the maximum fee, it shouldn't be hard-c
 
 **Cyfrin:** Verified.
 
-## [M-19] Refactor `SecuritizeBridge::bridgeDSTokens` and `quoteBridge` to use `internal` function saves 2 storage reads per bridging transaction
+## [M-19] Refactor `Securitize Bridge::bridge DSTokens` and `quote Bridge` to use `internal` function saves 2 storage reads per bridging transaction
 - Severity: `Medium`
 - Source report: `cctpv2.md`
 
@@ -795,7 +795,7 @@ The same optimization should also be applied to `USDCBridgeV2::sendUSDCCrossChai
 
 **Cyfrin:** Verified.
 
-## [M-20] Refactor `SecuritizeBridge::validateLockedTokens` to take `dsServiceConsumer` as input parameter
+## [M-20] Refactor `Securitize Bridge::validate Locked Tokens` to take `ds Service Consumer` as input parameter
 - Severity: `Medium`
 - Source report: `cctpv2.md`
 
@@ -813,7 +813,7 @@ Reading from storage is expensive; instead:
 
 **Cyfrin:** Verified.
 
-## [M-21] Remove unused function `USDCBridgeV2::_redeemUSDC`
+## [M-21] Remove unused function `USDCBridge V2::_redeem USDC`
 - Severity: `Medium`
 - Source report: `cctpv2.md`
 
@@ -898,7 +898,7 @@ Also consider changing `removeBridgeAddress` to delete from `chainIdToCCTPDomain
 
 **Cyfrin:** Verified.
 
-## [M-24] Upgradeable contracts should call `_disableInitializers` in constructor
+## [M-24] Upgradeable contracts should call `_disable Initializers` in constructor
 - Severity: `Medium`
 - Source report: `cctpv2.md`
 
@@ -919,7 +919,7 @@ Affected contracts:
 
 **Cyfrin:** Verified.
 
-## [M-25] Use `addressNotZero` modifier on `USDCBridgeV2::setBridgeAddress`
+## [M-25] Use `address Not Zero` modifier on `USDCBridge V2::set Bridge Address`
 - Severity: `Medium`
 - Source report: `cctpv2.md`
 
@@ -934,7 +934,7 @@ Affected contracts:
 
 **Cyfrin:** Verified.
 
-## [M-26] Use `SafeERC20` approval and transfer functions instead of standard IERC20 functions
+## [M-26] Use `Safe ERC20` approval and transfer functions instead of standard IERC20 functions
 - Severity: `Medium`
 - Source report: `cctpv2.md`
 
@@ -953,7 +953,7 @@ bridge/USDCBridgeV2.sol
 
 **Cyfrin:** Verified.
 
-## [M-27] Use `targetAddress` instead of `bridgeAddresses[targetChain]` for check in `SecuritizeBridge::bridgeDSTokens`
+## [M-27] Use `target Address` instead of `bridge Addresses[target Chain]` for check in `Securitize Bridge::bridge DSTokens`
 - Severity: `Medium`
 - Source report: `cctpv2.md`
 
@@ -1055,7 +1055,7 @@ Fixed in commit [1e25f8c](https://github.com/cryptoartcom/cryptoart-smart-contra
 
 **Cyfrin:** Verified.
 
-## [M-32] `BridgeableTokenP::getMaxDebitableAmount` doesn't account for isolate mode, returning inflated values
+## [M-32] `Bridgeable Token P::get Max Debitable Amount` doesn't account for isolate mode, returning inflated values
 - Severity: `Medium`
 - Source report: `parallel3.1.md`
 
@@ -1119,7 +1119,7 @@ function getMaxDebitableAmount() external view returns (uint256) {
 
 \clearpage
 
-## [M-33] `IBridgeableTokenP::swapLzTokenToPrincipalToken` interface declares a `uint256` return value but `BridgeableTokenP::swapLzTokenToPrincipalToken` returns nothing, breaking external integrations
+## [M-33] `IBridgeable Token P::swap Lz Token To Principal Token` interface declares a `uint256` return value but `Bridgeable Token P::swap Lz Token To Principal Token` returns nothing, breaking external integrations
 - Severity: `Medium`
 - Source report: `parallel3.1.md`
 
@@ -1165,7 +1165,7 @@ function swapLzTokenToPrincipalToken(address _to, uint256 _amount) external;
 
 **Cyfrin:** Verified. `BridgeableTokenP::swapLzTokenToPrincipalToken` now returns the amount of `principalToken` actually minted.
 
-## [M-35] Use `SafeERC20` approval and transfer functions instead of standard IERC20 functions for `liquidityToken`
+## [M-35] Use `Safe ERC20` approval and transfer functions instead of standard IERC20 functions for `liquidity Token`
 - Severity: `Medium`
 - Source report: `ramp.md`
 
@@ -1240,7 +1240,7 @@ The problem is that block production rates vary dramatically across these chains
 
 **Cyfrin:** Verified.
 
-## [M-37] High centralization risk in `STBL_USST::bridgeBurn`
+## [M-37] High centralization risk in `STBL_USST::bridge Burn`
 - Severity: `Medium`
 - Source report: `stbl.md`
 
@@ -1342,7 +1342,7 @@ Fixed in commit [cb00843](https://github.com/SyntetikaLabs/monorepo/commit/cb008
 
 **Cyfrin:** Verified.
 
-## [M-39] Decimal mismatch in `BasisTradeTailor:transferHypeToCore` causes precision loss
+## [M-39] Decimal mismatch in `Basis Trade Tailor:transfer Hype To Core` causes precision loss
 - Severity: `Medium`
 - Source report: `update.md`
 
@@ -1659,7 +1659,7 @@ Fixed in commit [b567696](https://github.com/worldliberty/usd1-protocol/blob/b56
 
 **Cyfrin:** Verified.
 
-## [M-42] `_receiverGas` check excludes minimum acceptable value
+## [M-42] `_receiver Gas` check excludes minimum acceptable value
 - Severity: `Medium`
 - Source report: `yieldfi.md`
 
@@ -1683,7 +1683,7 @@ Same applies to the call [`Bridge::setMIN_RECEIVER_GAS`](https://github.com/Yiel
 
 **Cyfrin:** Verified.
 
-## [M-43] `BridgeCCIP.isL1` can be immutable
+## [M-43] `Bridge CCIP.is L1` can be immutable
 - Severity: `Medium`
 - Source report: `yieldfi.md`
 
@@ -1696,7 +1696,7 @@ Consider making `BridgeCCIP.isL1` immutable.
 
 **Cyfrin:** Verified.
 
-## [M-44] Access to `LockBox::unlock` doesn't follow principle of least privilege
+## [M-44] Access to `Lock Box::unlock` doesn't follow principle of least privilege
 - Severity: `Medium`
 - Source report: `yieldfi.md`
 
@@ -1750,7 +1750,7 @@ This introduces an inconsistency: if `BridgeCCIP.router` is changed, the contrac
 
 **Cyfrin:** Verified. `router` removed and `i_ccipRouter` used from the inherited contract.
 
-## [M-46] Hardcoded `extraArgs` violates CCIP best practices
+## [M-46] Hardcoded `extra Args` violates CCIP best practices
 - Severity: `Medium`
 - Source report: `yieldfi.md`
 
@@ -1778,7 +1778,7 @@ Client.EVM2AnyMessage memory evm2AnyMessage = Client.EVM2AnyMessage({
 
 **Cyfrin:** Verified. `extraArgs` is now passed as a parameter to the call.
 
-## [M-47] Hardcoded CCIP `feeToken` prevents LINK discount usage
+## [M-47] Hardcoded CCIP `fee Token` prevents LINK discount usage
 - Severity: `Medium`
 - Source report: `yieldfi.md`
 
@@ -1806,7 +1806,7 @@ This design choice simplifies implementation but has cost implications: CCIP off
 
 **Cyfrin:** Verified.
 
-## [M-48] Static `gasLimit` will result in overpayment
+## [M-48] Static `gas Limit` will result in overpayment
 - Severity: `Medium`
 - Source report: `yieldfi.md`
 

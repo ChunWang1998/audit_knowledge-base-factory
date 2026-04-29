@@ -4,7 +4,7 @@
 - 說明：本版為完整敘述，不做刪節號截斷
 - 筆數：2
 
-## F-2026-14977 - Token Pricing Assumes All Payment Tokens HaveSame Decimals And Price
+## F-2026-14977 - Token Pricing Assumes All Payment Tokens Have Same Decimals And Price
 - 嚴重度：High
 - Report source：Fabstir.pdf
 
@@ -17,7 +17,7 @@ Consider avoiding usage of fallback values. Consider reverting if pricing inunsu
 ### 修補方式（實際）
 Fixed in f614355: NodeRegistryWithModelsUpgradeable now enforces explicit per-tokenmodel pricing through modelTokenPricing[operator][modelId][token], and getModelPricing reverts on missing entries via `require(price > 0, "No model pricing")`. function `getModelPricing(address operator, bytes32 modelId, address token)` ex ternal view returns (uint256) { if (nodes[operator].operator == `address(0)`) return 0; uint256 price = modelTokenPricing[operator][modelId][token]; `require(price > 0, "No model pricing")`; return price; } Shared fallback paths based on a single stable value were removed fromactive pricing flow, and model session creation now depends on explicittoken-specific configuration.
 
-## F-2026-15254 - Use of IERC20.transfer() Instead ofSafeERC20.safeTransfer() in Refund Path
+## F-2026-15254 - Use of IERC20.transfer() Instead of Safe ERC20.safe Transfer() in Refund Path
 - 嚴重度：High
 - Report source：Fabstir.pdf
 
@@ -35,7 +35,7 @@ The raw IERC20.transfer call has been replaced with a low-level call thatcorrect
 - Filter: `Severity in {Critical, Medium}` and explicit `Fixed/Resolved markers`
 - Source: `cyfrin/*.md`
 
-## [M-1] To prevent duplicate ids in `_batchBurn`, enforce ascending order instead of nested `for` loops
+## [M-1] To prevent duplicate ids in `_batch Burn`, enforce ascending order instead of nested `for` loops
 - Severity: `Medium`
 - Source report: `cryptoart.md`
 
@@ -76,7 +76,7 @@ Fixed in commit [3c39fb8](https://github.com/cryptoartcom/cryptoart-smart-contra
 
 \clearpage
 
-## [M-2] Deploy script `UpdateParallelizer.ts` does not handle facet removal case
+## [M-2] Deploy script `Update Parallelizer.ts` does not handle facet removal case
 - Severity: `Medium`
 - Source report: `parallel3.1.md`
 
@@ -90,7 +90,7 @@ case for `Remove` is missing.  This could lead to deleted selectors being presen
 
 **Cyfrin:** Verified. `UpdateParallelizer.ts` now accounts for the case when removing selectors from the old facet.
 
-## [M-3] `BasisTradeTailor` is ERC-165 non compliant
+## [M-3] `Basis Trade Tailor` is ERC-165 non compliant
 - Severity: `Medium`
 - Source report: `trade.md`
 

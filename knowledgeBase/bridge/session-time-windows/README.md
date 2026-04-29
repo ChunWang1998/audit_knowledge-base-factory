@@ -2,7 +2,7 @@
 
 - Count: 4
 
-## F-2026-14911 - proofInterval Validated as Token Count but Used asSeconds in Timeout Calculation
+## F-2026-14911 - proof Interval Validated as Token Count but Used as Seconds in Timeout Calculation
 - 嚴重度：Medium
 - Report source：Fabstir.pdf
 
@@ -15,7 +15,7 @@ Add a separate minTokensPerProof field for time-based timeout logic, keeping pro
 ### 修補方式（實際）
 Fixed in 8893036: Timeout semantics were separated from token-per-proof requirements byintroducing proofTimeoutWindow as an explicit time-based parameter insession configuration and storage. uint256 proofTimeoutWindow; 32 Validation now enforces bounded timeout values (`MIN_PROOF_TIMEOUT` to `MAX_PROOF_TIMEOUT`), while proof token requirements remain validated throughproofInterval and `MIN_PROVEN_TOKENS`. require( params.proofTimeoutWindow >= `MIN_PROOF_TIMEOUT` && params.proofTime outWindow <= `MAX_PROOF_TIMEOUT`, "Invalid proof timeout window" ); triggerSessionTimeout now evaluates abandonment using lastProofTime + proofTimeoutWindow (with `DEFAULT_PROOF_TIMEOUT` fallback for legacy sessions),eliminating the prior coupling of timeout behavior to token-countconfiguration. uint256 timeoutWindow = session.proofTimeoutWindow > 0 ? session.proofTimeoutWindow : `DEFAULT_PROOF_TIMEOUT`; || (`block.timestamp` > session.lastProofTime + timeoutWindow); 33
 
-## F-2026-15144 - Dispute Window Calculated From Session Start TimeInstead of Last Proof Submission
+## F-2026-15144 - Dispute Window Calculated From Session Start Time Instead of Last Proof Submission
 - 嚴重度：Medium
 - Report source：Fabstir.pdf
 
@@ -28,7 +28,7 @@ Change the dispute window reference from startTime to lastProofTime: if (`msg.se
 ### 修補方式（實際）
 Fixed in 596ea59: completeSessionJob now gates non-depositor completion using session.lastProofTime + disputeWindow instead of session.startTime + disputeWindow. 43 if (`msg.sender` != session.depositor) { require(`block.timestamp` >= session.lastProofTime + disputeWindow, "Must w ait dispute window"); } The dispute delay is therefore anchored to the most recent proofsubmission, preserving a review interval before host-triggered settlementregardless of total session duration. 44
 
-## F-2026-15257 - Early Cancel Fee Applied on Depositor-TriggeredTimeouts
+## F-2026-15257 - Early Cancel Fee Applied on Depositor-Triggered Timeouts
 - 嚴重度：Medium
 - Report source：Fabstir.pdf
 
@@ -41,7 +41,7 @@ Restrict early cancel fee application to voluntary session completion only.One a
 ### 修補方式（實際）
 The early cancellation fee condition now additionally checks that session.status == SessionStatus.Completed, ensuring the fee is only applied onvoluntary depositor cancellations and not on timeout paths where thesession status is TimedOut: // Early cancel fee: depositor cancels before any proofs (F202615257: not on timeout) if (completedBy == session.depositor && session.status == SessionStatus.Compl eted && session.proofs.length == 0 && minTokensFee > 0) { Revised commit: df1f2e4. 58
 
-## F-2025-14287 - DoS via Concurrent Joint Contributor Invites -Medium
+## F-2025-14287 - Do S via Concurrent Joint Contributor Invites - Medium
 - 嚴重度：Medium
 - Report source：RYT.pdf
 
@@ -516,7 +516,7 @@ The issue manifests under the following sequence of events:
 
 \clearpage
 
-## [M-8] Consider emitting event when synchronizing `lstLiabilityPrincipal`
+## [M-8] Consider emitting event when synchronizing `lst Liability Principal`
 - Severity: `Medium`
 - Source report: `manager.md`
 
@@ -529,7 +529,7 @@ However this function emits no events even though it changes `$$.lstLiabilityPri
 
 **Cyfrin:** Verified.
 
-## [M-9] Refactor `LidoStVaultYieldProvider::_syncExternalLiabilitySettlement` to eliminate `liabilityETH`
+## [M-9] Refactor `Lido St Vault Yield Provider::_sync External Liability Settlement` to eliminate `liability ETH`
 - Severity: `Medium`
 - Source report: `manager.md`
 
@@ -557,7 +557,7 @@ However this function emits no events even though it changes `$$.lstLiabilityPri
 
 \clearpage
 
-## [M-10] `PaymentSettler::claimAllPayouts` doesn't validate input `tokens` addresses are legitimate contracts before calling `adminClaimPayout` on them
+## [M-10] `Payment Settler::claim All Payouts` doesn't validate input `tokens` addresses are legitimate contracts before calling `admin Claim Payout` on them
 - Severity: `Medium`
 - Source report: `pledge.md`
 
@@ -738,7 +738,7 @@ TokenBank.sol
 
 **Cyfrin:** Verified.
 
-## [M-13] `Prompt::finalizedAnswer` is never set
+## [M-13] `Prompt::finalized Answer` is never set
 - Severity: `Medium`
 - Source report: `protocol.md`
 
@@ -767,7 +767,7 @@ Fixed in commit [581a98d](https://github.com/Engage-Protocol/engage-protocol/com
 
 **Cyfrin:** Verified.
 
-## [M-14] Consider reverting in `RebasingLibrary` functions if rounding down to zero occurs
+## [M-14] Consider reverting in `Rebasing Library` functions if rounding down to zero occurs
 - Severity: `Medium`
 - Source report: `rebasing.md`
 

@@ -2,7 +2,7 @@
 
 - Count: 2
 
-## F-2026-15280 - Hardcoded Private Key Exposure in Test ScriptsEnables Unauthorized Account Control
+## F-2026-15280 - Hardcoded Private Key Exposure in Test Scripts Enables Unauthorized Account Control
 - 嚴重度：Medium
 - Report source：Fabstir.pdf
 
@@ -15,7 +15,7 @@ Immediate revocation/retirement of all exposed keypairs should beenforced.Verifi
 ### 修補方式（實際）
 Hardcoded private keys have been replaced with environment variablereferences across all affected test scripts; however, the original keyspersist in Git history and the associated accounts should be consideredpermanently compromised — key rotation and fund migration are stillrequired. Revised commit: df1f2e4. 60
 
-## F-2025-14485 - Lack of Limits and Delay in Forced WithdrawalParameter Updates - Medium
+## F-2025-14485 - Lack of Limits and Delay in Forced Withdrawal Parameter Updates - Medium
 - 嚴重度：Medium
 - Report source：BullBit.pdf
 
@@ -30,7 +30,7 @@ The BullBit team implemented upper bounds for feeAmount and minWithdrawAmount an
 - Filter: `Severity in {Critical, Medium}` and explicit `Fixed/Resolved markers`
 - Source: `cyfrin/*.md`
 
-## [M-1] Market pause flag not enforced by `ConditionalTokens::splitPosition`
+## [M-1] Market pause flag not enforced by `Conditional Tokens::split Position`
 - Severity: `Medium`
 - Source report: `clob.md`
 

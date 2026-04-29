@@ -17,7 +17,7 @@ Consider identifying and updating all testnet time constants to mainnetvalues as
 ### 修補方式（實際）
 Fixed in commit f9604f9. The codebase replaced the testnet-only timeconstants with production durations, setting `SUBSCRIPTION_PERIOD` and `REWARD_DURATION` to 30 days and defining `HOURS`/`DAY`/`MONTH`/`MAX_INACTIVE_PERIOD` using standard hour/day-based values to restore the intended subscriptionand rewards economics. 23
 
-## F-2025-14457 - Subscription Renewal Resets Timer Instead ofExtending Causing User Fund Loss
+## F-2025-14457 - Subscription Renewal Resets Timer Instead of Extending Causing User Fund Loss
 - 嚴重度：Medium
 - Report source：Acecoin.pdf
 
@@ -30,7 +30,7 @@ Consider extending the subscription when someone makes a payment,instead of rese
 ### 修補方式（實際）
 Fixed in c9d413a. Both `renewSubscription()` and `subscribeToLevel()` have beenprotected and now can only be executed when the main or levelsubscription is over: `renewSubscription()` function `renewSubscription()` external nonReentrant { … if (`isMainActive(userId)`) revert `SubscriptionAlreadyActive()`; } `subscribeToLevel()` function `subscribeToLevel(uint256 level)` external `validLevel(level)` nonReentr ant { … if (`isLevelActive(userId, level)`) revert `LevelAlreadySubscribed()`; } 26
 
-## F-2025-14480 - Missing State Validation Enables Re-Subscription toAn Active Level
+## F-2025-14480 - Missing State Validation Enables Re-Subscription to An Active Level
 - 嚴重度：Medium
 - Report source：Acecoin.pdf
 
@@ -43,7 +43,7 @@ It is recommended to explicitly prevent re-subscription to an already activeleve
 ### 修補方式（實際）
 Fixed in c9d413a. The protection against the re-subscription to the samelevel has been implemented in the `subscribeToLevel()` function as follows: function `subscribeToLevel(uint256 level)` external `validLevel(level)` nonReent rant { … if (`isLevelActive(userId, level)`) revert `LevelAlreadySubscribed()`; } 44
 
-## F-2025-14490 - Team Rewards Accumulate Without Required ActiveStake
+## F-2025-14490 - Team Rewards Accumulate Without Required Active Stake
 - 嚴重度：High
 - Report source：Acecoin.pdf
 
@@ -56,7 +56,7 @@ Add a check for an active stake in `_processTeamRewards`(): function `_processTe
 ### 修補方式（實際）
 Fixed in commit f9604f9. The codebase added an explicit active-stakerequirement in `_processTeamRewards`() by checking whether the referrer hasat least one active stake (slot 0 or slot 1) before accumulating teamrewards, aligning reward accrual with the documented “active stakerequired” requirement.
 
-## F-2026-14510 - Unimplemented pendingReward State VariableResults in Dead Code and Potential Reward Accounting Issues
+## F-2026-14510 - Unimplemented pending Reward State Variable Results in Dead Code and Potential Reward Accounting Issues
 - 嚴重度：Medium
 - Report source：Acecoin.pdf
 
@@ -69,7 +69,7 @@ It is recommended to: consider the system redesign and implementation of the pro
 ### 修補方式（實際）
 Fixed in 1829f31. The redundant pendingReward variable was removed fromthe codebase. 60
 
-## F-2026-16037 - Auto-Swap Reverts During Sell Execution Can DenyUser Exits
+## F-2026-16037 - Auto-Swap Reverts During Sell Execution Can Deny User Exits
 - 嚴重度：Medium
 - Report source：Knoxnet.pdf
 
@@ -82,7 +82,7 @@ The tax-processing path should be decoupled from the user sell path.External rou
 ### 修補方式（實際）
 Fixed inc20e980: In KnoxNet, the auto-swap path has been isolated from the user sell flowby wrapping the external router calls in try/catch and returning on failureinstead of propagating a revert. The swapExactTokensForETHSupportingFeeOnTransferTokens call and the optional addLiquidityETH call no longer cause the enclosing sell transaction to failwhen the auto-swap path is temporarily invalid. if (`_shouldApplyTax`(sender, recipient)) { amountReceived = `_applyTax`(sender, recipient, amount); if (`_shouldAutoSwap`(recipient)) `_autoSwapBack`(amount); } function `_autoSwapBack`(uint256 amount) internal swapping { // … try 42 `router.swapExactTokensForETHSupportingFeeOnTransferTokens( swapTokens, 0, path, address(this)`, `block.timestamp` + `ROUTER_DEADLINE_SECONDS` ) {} catch { return; try router.addLiquidityETH{value: amountETHLiquidity}( `address(this)`, liquidityTokensToLiquify, minToken, minETH, liquidityTaxReceiver, `block.timestamp` + `ROUTER_DEADLINE_SECONDS` ) returns (uint256, uint256 ethUsed, uint256) { accumulatedLiquidityTokens -= liquidityTokensToLiquify; addedLiquidityTokens = liquidityTokensToLiquify; addedLiquidityETH = ethUsed; } catch { // skip liquidity addition on failure; tokens + `ETH` remain in contract } } 43
 
-## F-2026-15022 - Owner Rights Can Be Renounced While Contract IsPaused Permanently Locking Transfer
+## F-2026-15022 - Owner Rights Can Be Renounced While Contract Is Paused Permanently Locking Transfer
 - 嚴重度：Medium
 - Report source：Node Meta.pdf
 
@@ -95,7 +95,7 @@ Introduce a proper validation in the `renounceOwnership()` function to ensureown
 ### 修補方式（實際）
 Fixed in 318db5a, the pause state is now checked in the `renounceOwner()` toprevent calling function once the contract is paused: function `renounceOwnership()` public onlyOwner { if (`_paused`) revert `SYS_DISABLED`(); } 27
 
-## F-2026-15229 - Cooldown Timer Reset on Repeated Calls Leads toExtended Staking on Previously Queued Assets
+## F-2026-15229 - Cooldown Timer Reset on Repeated Calls Leads to Extended Staking on Previously Queued Assets
 - 嚴重度：Medium
 - Report source：Overlayer.pdf
 
@@ -108,7 +108,7 @@ The following remediation options address the timer-reset behavior atdifferent l
 ### 修補方式（實際）
 Fixed in d07a0a1, the cooldown functionality was removed. TheStakedOverlayerWrap vault now operates solely under the original `ERC` 4626 flow. This allows users to withdraw their assets and rewardsimmediately, without any time restriction. 20
 
-## F-2025-13597 - O -By-One Error in`_exceedsMaxClaimablePeriods()` Allows Claiming One Extra PeriodBeyond Con gured Maximum
+## F-2025-13597 - O -By-One Error in`_exceeds Max Claimable Periods()` Allows Claiming One Extra Period Beyond Con gured Maximum
 - 嚴重度：Medium
 - Report source：Vechain Foundation.pdf
 
@@ -121,7 +121,7 @@ Change the comparison from > to >= on `_exceedsMaxClaimablePeriods`() function t
 ### 修補方式（實際）
 The finding is fixed in commit hash 5f2e9cc after changing the comparisonoperator from > (strict greater-than) to >= (greater-than-or-equal) in the `_exceedsMaxClaimablePeriods`() function. This corrects the off-by-one errorthat previously allowed users to claim rewards for one extra period beyondthe configured maximum. 39
 
-## F-2025-13723 - Permanent Phantom Stake Accumulation Due toMissing E ective Stake Cleanup on Re-delegation
+## F-2025-13723 - Permanent Phantom Stake Accumulation Due to Missing Effective Stake Cleanup on Re-delegation
 - 嚴重度：High
 - Report source：Vechain Foundation.pdf
 
@@ -604,7 +604,7 @@ Fixed in commit [9bbbcfc](https://github.com/suzaku-network/suzaku-core/pull/155
 
 **Cyfrin:** Verified.
 
-## [C-3] Adapter vault `_userWstETH` not cleared after redemption enables theft of other users' funds
+## [C-3] Adapter vault `_user Wst ETH` not cleared after redemption enables theft of other users' funds
 - Severity: `Critical`
 - Source report: `escrow.md`
 
@@ -747,7 +747,7 @@ The redeem flow also now burns shares after `processRedemption` so the `wstETH` 
 \clearpage
 ## High Risk
 
-## [C-4] Circular slippage protection in `SablierLidoAdapter::_wstETHToWeth` enables sandwich attacks on adapter vault unstaking
+## [C-4] Circular slippage protection in `Sablier Lido Adapter::_wst ETHTo Weth` enables sandwich attacks on adapter vault unstaking
 - Severity: `Critical`
 - Source report: `escrow.md`
 
@@ -975,7 +975,7 @@ function unstakeTokensViaAdapter(uint256 vaultId, uint256 minEthOut) external;
 
 \clearpage
 
-## [C-5] Attacker can make pledge on behalf of users if those users have approved `PledgeManager` to spend their tokens
+## [C-5] Attacker can make pledge on behalf of users if those users have approved `Pledge Manager` to spend their tokens
 - Severity: `Critical`
 - Source report: `pledge.md`
 
@@ -1281,7 +1281,7 @@ require(order.expiration == 0 || order.expiration > block.timestamp, "expired");
 
 **Cyfrin:** Verified.
 
-## [M-10] JR Tranche is susceptible to bankrun scenarios given that `SharesCooldown` finalization allows to bypass `minimumJrtSrtRatio` and first withdrawers from JR Tranche get a better cooldown and fees compared to late withdrawers
+## [M-10] JR Tranche is susceptible to bankrun scenarios given that `Shares Cooldown` finalization allows to bypass `minimum Jrt Srt Ratio` and first withdrawers from JR Tranche get a better cooldown and fees compared to late withdrawers
 - Severity: `Medium`
 - Source report: `cooldown.md`
 
@@ -1431,7 +1431,7 @@ The goal is to disincentivize first withdrawers (when `coverage` is high) from w
 
 **Cyfrin:** Verified. Instant finalizations revert when the shares to be redeemed exceed the maximum redeemable shares on the underlying Tranche; The maximum redeemable shares account for the `minimumJrtSrtRatio` on the JRT.
 
-## [M-11] Gas optimization for `getVaults` function
+## [M-11] Gas optimization for `get Vaults` function
 - Severity: `Medium`
 - Source report: `core.md`
 
@@ -1493,7 +1493,7 @@ Fixed in commit [59a0109](https://github.com/suzaku-network/suzaku-core/commit/5
 
 **Cyfrin:** Verified.
 
-## [M-12] Historical reward loss due to `NodeId` reuse in `AvalancheL1Middleware`
+## [M-12] Historical reward loss due to `Node Id` reuse in `Avalanche L1Middleware`
 - Severity: `Medium`
 - Source report: `core.md`
 
@@ -1702,7 +1702,7 @@ Fixed in commit [2a88616](https://github.com/suzaku-network/suzaku-core/pull/155
 
 **Cyfrin:** Verified.
 
-## [M-13] Incorrect inclusion of removed nodes in `_requireMinSecondaryAssetClasses` during `forceUpdateNodes`
+## [M-13] Incorrect inclusion of removed nodes in `_require Min Secondary Asset Classes` during `force Update Nodes`
 - Severity: `Medium`
 - Source report: `core.md`
 
@@ -1827,7 +1827,7 @@ Fixed in commit [91ae0e3](https://github.com/suzaku-network/suzaku-core/pull/155
 
 **Cyfrin:** Verified.
 
-## [M-14] Incorrect vault status determination in `MiddlewareVaultManager`
+## [M-14] Incorrect vault status determination in `Middleware Vault Manager`
 - Severity: `Medium`
 - Source report: `core.md`
 
@@ -1862,7 +1862,7 @@ Fixed in commit [9bbbcfc](https://github.com/suzaku-network/suzaku-core/pull/155
 
 **Cyfrin:** Verified.
 
-## [M-15] Insufficient update window validation can cause denial of service in `forceUpdateNodes`
+## [M-15] Insufficient update window validation can cause denial of service in `force Update Nodes`
 - Severity: `Medium`
 - Source report: `core.md`
 
@@ -1932,7 +1932,7 @@ Fixed in commit [4f9d52a](https://github.com/suzaku-network/suzaku-core/pull/155
 
 **Cyfrin:** Verified.
 
-## [M-16] Insufficient validation in `AvalancheL1Middleware::removeOperator` can create permanent validator lockup
+## [M-16] Insufficient validation in `Avalanche L1Middleware::remove Operator` can create permanent validator lockup
 - Severity: `Medium`
 - Source report: `core.md`
 
@@ -2669,7 +2669,7 @@ In `is_vacant`, we check whether the current time is greater than the expiration
 
 **Cyfrin:** Verified.
 
-## [M-21] Meta transactions will not work due to direct msg.sender usage in validateLockedTokens
+## [M-21] Meta transactions will not work due to direct msg.sender usage in validate Locked Tokens
 - Severity: `Medium`
 - Source report: `dstokenswap.md`
 
@@ -2891,7 +2891,7 @@ In `exitWithinGracePeriod`, use `min(shareBalance, _userDeposits[vaultId][msg.se
 
 **Cyfrin:** Verified.
 
-## [M-24] `PledgeManager::refundTokens` doesn't decrement `tokensSold` when pledge hasn't concluded, preventing pledge from reaching its funding goal
+## [M-24] `Pledge Manager::refund Tokens` doesn't decrement `tokens Sold` when pledge hasn't concluded, preventing pledge from reaching its funding goal
 - Severity: `Medium`
 - Source report: `pledge.md`
 
@@ -2941,7 +2941,7 @@ In `exitWithinGracePeriod`, use `min(shareBalance, _userDeposits[vaultId][msg.se
 
 **Cyfrin:** Verified.
 
-## [M-26] `AccountableOpenTerm` rate publish/rollback does not refresh delinquency status
+## [M-26] `Accountable Open Term` rate publish/rollback does not refresh delinquency status
 - Severity: `Medium`
 - Source report: `pr50.md`
 
@@ -2956,7 +2956,7 @@ In `exitWithinGracePeriod`, use `min(shareBalance, _userDeposits[vaultId][msg.se
 
 **Cyfrin:** Verified. `_updateDelinquentStatus()` now called from both `publishRate()` and `rollbackRate()`.
 
-## [M-27] `AccountableYield::repay` vs `publishRate` transaction ordering can undo repayment accounting
+## [M-27] `Accountable Yield::repay` vs `publish Rate` transaction ordering can undo repayment accounting
 - Severity: `Medium`
 - Source report: `pr50.md`
 
@@ -2999,7 +2999,7 @@ Consider adding a check in `publish()` to reject already-stale requests, e.g. `r
 
 **Cyfrin:** Verified.
 
-## [M-29] Cancelling a later-batch request in `AccountableOpenTerm` can delay earlier withdrawals
+## [M-29] Cancelling a later-batch request in `Accountable Open Term` can delay earlier withdrawals
 - Severity: `Medium`
 - Source report: `pr50.md`
 
@@ -3156,7 +3156,7 @@ function test_cancelFromFutureBatch_canDelayEarlierBatchProcessing() public {
 
 **Cyfrin:** Verified. Cancellation now subtracts shares from the correct batch(es) via per-controller batch tracking.
 
-## [M-30] In `pUSDeDepositor::deposit_viaSwap`, using `block.timestamp` in swap deadline is not very effective
+## [M-30] In `p USDe Depositor::deposit_via Swap`, using `block.timestamp` in swap deadline is not very effective
 - Severity: `Medium`
 - Source report: `predeposit.md`
 
@@ -3288,7 +3288,7 @@ Fixed in commit [4e56c11](https://github.com/Engage-Protocol/engage-protocol/com
 
 **Cyfrin:** Verified.
 
-## [M-32] Game creator can call `TriviaChoicePrompt::revealSolutions` before the `reactionDeadline` or end of game, griefing players from submitting answers while still retaining player entry fees
+## [M-32] Game creator can call `Trivia Choice Prompt::reveal Solutions` before the `reaction Deadline` or end of game, griefing players from submitting answers while still retaining player entry fees
 - Severity: `Medium`
 - Source report: `protocol.md`
 
@@ -3355,7 +3355,7 @@ Fixed in commit [5902894](https://github.com/Engage-Protocol/engage-protocol/com
 
 **Cyfrin:** Verified.
 
-## [M-34] Return fast in `ComplianceServiceRegulated::checkHoldUp` if platform wallet
+## [M-34] Return fast in `Compliance Service Regulated::check Hold Up` if platform wallet
 - Severity: `Medium`
 - Source report: `rebasing.md`
 
@@ -3392,7 +3392,7 @@ Fixed in commit [5902894](https://github.com/Engage-Protocol/engage-protocol/com
 
 **Cyfrin:** Verified.
 
-## [M-35] Missing signature deadline for `GlobalRegistryService::executePreApprovedTransaction`
+## [M-35] Missing signature deadline for `Global Registry Service::execute Pre Approved Transaction`
 - Severity: `Medium`
 - Source report: `registry.md`
 
@@ -3409,7 +3409,7 @@ Fixed in commit [5902894](https://github.com/Engage-Protocol/engage-protocol/com
 
 \clearpage
 
-## [M-36] Mismatching variable naming for `Metadata.depositBlock`
+## [M-36] Mismatching variable naming for `Metadata.deposit Block`
 - Severity: `Medium`
 - Source report: `stbl.md`
 
@@ -3468,7 +3468,7 @@ Fixed in commit [949cb4](https://github.com/Strata-Money/contracts-tranches/comm
 
 **Cyfrin:** Verified.
 
-## [M-41] NatSpec enhancements
+## [M-41] Nat Spec enhancements
 - Severity: `Medium`
 - Source report: `vesting.md`
 
@@ -3579,7 +3579,7 @@ But the call to `_status(b)` already checks `block.timestamp > b.resolveBy` and 
 
 **Cyfrin:** Verified.
 
-## [M-45] Missing vesting check in `PerpetualBond::setVestingPeriod`
+## [M-45] Missing vesting check in `Perpetual Bond::set Vesting Period`
 - Severity: `Medium`
 - Source report: `yieldfi.md`
 
@@ -3613,7 +3613,7 @@ This means the vesting period in `PerpetualBond` can be modified even while toke
 
 **Cyfrin:** Verified. `unvestedAmount` is now checked.
 
-## [M-46] Order not eligible at `eligibleAt`
+## [M-46] Order not eligible at `eligible At`
 - Severity: `Medium`
 - Source report: `yieldfi.md`
 
@@ -3632,7 +3632,7 @@ require(block.timestamp > order.eligibleAt, "!waitingPeriod");
 
 **Cyfrin:** Verified.
 
-## [M-47] Order read twice in `Manager::executeOrder`
+## [M-47] Order read twice in `Manager::execute Order`
 - Severity: `Medium`
 - Source report: `yieldfi.md`
 

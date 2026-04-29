@@ -3,7 +3,7 @@
 - Count: `4`
 - Source report: `Beraborrow.pdf`
 
-## [M-10] InternalizeDonations will never work for asset token
+## [M-10] Internalize Donations will never work for asset token
 - Severity: `Medium`
 - Root-cause: `accounting-invariant`
 - Impact: `locked-funds`, `functional-break`
@@ -17,7 +17,7 @@ For the main asset, real balance can be near zero because funds are staked exter
 - Status: `Fixed/Resolved in report`
 - PR: [blockend/pull/176](https://github.com/Beraborrowofficial/blockend/pull/176)
 
-## [M-11] InfraredCollateralVault::rebalance() can DoS protocol
+## [M-11] Infrared Collateral Vault::rebalance() can Do S protocol
 - Severity: `Medium`
 - Root-cause: `validation-missing`
 - Impact: `dos`

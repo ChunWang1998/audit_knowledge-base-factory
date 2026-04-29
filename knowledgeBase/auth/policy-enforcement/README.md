@@ -2,7 +2,7 @@
 
 - Count: 11
 
-## F-2026-14935 - Auction Mode Bypass in bulkTransferTokens AllowsTransfers During Active Auctions
+## F-2026-14935 - Auction Mode Bypass in bulk Transfer Tokens Allows Transfers During Active Auctions
 - 嚴重度：Medium
 - Report source：Dexalot.pdf
 
@@ -15,7 +15,7 @@ The auction mode check should be added to the bulkTransferTokens loopbefore call
 ### 修補方式（實際）
 Fixed in 0e1526e: bulkTransferTokens now enforces the same auction-mode restriction as transferToken by adding: require(tokenDetailsMap[symbol].auctionMode == ITradePairs.AuctionMode.`OFF`, " P-`AUCT`-01"); The bypass path described in the issue is removed, and transfer behavioris now consistent between single-transfer and bulk-transfer flows forauction-restricted tokens. 28
 
-## F-2026-15965 - Incomplete Blacklist Enforcement in transferFromAllows Blacklisted Callers to Bypass Transfer Restrictions
+## F-2026-15965 - Incomplete Blacklist Enforcement in transfer From Allows Blacklisted Callers to Bypass Transfer Restrictions
 - 嚴重度：High
 - Report source：Knoxnet.pdf
 
@@ -28,7 +28,7 @@ Blacklist validation should be applied to all relevant actors in the transferpat
 ### 修補方式（實際）
 Fixed inc20e980: In KnoxNet, blacklist validation now covers all relevant actors in thetransfer path. The `_enforceTxLimit` function checks sender, recipient, and `_msgSender`, which prevents a blacklisted spender from using transferFrom 12 on behalf of a non-blacklisted holder and prevents transfers to blacklistedrecipients. The allowance-based blacklist bypass described in the findingis therefore no longer present. function `_enforceTxLimit`( address sender, address recipient, uint256 amount ) internal view { `require(blacklist[sender] == 0, "Sender blacklisted!")`; `require(blacklist[recipient] == 0, "Recipient blacklisted!")`; require(blacklist[`_msgSender`()] == 0, "Caller blacklisted!"); if (isTxLimitExempt[sender] || isTxLimitExempt[recipient]) return; TransferType transferType = `_classifyTransfer`(sender, recipient); uint256 maxTxAmount = transferType == TransferType.Sell ? `_maxSellTxAmount` : `_maxBuyTxAmount`; `require( amount <= maxTxAmount, "Amount exceeds the tx limit." )`;
 
-## F-2026-15974 - Blacklist Enforcement Bypassed When Recipient IsTransaction-Limit Exempt
+## F-2026-15974 - Blacklist Enforcement Bypassed When Recipient Is Transaction-Limit Exempt
 - 嚴重度：Medium
 - Report source：Knoxnet.pdf
 
@@ -52,7 +52,7 @@ The depositToken() function assumes that the Pool contract receivesexactly the a
 The deposit logic was updated to account for fee-on-transfer anddeflationary tokens by measuring the Poolʼs token balance before and afterthe transfer and crediting users only with the actual amount received incommit 322258e. function depositToken(uint256 amount) external whenNotPaused nonReentrant { require(usdcToken != address(0), Pool_Usdc0x()); require(amount > 0, Pool_AmountZero()); 29 uint256 balanceBefore = IERC20(usdcToken).balanceOf(address(this)); IERC20(usdcToken).safeTransferFrom(msg.sender, address(this), amount); uint256 balanceAfter = IERC20(usdcToken).balanceOf(address(this)); uint256 receivedAmount = balanceAfter - balanceBefore; require(receivedAmount > 0, Pool_NoTokenReceived()); uint256 userBalanceBefore = balances[msg.sender][usdcToken]; balances[msg.sender][usdcToken] += receivedAmount; emit Deposit(msg.sender, usdcToken, receivedAmount, balances[msg.sende r][usdcTo
 
 
-## F-2026-14500 -  nalizeForceWithdrawal Silently Burns User BalanceWhen Pool Has Insu cient Token Balance - High
+## F-2026-14500 -  nalize Force Withdrawal Silently Burns User Balance When Pool Has Insu cient Token Balance - High
 - 嚴重度：High
 - Report source：BullBit.pdf
 
@@ -63,7 +63,7 @@ The finalizeForceWithdrawal() function in the Pool contract contains avulnerabil
 The force-withdrawal mechanism was entirely removed from the contractby eliminating the initiateForceWithdrawal() and finalizeForceWithdrawal() functions in commit 322258e. 19 Evidences PoC
 
 
-## F-2025-13316 - Total Supply ERC-721 Enumeration Incompliance -Medium
+## F-2025-13316 - Total Supply ERC-721 Enumeration Incompliance - Medium
 - 嚴重度：Medium
 - Report source：Digital Oro International.pdf
 
@@ -74,7 +74,7 @@ The DOI_Gold and DOI_Token contracts are ERC-721 tokenimplementations. The contr
 The Finding is ﬁxed in the commit c19b227. The custom totalSupply function declarations are removed. 23
 
 
-## F-2025-13411 - Pausing Disables Allowance Revocation LeavingUsers Exposed During Emergencies - Medium
+## F-2025-13411 - Pausing Disables Allowance Revocation Leaving Users Exposed During Emergencies - Medium
 - 嚴重度：Medium
 - Report source：NEBA Token.pdf
 
@@ -85,7 +85,7 @@ The token intentionally pauses transfers via ERC20PausableUpgradeable. Inadditio
 The approve() function does not enforce an unpaused status nowwithin the new implementation. Revised commit: 1f432d1. 9
 
 
-## F-2025-14262 - Reusable Authentication Signatures Due to MissingNonce - Medium
+## F-2025-14262 - Reusable Authentication Signatures Due to Missing Nonce - Medium
 - 嚴重度：Medium
 - Report source：RYT-2.pdf
 
@@ -96,7 +96,7 @@ The DIDContract implements an authenticate function that verifies userauthentica
 Fixed in a695108, the authentication hash now includes the nonce which isincremented each time when the signature was used ensuring thatpreviously issued signatures become invalid: bytes32 messageHash = keccak256( abi.encodePacked( did, proof.verificationMethod, proof.timestamp, msg.sender, proof.nonce ) ); authNonces[msg.sender] = authNonces[msg.sender] + 1; 16
 
 
-## F-2025-14269 - Possibility of Burning Incorrect Token Because ofMutable Credential Contract Address - Medium
+## F-2025-14269 - Possibility of Burning Incorrect Token Because of Mutable Credential Contract Address - Medium
 - 嚴重度：Medium
 - Report source：RYT-2.pdf
 
@@ -107,7 +107,7 @@ The DIDContract and SoulboundCredential contracts are designed to operatetogethe
 Fixed in a695108, the new sbtAddr param was introduced in the revokeSBTCredential() function that is used as the target address of the SoulboundCredential contract: function revokeSBTCredential(address sbtAddr, uint256 tokenId) external whenNotPaused sbtRequired onlyAuthorizedIssuer { if (sbtAddr == address(0)) revert InvalidSBTAddress(); SoulboundCredential target = SoulboundCredential(sbtAddr); ... } 18
 
 
-## F-2025-14222 - Security Mechanisms Inoperative due toOpenZeppelin v5 Hook Incompatibility - High
+## F-2025-14222 - Security Mechanisms Inoperative due to Open Zeppelin v5 Hook Incompatibility - High
 - 嚴重度：High
 - Report source：RYT.pdf
 
@@ -117,7 +117,7 @@ The RYTStablecoin contract is an ERC20 token that implements regulatory andsecur
 ### 修補方式（實際）
 In file hash 851798d95a8fa81a37c950c9c2da0a4085a96f52e73d38eb2f044b56868adb21, thefix replaces the deprecated _beforeTokenTransfer hook with the correct _update override, ensuring that pausability and blocklisting checks areactually executed during all token transfers, mints, and burns. Evidences PoC #1
 
-## F-2026-15162 - Deactivated Model Still Usable for Sessions and NodeRegistration
+## F-2026-15162 - Deactivated Model Still Usable for Sessions and Node Registration
 - 嚴重度：Medium
 - Report source：Fabstir.pdf
 
@@ -135,7 +135,7 @@ Fixed in a49ef12: JobMarketplaceWithModelsUpgradeable now enforces model activat
 - Filter: `Severity in {Critical, Medium}` and explicit `Fixed/Resolved markers`
 - Source: `cyfrin/*.md`
 
-## [C-1] In `DelegatorFactory` new entity can be created for a blacklisted implementation
+## [C-1] In `Delegator Factory` new entity can be created for a blacklisted implementation
 - Severity: `Critical`
 - Source report: `core.md`
 
@@ -551,7 +551,7 @@ Fixed in commit [ccd5e7d](https://github.com/suzaku-network/suzaku-core/pull/155
 
 **Cyfrin:** Verified.
 
-## [M-4] `MintType` is almost never enforced
+## [M-4] `Mint Type` is almost never enforced
 - Severity: `Medium`
 - Source report: `cryptoart.md`
 
@@ -578,7 +578,7 @@ Fixed in commit [deaf964](https://github.com/cryptoartcom/cryptoart-smart-contra
 
 **Cyfrin:** Verified.
 
-## [M-5] Inconsistent storage location namespace root in `YieldManagerStorageLayout`
+## [M-5] Inconsistent storage location namespace root in `Yield Manager Storage Layout`
 - Severity: `Medium`
 - Source report: `manager.md`
 
@@ -603,7 +603,7 @@ Fixed in commit [deaf964](https://github.com/cryptoartcom/cryptoart-smart-contra
 
 **Cyfrin:** Verified.
 
-## [M-6] `DividendManager::distributePayout` records a new payout record increasing the current payout index for zero `payoutAmount`
+## [M-6] `Dividend Manager::distribute Payout` records a new payout record increasing the current payout index for zero `payout Amount`
 - Severity: `Medium`
 - Source report: `pledge.md`
 
@@ -642,7 +642,7 @@ function test_distributePayout_ZeroPayout() external {
 
 **Cyfrin:** Verified.
 
-## [M-7] `RemoraToken` transfers are bricked when `from` is not whitelisted, has sufficient tokens to transfer but no tokens locked
+## [M-7] `Remora Token` transfers are bricked when `from` is not whitelisted, has sufficient tokens to transfer but no tokens locked
 - Severity: `Medium`
 - Source report: `pledge.md`
 
@@ -885,7 +885,7 @@ function _verifyDocumentSignature(
 
 **Cyfrin:** Verified.
 
-## [M-9] In `RemoraToken::transfer`, `transferFrom` and `_exchangeAllowed` perform all checks for each user together in order to prevent unnecessary work
+## [M-9] In `Remora Token::transfer`, `transfer From` and `_exchange Allowed` perform all checks for each user together in order to prevent unnecessary work
 - Severity: `Medium`
 - Source report: `pledge.md`
 
@@ -923,7 +923,7 @@ function _verifyDocumentSignature(
 
 **Cyfrin:** Verified.
 
-## [M-10] Remove `decimals` from initial `RemoraToken` mint
+## [M-10] Remove `decimals` from initial `Remora Token` mint
 - Severity: `Medium`
 - Source report: `pledge.md`
 
@@ -996,7 +996,7 @@ Fixed in commit [2bba52d](https://github.com/Engage-Protocol/engage-protocol/com
 
 **Cyfrin:** Verified.
 
-## [M-12] `ComplianceServiceRegulated::getComplianceTransferableTokens` should call `IDSLockManager::getTransferableTokensForInvestor`
+## [M-12] `Compliance Service Regulated::get Compliance Transferable Tokens` should call `IDSLock Manager::get Transferable Tokens For Investor`
 - Severity: `Medium`
 - Source report: `rebasing.md`
 
@@ -1020,7 +1020,7 @@ Fixed in commit [2bba52d](https://github.com/Engage-Protocol/engage-protocol/com
 
 **Cyfrin:** Verified.
 
-## [M-13] `ComplianceServiceRegulated::preIssuanceCheck` allows issuance to non-accredited investors when `forceAccredited` or `forceAccreditedUS` is set, and allows issuance below regional minimum thresholds, violating compliance requirements
+## [M-13] `Compliance Service Regulated::pre Issuance Check` allows issuance to non-accredited investors when `force Accredited` or `force Accredited US` is set, and allows issuance below regional minimum thresholds, violating compliance requirements
 - Severity: `Medium`
 - Source report: `rebasing.md`
 
@@ -1077,7 +1077,7 @@ Hence `preIssuanceCheck` could result in users being issued an amount of tokens 
 
 **Cyfrin:** Verified.
 
-## [M-14] `ComplianceServiceRegulated` and its parent `ComplianceServiceWhitelisted` uses a chain of `initializer` modifiers when calling the `initialize`
+## [M-14] `Compliance Service Regulated` and its parent `Compliance Service Whitelisted` uses a chain of `initializer` modifiers when calling the `initialize`
 - Severity: `Medium`
 - Source report: `rebasing.md`
 
@@ -1128,7 +1128,7 @@ contract ComplianceServiceRegulated is ComplianceServiceWhitelisted {
 
 **Cyfrin:** Verified.
 
-## [M-15] Asymmetry enforcement between `TokenIssuer::registerInvestor`, `WalletRegistrar::registerWallet` and `SecuritizeSwap::_registerNewInvestor`
+## [M-15] Asymmetry enforcement between `Token Issuer::register Investor`, `Wallet Registrar::register Wallet` and `Securitize Swap::_register New Investor`
 - Severity: `Medium`
 - Source report: `rebasing.md`
 
@@ -1429,7 +1429,7 @@ compliance/WalletManager.sol
 
 **Cyfrin:** Verified.
 
-## [M-21] Refactor away duplicated code between `ComplianceService::newPreTransferCheck` and `preTransferCheck`
+## [M-21] Refactor away duplicated code between `Compliance Service::new Pre Transfer Check` and `pre Transfer Check`
 - Severity: `Medium`
 - Source report: `rebasing.md`
 
@@ -1454,7 +1454,7 @@ So to remove code duplication, `preTransferCheck` should call `newPreTransferChe
 
 **Cyfrin:** Verified.
 
-## [M-22] Remove useless function `ComplianceServiceRegulated::adjustTransferCounts`
+## [M-22] Remove useless function `Compliance Service Regulated::adjust Transfer Counts`
 - Severity: `Medium`
 - Source report: `rebasing.md`
 
@@ -1492,7 +1492,7 @@ So to remove code duplication, `preTransferCheck` should call `newPreTransferChe
 
 **Cyfrin:** Verified.
 
-## [M-23] Transferring all the investor balance from a non-us investor to a new us investor allows to bypass the `usInvestorLimit`
+## [M-23] Transferring all the investor balance from a non-us investor to a new us investor allows to bypass the `us Investor Limit`
 - Severity: `Medium`
 - Source report: `rebasing.md`
 
@@ -1629,7 +1629,7 @@ describe('US Investor Limit Bypass Vulnerability POC', function() {
 
 **Cyfrin:** Verified.
 
-## [M-24] Upgradeable contracts should call `_disableInitializers` in constructor
+## [M-24] Upgradeable contracts should call `_disable Initializers` in constructor
 - Severity: `Medium`
 - Source report: `rebasing.md`
 
@@ -1664,7 +1664,7 @@ Affected contracts:
 
 **Cyfrin:** Verified.
 
-## [M-25] `ComplianceServiceGlobalWhitelisted::getComplianceTransferableTokens` returns positive token amount for blacklisted users
+## [M-25] `Compliance Service Global Whitelisted::get Compliance Transferable Tokens` returns positive token amount for blacklisted users
 - Severity: `Medium`
 - Source report: `registry.md`
 
@@ -1691,7 +1691,7 @@ Affected contracts:
 \clearpage
 ## Gas Optimization
 
-## [M-26] `ComplianceServiceGlobalWhitelisted::newPreTransferCheck` and `preTransferCheck` allow blacklisted users to transfer tokens
+## [M-26] `Compliance Service Global Whitelisted::new Pre Transfer Check` and `pre Transfer Check` allow blacklisted users to transfer tokens
 - Severity: `Medium`
 - Source report: `registry.md`
 
@@ -1733,7 +1733,7 @@ function preTransferCheck(address _from, address _to, uint256 _value) public vie
 
 **Cyfrin:** Verified.
 
-## [M-27] Remove redundant calls to `EnumerableSet::contains`
+## [M-27] Remove redundant calls to `Enumerable Set::contains`
 - Severity: `Medium`
 - Source report: `registry.md`
 
@@ -1791,7 +1791,7 @@ Fixed in commit [86384fe](https://github.com/SyntetikaLabs/monorepo/commit/86384
 
 **Cyfrin:** Verified.
 
-## [M-30] Missing call to `_setGlobalWhitelist` in `Minter.sol`
+## [M-30] Missing call to `_set Global Whitelist` in `Minter.sol`
 - Severity: `Medium`
 - Source report: `syntetika.md`
 
@@ -1878,7 +1878,7 @@ Fixed in commit [3d1e596](https://github.com/SyntetikaLabs/monorepo/commit/3d1e5
 
 **Cyfrin:** Verified.
 
-## [M-33] Incorrect error message in `_checkNotBlacklisted`
+## [M-33] Incorrect error message in `_check Not Blacklisted`
 - Severity: `Medium`
 - Source report: `wlf.md`
 

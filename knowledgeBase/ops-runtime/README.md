@@ -2,7 +2,7 @@
 
 - Count: 4
 
-## F-2026-14863 - Missing Gas Tank Auto-Fill for Recipients in BulkTransfers
+## F-2026-14863 - Missing Gas Tank Auto-Fill for Recipients in Bulk Transfers
 - 嚴重度：Medium
 - Report source：Dexalot.pdf
 
@@ -39,7 +39,7 @@ GuardUpgradeable Removal in OpenZeppelin v5.5 [RESOLVED] Source: https://github.
 ### 修補方式（實際）
 Status: Fixed/Resolved in report.
 
-## L-13 - rescueOrphanFunds fails to reset vesting
+## L-13 - rescue Orphan Funds fails to reset vesting
 - 嚴重度：Low
 - Report source：Tori Finance.pdf
 
@@ -76,7 +76,7 @@ test/MockStakedUSDe.sol
 
 **Cyfrin:** Verified.
 
-## [M-2] Consider using `SafeCast` when downcasting amounts
+## [M-2] Consider using `Safe Cast` when downcasting amounts
 - Severity: `Medium`
 - Source report: `syntetika.md`
 

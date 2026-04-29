@@ -26,6 +26,20 @@ prompt:
 `PDF` rename: 根據pdf report 的標題重新命名pdf file, 以Customer 命名即可，例如Dlicom
 pdf to knowledgeBase: 將 PDF folder 中被fixed 的issue 整理出來放入 @knowledgeBase/ 中, 參考原本的內容來進行分類, 架構也參考原本的內容, 內容整理要完全參考pdf 內容, 要詳細
 
+## Bug bounty platform rank
+1. code4rena (可以提交兩次)
+https://code4rena.com/bounties
+https://code4rena.com/audits
+
+2. immunefi 
+https://immunefi.com/bug-bounty/?filter=language%3DSolidity
+
+3. Cantina (幾乎都deposit required)
+TODO: https://cantina.xyz/code/78a734d2-b460-4245-9c81-833487d6a339/overview
+
+4. HackenProof (要求的reputation 很高)
+
+5. sherlock (要先deposit 250U 進去!)
 
 ## Use knowledgebase to audit 
 根據 https://github.com/msitarzewski/agency-agents/blob/main/specialized/blockchain-security-auditor.md

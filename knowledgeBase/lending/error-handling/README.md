@@ -3,7 +3,7 @@
 - Count: `2`
 - Definition: error path handling is too strict or missing, causing avoidable reverts/system blockage.
 
-## [Notional][M-25] `getWithdrawRequestValue()` revert can brick account actions
+## [Notional][M-25] `get Withdraw Request Value()` revert can brick account actions
 - Severity: `Medium`
 - Source: [Issue #779](https://github.com/sherlock-audit/2025-06-notional-exponent-judging/issues/779)
 - Impact: `dos`
@@ -211,7 +211,7 @@ Fixed in commit [9ac7bf0](https://github.com/suzaku-network/suzaku-core/pull/155
 
 **Cyfrin:** Verified.
 
-## [C-4] `PaymentSettler` can change `stablecoin` but `RemoraToken` can't resulting in corrupted state with DoS for core functions
+## [C-4] `Payment Settler` can change `stablecoin` but `Remora Token` can't resulting in corrupted state with Do S for core functions
 - Severity: `Critical`
 - Source report: `pledge.md`
 
@@ -262,7 +262,7 @@ The simplest solution may be to remove `stablecoin` from `RemoraToken` completel
 
 \clearpage
 
-## [C-5] `PledgeManager::pledge`, `refundTokens` will revert due to overflow when `pricePerToken * numTokens > type(uint32).max`
+## [C-5] `Pledge Manager::pledge`, `refund Tokens` will revert due to overflow when `price Per Token * num Tokens > type(uint32).max`
 - Severity: `Critical`
 - Source report: `pledge.md`
 
@@ -391,7 +391,7 @@ As part of this change, the `PaymentSettler` contract must be responsible for co
 
 **Cyfrin:** Verified.
 
-## [C-7] An attacker can drain the entire protocol balance of sUSDe during the yield phase due to incorrect redemption accounting logic in `pUSDeVault::_withdraw`
+## [C-7] An attacker can drain the entire protocol balance of s USDe during the yield phase due to incorrect redemption accounting logic in `p USDe Vault::_withdraw`
 - Severity: `Critical`
 - Source report: `predeposit.md`
 
@@ -819,7 +819,7 @@ Fixed in commits [a2e353e](https://github.com/Engage-Protocol/engage-protocol/co
 
 **Cyfrin:** Verified.
 
-## [C-10] Instant withdrawals in priority pool can result in loss of funds for StakingProxy contract
+## [C-10] Instant withdrawals in priority pool can result in loss of funds for Staking Proxy contract
 - Severity: `Critical`
 - Source report: `stakingproxy.md`
 
@@ -1500,7 +1500,7 @@ contract MathTest is Test {
 \clearpage
 ## High Risk
 
-## [M-13] DelegationManager is incompatible with smart contract wallets with Approved hashes
+## [M-13] Delegation Manager is incompatible with smart contract wallets with Approved hashes
 - Severity: `Medium`
 - Source report: `DelegationFramework1.md`
 
@@ -1577,7 +1577,7 @@ Since DelegationManager rejects empty signatures before calling `isValidSignatur
 
 **Cyfrin:** Resolved.
 
-## [M-14] Missing zero length check in `AllowedMethodsEnforcer::getTermsInfo()`
+## [M-14] Missing zero length check in `Allowed Methods Enforcer::get Terms Info()`
 - Severity: `Medium`
 - Source report: `DelegationFramework1.md`
 
@@ -1774,7 +1774,7 @@ function test_transferFailsButSpentLimitIncreases() public {
 
 **Cyfrin:** Resolved. Restricted execution type to only `EXECTYPE_DEFAULT`
 
-## [M-16] Invalid `maxWithdraw()` check in `withdraw()`
+## [M-16] Invalid `max Withdraw()` check in `withdraw()`
 - Severity: `Medium`
 - Source report: `accountable.md`
 
@@ -1830,7 +1830,7 @@ index a64f47c..c8824bb 100644
 
 \clearpage
 
-## [M-17] `CompensationPriceFinder::getZeroForOne` may compute smaller effective prices than expected
+## [M-17] `Compensation Price Finder::get Zero For One` may compute smaller effective prices than expected
 - Severity: `Medium`
 - Source report: `angstrom.md`
 
@@ -1958,7 +1958,7 @@ Here, if the effective price is exactly equal to the end tick then execution wil
 
 **Cyfrin:** Verified. The outer conditional branch has been removed.
 
-## [M-18] `rewardGrowthOutsideX128` is not correctly initialized in `PoolRewards::updateAfterLiquidityAdd`
+## [M-18] `reward Growth Outside X128` is not correctly initialized in `Pool Rewards::update After Liquidity Add`
 - Severity: `Medium`
 - Source report: `angstrom.md`
 
@@ -2421,7 +2421,7 @@ In this case, execution will revert in `Math512Lib::div512by256` with `DivisorZe
 
 **Cyfrin:** Verified.
 
-## [M-22] `liquidityProviderWallet` is not set during initialization
+## [M-22] `liquidity Provider Wallet` is not set during initialization
 - Severity: `Medium`
 - Source report: `bridge.md`
 
@@ -2487,7 +2487,7 @@ bridge/USDCBridgeV2.sol
 
 **Cyfrin:** Verified.
 
-## [M-24] `Tranche::burnSharesAsFee` can be used to manipulate the exchange rate to cause withdrawals to revert for legitimate users
+## [M-24] `Tranche::burn Shares As Fee` can be used to manipulate the exchange rate to cause withdrawals to revert for legitimate users
 - Severity: `Medium`
 - Source report: `cooldown.md`
 
@@ -2684,7 +2684,7 @@ Fixed in commit [0e0d4ae](https://github.com/suzaku-network/suzaku-core/pull/155
 
 **Cyfrin:** Verified.
 
-## [M-27] DoS on stake accounting functions by bloating `operatorNodesArray` with irremovable nodes
+## [M-27] Do S on stake accounting functions by bloating `operator Nodes Array` with irremovable nodes
 - Severity: `Medium`
 - Source report: `core.md`
 
@@ -2975,7 +2975,7 @@ Fixed in commit [2fb0daf](https://github.com/suzaku-network/suzaku-core/commit/2
 
 \clearpage
 
-## [M-30] Rewards distribution DoS due to uncached secondary asset classes
+## [M-30] Rewards distribution Do S due to uncached secondary asset classes
 - Severity: `Medium`
 - Source report: `core.md`
 
@@ -3225,7 +3225,7 @@ Fixed in commit [001cf04](https://github.com/suzaku-network/suzaku-core/pull/155
 
 **Cyfrin:** Verified.
 
-## [M-32] Unclaimable rewards for removed vaults in `Rewards::claimRewards`
+## [M-32] Unclaimable rewards for removed vaults in `Rewards::claim Rewards`
 - Severity: `Medium`
 - Source report: `core.md`
 
@@ -3397,7 +3397,7 @@ Fixed in commit [a9f6aaa](https://github.com/suzaku-network/suzaku-core/pull/155
 
 **Cyfrin:** Verified.
 
-## [M-34] Wrong revert reason In `onSlash` functionality
+## [M-34] Wrong revert reason In `on Slash` functionality
 - Severity: `Medium`
 - Source report: `core.md`
 
@@ -3428,7 +3428,7 @@ Fixed in commit [b654dfb](https://github.com/suzaku-network/suzaku-core/commit/b
 \clearpage
 ## Gas Optimization
 
-## [M-35] Wrong value is returned in `upperLookupRecentCheckpoint`
+## [M-35] Wrong value is returned in `upper Lookup Recent Checkpoint`
 - Severity: `Medium`
 - Source report: `core.md`
 
@@ -3516,7 +3516,7 @@ Fixed in commit [d198969](https://github.com/suzaku-network/suzaku-core/pull/155
 
 **Cyfrin:** Verified.
 
-## [M-36] `IERC7160` specification requires `hasPinnedTokenURI` to revert for non-existent `tokenId`
+## [M-36] `IERC7160` specification requires `has Pinned Token URI` to revert for non-existent `token Id`
 - Severity: `Medium`
 - Source report: `cryptoart.md`
 
@@ -3546,7 +3546,7 @@ Fixed in commit [56d0e22](https://github.com/cryptoartcom/cryptoart-smart-contra
 
 **Cyfrin:** Verified.
 
-## [M-37] `IERC7160` specification requires `pinTokenURI` to revert for non-existent `tokenId`
+## [M-37] `IERC7160` specification requires `pin Token URI` to revert for non-existent `token Id`
 - Severity: `Medium`
 - Source report: `cryptoart.md`
 
@@ -3586,7 +3586,7 @@ Fixed in commit [0409ae4](https://github.com/cryptoartcom/cryptoart-smart-contra
 
 **Cyfrin:** Verified.
 
-## [M-38] In `tokenURI` avoid copying entire `_tokenURIs[tokenId]` from `storage` into `memory`
+## [M-38] In `token URI` avoid copying entire `_token URIs[token Id]` from `storage` into `memory`
 - Severity: `Medium`
 - Source report: `cryptoart.md`
 
@@ -3857,7 +3857,7 @@ if lamports_diff > 0 {
 
 **Cyfrin:** Verified.
 
-## [M-45] Users can reset the status of their `firstPurchase` on the `referralData` when the `stablecoin` doesn't revert on transfers to `address(0)`
+## [M-45] Users can reset the status of their `first Purchase` on the `referral Data` when the `stablecoin` doesn't revert on transfers to `address(0)`
 - Severity: `Medium`
 - Source report: `final.md`
 
@@ -3881,7 +3881,7 @@ Alternatively, acknowledge this issue and make sure the signers never generate a
 \clearpage
 ## Gas Optimization
 
-## [M-46] `YieldManager::fundYieldProvider` and `LidoStVaultYieldProvider::fundYieldProvider` don't enforce `isStakingPaused` and `isOssificationInitiated` allowing unsafe staking
+## [M-46] `Yield Manager::fund Yield Provider` and `Lido St Vault Yield Provider::fund Yield Provider` don't enforce `is Staking Paused` and `is Ossification Initiated` allowing unsafe staking
 - Severity: `Medium`
 - Source report: `manager.md`
 
@@ -3902,7 +3902,7 @@ Yield Providers can be paused by either:
 
 **Cyfrin:** Verified. `LidoStVaultYieldProvider::fundYieldProvider` now reverts if staking has been paused or if ossification has been initiated or completed.
 
-## [M-47] `YieldManager::unpauseStaking` uses stale `lstLiabilityPrincipal` causing DoS when external actor repays LST liability
+## [M-47] `Yield Manager::unpause Staking` uses stale `lst Liability Principal` causing Do S when external actor repays LST liability
 - Severity: `Medium`
 - Source report: `manager.md`
 
@@ -3924,7 +3924,7 @@ However it doesn't first sync `$$.lstLiabilityPrincipal` using `LidoStVaultYield
 
 **Cyfrin:** Verified.
 
-## [M-48] `YieldManager::withdrawLST` uses stale `lstLiabilityPrincipal` can cause temporary DoS when negative rebasing occurs
+## [M-48] `Yield Manager::withdraw LST` uses stale `lst Liability Principal` can cause temporary Do S when negative rebasing occurs
 - Severity: `Medium`
 - Source report: `manager.md`
 
@@ -3970,7 +3970,7 @@ The temporary DoS would resolve itself the next time an operation occurred that 
 
 **Cyfrin:** Verified. The [`userFunds` semantics change PR](https://github.com/Consensys/linea-monorepo/pull/1703), removes the need to sync `$$.lstLiabilityPrincipal` in `YieldManager::withdrawLST`. It is no longer used for a check.
 
-## [M-49] Consistently use `ErrorUtils::revertIfZeroAddress`
+## [M-49] Consistently use `Error Utils::revert If Zero Address`
 - Severity: `Medium`
 - Source report: `manager.md`
 
@@ -4063,7 +4063,7 @@ Additionally added commit [55fe25a](https://github.com/Consensys/linea-monorepo/
 
 **Cyfrin:** Verified.
 
-## [M-52] Incorrect yield accounting when `_payNodeOperatorFees` reverts in `LidoStVaultYieldProvider::reportYield`
+## [M-52] Incorrect yield accounting when `_pay Node Operator Fees` reverts in `Lido St Vault Yield Provider::report Yield`
 - Severity: `Medium`
 - Source report: `manager.md`
 
@@ -4083,7 +4083,7 @@ Furthermore, this behavior does **not** trigger a revert in situations where ins
 
 **Cyfrin:** Verified. Positive yield is now reported only when the total value held by the underlying `stVault` exceeds all liabilities, obligations, and fees. Payment of liabilities, obligations and fees is attempted each time `reportYield` is executed.
 
-## [M-53] `Getters::getCollateralSurplus` returns positive values even when `Surplus::processSurplus` is guaranteed to revert
+## [M-53] `Getters::get Collateral Surplus` returns positive values even when `Surplus::process Surplus` is guaranteed to revert
 - Severity: `Medium`
 - Source report: `parallel3.1.md`
 
@@ -4114,7 +4114,7 @@ Optionally, consider introducing a custom error (i.e. `SurplusNotProcessable`) i
 
 **Cyfrin:** Verified. `LibSurpluss::_computeCollateralSurplus` now reverts if `collateralRatio < surplusBufferRatio`.
 
-## [M-54] `RewardHandler` may revert due to receiving less than expected
+## [M-54] `Reward Handler` may revert due to receiving less than expected
 - Severity: `Medium`
 - Source report: `parallel3.1.md`
 
@@ -4359,7 +4359,7 @@ contract CyfrinRewardHandlerManagedTest is Fixture {
 
 **Cyfrin:** Verified. `amountOut` is now calculated from the actual balance instead of relying on the returned data from the Router.
 
-## [M-55] `DocumentManager::hasSignedDocs` incorrectly returns `true` when there are no documents to sign
+## [M-55] `Document Manager::has Signed Docs` incorrectly returns `true` when there are no documents to sign
 - Severity: `Medium`
 - Source report: `pledge.md`
 
@@ -4423,7 +4423,7 @@ contract DocumentManagerTest is UnitTestBase, DocumentManager {
 
 **Cyfrin:** Verified.
 
-## [M-56] Don't add duplicate `documentHash` to `DocumentManager::DocumentStorage::_docHashes` when overwriting via `_setDocument` as this causes panic revert when calling `_removeDocument`
+## [M-56] Don't add duplicate `document Hash` to `Document Manager::Document Storage::_doc Hashes` when overwriting via `_set Document` as this causes panic revert when calling `_remove Document`
 - Severity: `Medium`
 - Source report: `pledge.md`
 
@@ -4600,7 +4600,7 @@ It reverts with `[FAIL: EmptyDocument();` when calling `_removeDocument` at the 
 
 **Cyfrin:** Verified.
 
-## [M-59] Tokens that were locked when `lockUpTime > 0` will be impossible to unlock if `lockUpTime` is set to zero
+## [M-59] Tokens that were locked when `lock Up Time > 0` will be impossible to unlock if `lock Up Time` is set to zero
 - Severity: `Medium`
 - Source report: `pledge.md`
 
@@ -4628,7 +4628,7 @@ This invariant would be violated since the lockups would still be present but th
 
 **Cyfrin:** Verified.
 
-## [M-60] Use `SignatureChecker` library and optionally support `EIP7702` accounts which use their private key to sign
+## [M-60] Use `Signature Checker` library and optionally support `EIP7702` accounts which use their private key to sign
 - Severity: `Medium`
 - Source report: `pledge.md`
 
@@ -4671,7 +4671,7 @@ To support this scenario check out [this finding](https://solodit.remora-project
 
 **Cyfrin:** Verified.
 
-## [M-61] Use timestamp instead of uri length to test of existing document in `DocumentManager`
+## [M-61] Use timestamp instead of uri length to test of existing document in `Document Manager`
 - Severity: `Medium`
 - Source report: `pledge.md`
 
@@ -4689,7 +4689,7 @@ To support this scenario check out [this finding](https://solodit.remora-project
 
 \clearpage
 
-## [M-62] Consider removing redundant zero address check from `createYieldStrategy`
+## [M-62] Consider removing redundant zero address check from `create Yield Strategy`
 - Severity: `Medium`
 - Source report: `pr50.md`
 
@@ -4730,7 +4730,7 @@ function deploy(uint256 amount, bytes32 salt, bytes memory bytecode) internal re
 
 **Cyfrin:** Verified. Optimization also done for Open- and FixedTerm factories.
 
-## [M-63] Consider reverting in `publishedDataByBatchId` for invalid batch IDs
+## [M-63] Consider reverting in `published Data By Batch Id` for invalid batch IDs
 - Severity: `Medium`
 - Source report: `pr50.md`
 
@@ -4752,7 +4752,7 @@ function publishedDataByBatchId(uint256 id) external view returns (PublishedData
 \clearpage
 ## Gas Optimization
 
-## [M-64] Increasing `AccountableOpenTerm.loan.withdrawalPeriod` from `0` can cause withdrawals to become stuck
+## [M-64] Increasing `Accountable Open Term.loan.withdrawal Period` from `0` can cause withdrawals to become stuck
 - Severity: `Medium`
 - Source report: `pr50.md`
 
@@ -4778,7 +4778,7 @@ When transitioning from `withdrawalPeriod == 0` → `withdrawalPeriod > 0`, ensu
 
 **Cyfrin:** Verified. `acceptTerms` now reverts if the withdrawal period is increased from 0 and there's still queued shares.
 
-## [M-65] `pUSDeVault::maxDeposit` doesn't account for deposit pausing, in violation of EIP-4626 which can break protocols integrating with `pUSDeVault`
+## [M-65] `p USDe Vault::max Deposit` doesn't account for deposit pausing, in violation of EIP-4626 which can break protocols integrating with `p USDe Vault`
 - Severity: `Medium`
 - Source report: `predeposit.md`
 
@@ -4810,7 +4810,7 @@ function test_maxDeposit_WhenDepositsPaused() external {
 
 **Cyfrin:** Verified.
 
-## [M-66] `pUSDeVault::maxMint` doesn't account for mint pausing, in violation of EIP-4626 which can break protocols integrating with `pUSDeVault`
+## [M-66] `p USDe Vault::max Mint` doesn't account for mint pausing, in violation of EIP-4626 which can break protocols integrating with `p USDe Vault`
 - Severity: `Medium`
 - Source report: `predeposit.md`
 
@@ -4852,7 +4852,7 @@ function test_maxMint_WhenDepositsPaused() external {
 
 **Cyfrin:** Verified.
 
-## [M-67] `pUSDeVault::startYieldPhase` should not remove supported vaults from being supported or should prevent new supported vaults once in the yield phase
+## [M-67] `p USDe Vault::start Yield Phase` should not remove supported vaults from being supported or should prevent new supported vaults once in the yield phase
 - Severity: `Medium`
 - Source report: `predeposit.md`
 
@@ -4903,7 +4903,7 @@ Alternatively don't allow supported vaults to be added during the yield phase (a
 
 **Cyfrin:** Verified.
 
-## [M-68] `yUSDeVault` edge cases should be explicitly handled to prevent view functions from reverting
+## [M-68] `y USDe Vault` edge cases should be explicitly handled to prevent view functions from reverting
 - Severity: `Medium`
 - Source report: `predeposit.md`
 
@@ -4976,7 +4976,7 @@ While a subset of these reverts could be considered "due to other conditions tha
 
 \clearpage
 
-## [M-69] DoS of meta vault withdrawals during points phase if one vault is paused or attempted redemption exceeds the maximum
+## [M-69] Do S of meta vault withdrawals during points phase if one vault is paused or attempted redemption exceeds the maximum
 - Severity: `Medium`
 - Source report: `predeposit.md`
 
@@ -5148,7 +5148,7 @@ function test_redeemRequiredBaseAssetsDoS() public {
 
 **Cyfrin:** Verified.
 
-## [M-70] Duplicate vaults can be pushed to `assetsArr`
+## [M-70] Duplicate vaults can be pushed to `assets Arr`
 - Severity: `Medium`
 - Source report: `predeposit.md`
 
@@ -5243,7 +5243,7 @@ function test_duplicateVaults() public {
 
 **Cyfrin:** Verified.
 
-## [M-71] Remove unused return value from `pUSDeVault::stakeUSDe` and explicitly revert if `USDeAssets == 0`
+## [M-71] Remove unused return value from `p USDe Vault::stake USDe` and explicitly revert if `USDe Assets == 0`
 - Severity: `Medium`
 - Source report: `predeposit.md`
 
@@ -5254,7 +5254,7 @@ function test_duplicateVaults() public {
 
 **Cyfrin:** Verified.
 
-## [M-72] Value leakage due to pUSDe redemptions rounding against the protocol/yUSDe depositors
+## [M-72] Value leakage due to p USDe redemptions rounding against the protocol/y USDe depositors
 - Severity: `Medium`
 - Source report: `predeposit.md`
 
@@ -5650,7 +5650,7 @@ function convertToShares(uint256 assets) public view virtual override returns (u
 
 \clearpage
 
-## [M-73] `DefaultSession::assertResults` should revert if `proposedWinners`, `totalXPs` and `totalTimes` array lengths don't match
+## [M-73] `Default Session::assert Results` should revert if `proposed Winners`, `total XPs` and `total Times` array lengths don't match
 - Severity: `Medium`
 - Source report: `protocol.md`
 
@@ -5666,7 +5666,7 @@ Fixed in commit [aafd672](https://github.com/Engage-Protocol/engage-protocol/com
 
 **Cyfrin:** Verified.
 
-## [M-74] `MajorityChoicePrompt`, `SPBinaryPrompt` and `TriviaChoicePrompt` will not work correctly when used with different instances of `SessionManager`
+## [M-74] `Majority Choice Prompt`, `SPBinary Prompt` and `Trivia Choice Prompt` will not work correctly when used with different instances of `Session Manager`
 - Severity: `Medium`
 - Source report: `protocol.md`
 
@@ -5697,7 +5697,7 @@ Fixed in commits [4b151db](https://github.com/Engage-Protocol/engage-protocol/co
 
 **Cyfrin:** Verified.
 
-## [M-75] If zero xp is earned by all users, once game has concluded `SessionManager::claimRewards` panic reverts due to division by zero but game also can't be cancelled resulting in locked tokens
+## [M-75] If zero xp is earned by all users, once game has concluded `Session Manager::claim Rewards` panic reverts due to division by zero but game also can't be cancelled resulting in locked tokens
 - Severity: `Medium`
 - Source report: `protocol.md`
 
@@ -5740,7 +5740,7 @@ Fixed in commit [951a454](https://github.com/Engage-Protocol/engage-protocol/com
 
 **Cyfrin:** Verified.
 
-## [M-76] Zero `curvePriceWad` from rounding causes incorrect pricing or denial of service
+## [M-76] Zero `curve Price Wad` from rounding causes incorrect pricing or denial of service
 - Severity: `Medium`
 - Source report: `ramp.md`
 
@@ -5876,7 +5876,7 @@ function setPriceScaleFactor(uint256 newScaleFactor) external onlyRole(DEFAULT_A
 
 **Cyfrin:** Verified.
 
-## [M-77] `RegistryService::addWallet` should revert if the wallet being added has positive balance of `DSToken`
+## [M-77] `Registry Service::add Wallet` should revert if the wallet being added has positive balance of `DSToken`
 - Severity: `Medium`
 - Source report: `rebasing.md`
 
@@ -5906,7 +5906,7 @@ Alternatively another option is to register the existing tokens for the investor
 
 \clearpage
 
-## [M-78] Burn and seize functions can be DoS when investor has several wallets that they control
+## [M-78] Burn and seize functions can be Do S when investor has several wallets that they control
 - Severity: `Medium`
 - Source report: `rebasing.md`
 
@@ -5986,7 +5986,7 @@ describe('Burn DoS Vulnerability POC', function() {
 
 **Cyfrin:** Verified.
 
-## [M-79] Investors transferring all their balances among their wallets or self-transferring on the same wallet causes to incorrectly decrement the investor counters causing DoS for other investors transfers
+## [M-79] Investors transferring all their balances among their wallets or self-transferring on the same wallet causes to incorrectly decrement the investor counters causing Do S for other investors transfers
 - Severity: `Medium`
 - Source report: `rebasing.md`
 
@@ -6276,7 +6276,7 @@ With that being say a malicious register investor can front run ( or if he alrea
 
 **Cyfrin:** Verified.
 
-## [M-81] Multiplication could overflow in `RebasingLibrary` for tokens with greater than 18 decimals
+## [M-81] Multiplication could overflow in `Rebasing Library` for tokens with greater than 18 decimals
 - Severity: `Medium`
 - Source report: `rebasing.md`
 
@@ -6353,7 +6353,7 @@ library RebasingLibrary {
 
 **Cyfrin:** Verified.
 
-## [M-82] No way to revert `setInvestorLiquidateOnly`
+## [M-82] No way to revert `set Investor Liquidate Only`
 - Severity: `Medium`
 - Source report: `rebasing.md`
 
@@ -6387,7 +6387,7 @@ function setInvestorLiquidateOnly(string memory _investorId, bool _enabled) publ
 
 **Cyfrin:** Verified.
 
-## [M-83] `StandardToken::transferWithPermit` can be DoS attacked by front-running to directly call `ERC20PermitMixin::permit`
+## [M-83] `Standard Token::transfer With Permit` can be Do S attacked by front-running to directly call `ERC20Permit Mixin::permit`
 - Severity: `Medium`
 - Source report: `registry.md`
 
@@ -6582,7 +6582,7 @@ function _updateInvestor(string calldata id, address[] memory walletAddresses) i
 
 **Cyfrin:** Verified.
 
-## [M-85] `setApprovalForAll()` function is double initialized in the child contract
+## [M-85] `set Approval For All()` function is double initialized in the child contract
 - Severity: `Medium`
 - Source report: `rwasegwrap.md`
 
@@ -6792,7 +6792,7 @@ The `internalTransferFrom` function should also be updated to conditionally call
 
 **Cyfrin:** Verified.
 
-## [M-88] Missing `notEmptyURI` modifier during initialization
+## [M-88] Missing `not Empty URI` modifier during initialization
 - Severity: `Medium`
 - Source report: `rwasegwrap.md`
 
@@ -6843,7 +6843,7 @@ Fixed in commit [0946fb](https://github.com/securitize-io/bc-securitize-vault-sc
 
 \clearpage
 
-## [M-89] Redundant balance check in safeTransferFrom before calling underlying transfer function
+## [M-89] Redundant balance check in safe Transfer From before calling underlying transfer function
 - Severity: `Medium`
 - Source report: `rwasegwrap.md`
 
@@ -6936,7 +6936,7 @@ function setKeeper(address _keeper) external onlyOwner {
 
 \clearpage
 
-## [M-91] Probability overflow can bypass `MaxProbabilityExceeded` check
+## [M-91] Probability overflow can bypass `Max Probability Exceeded` check
 - Severity: `Medium`
 - Source report: `spingame.md`
 
@@ -7016,7 +7016,7 @@ function testUpdateWithMoreThanMaxProba() external {
 
 \clearpage
 
-## [M-92] Insufficient fee validation in `STBL_Register::setupAsset` can cause underflow
+## [M-92] Insufficient fee validation in `STBL_Register::setup Asset` can cause underflow
 - Severity: `Medium`
 - Source report: `stbl.md`
 
@@ -7055,7 +7055,7 @@ This would mean that if the sum of all fees in basis points exceeds 10000, the m
 
 **Cyfrin:** Verified.
 
-## [M-93] Unnecessary usage of `_msgSender()` to validate if caller is the `Issuer` on the `STBL_PT1_YieldDistributor`
+## [M-93] Unnecessary usage of `_msg Sender()` to validate if caller is the `Issuer` on the `STBL_PT1_Yield Distributor`
 - Severity: `Medium`
 - Source report: `stbl.md`
 
@@ -7112,7 +7112,7 @@ The same applies for `distributeReward()`:
 
 \clearpage
 
-## [M-94] `StakingVault::distributeYield` should revert when there are no vault shares
+## [M-94] `Staking Vault::distribute Yield` should revert when there are no vault shares
 - Severity: `Medium`
 - Source report: `syntetika.md`
 
@@ -7131,7 +7131,7 @@ Fixed in commit [1b9d7f8](https://github.com/SyntetikaLabs/monorepo/commit/1b9d7
 
 **Cyfrin:** Verified.
 
-## [M-95] Unbounded `depositAddresses` can cause `CompliantDepositRegistry::challengeLatestBatch` to revert due to out of gas
+## [M-95] Unbounded `deposit Addresses` can cause `Compliant Deposit Registry::challenge Latest Batch` to revert due to out of gas
 - Severity: `Medium`
 - Source report: `syntetika.md`
 
@@ -7167,7 +7167,7 @@ Fixed in commit [319e7ea](https://github.com/SyntetikaLabs/monorepo/commit/319e7
 
 **Cyfrin:** Verified.
 
-## [M-96] `Tranche::maxMint` for Junior Tranches is at risk of overflow when the `jrNav` falls below `1:1` rate to `JR_Shares`
+## [M-96] `Tranche::max Mint` for Junior Tranches is at risk of overflow when the `jr Nav` falls below `1:1` rate to `JR_Shares`
 - Severity: `Medium`
 - Source report: `tranches.md`
 
@@ -7319,7 +7319,7 @@ Fixed in commit [23777d](https://github.com/Strata-Money/contracts-tranches/comm
 
 **Cyfrin:** Verified.
 
-## [M-98] Inconsistent APR boundary validation between `AprPairFeed` and `Accounting`
+## [M-98] Inconsistent APR boundary validation between `Apr Pair Feed` and `Accounting`
 - Severity: `Medium`
 - Source report: `tranches.md`
 
@@ -7391,7 +7391,7 @@ Fixed in commit [151661](https://github.com/Strata-Money/contracts-tranches/comm
 
 **Cyfrin:** Verified.
 
-## [M-100] Reducing reserves requesting `USDe` as the asset to receive causes the Strategy to release more `sUSDe` than necessary
+## [M-100] Reducing reserves requesting `USDe` as the asset to receive causes the Strategy to release more `s USDe` than necessary
 - Severity: `Medium`
 - Source report: `tranches.md`
 
@@ -7436,7 +7436,7 @@ Fixed in commit [953c3bc](https://github.com/Strata-Money/contracts-tranches/com
 
 **Cyfrin:** Verified.
 
-## [M-101] When Senior's TargetGain is negative, the tx will revert because the senior loss is not accounted for on the Junior Tranche as profit, causing the navs summation to not match the current nav
+## [M-101] When Senior's Target Gain is negative, the tx will revert because the senior loss is not accounted for on the Junior Tranche as profit, causing the navs summation to not match the current nav
 - Severity: `Medium`
 - Source report: `tranches.md`
 
@@ -7492,7 +7492,7 @@ Fixed in commit [5332b3](https://github.com/Strata-Money/contracts-tranches/comm
 
 **Cyfrin:** Verified.
 
-## [M-102] `SDLVesting::stakeReleasableTokens` gas optimization by caching variables
+## [M-102] `SDLVesting::stake Releasable Tokens` gas optimization by caching variables
 - Severity: `Medium`
 - Source report: `vesting.md`
 
@@ -7557,7 +7557,7 @@ Currently `lockTime` and `reSDLTokenIds[lockTime]` are read from storage for mul
 
 **Cyfrin:** Verified. `tokenId` now cached.
 
-## [M-103] `SDLVesting::withdrawRESDLPositions` enhancements
+## [M-103] `SDLVesting::withdraw RESDLPositions` enhancements
 - Severity: `Medium`
 - Source report: `vesting.md`
 
@@ -7588,7 +7588,7 @@ Consider adding validation for `_lockTimes` and move the state changes before th
 
 **Cyfrin:** Verified. `_lockTime[i]` now verified to not be larger than `MAX_LOCK_TIME` and delete is done before call to `safeTransfer`.
 
-## [M-104] Lack of `_lockTime` validation in `constructor`
+## [M-104] Lack of `_lock Time` validation in `constructor`
 - Severity: `Medium`
 - Source report: `vesting.md`
 
@@ -7633,7 +7633,7 @@ so that `start + duration` (even when zero) immediately yields the “fully vest
 
 **Cyfrin:** Verified. Comparison is not `>=`.
 
-## [M-106] `BetFactory::setPool` should validate input pool is legitimate AaveV3 pool and supports input token
+## [M-106] `Bet Factory::set Pool` should validate input pool is legitimate Aave V3 pool and supports input token
 - Severity: `Medium`
 - Source report: `wannabetv2.md`
 
@@ -7704,7 +7704,7 @@ contract BetFactory is Ownable {
 
 **Cyfrin:** Verified.
 
-## [M-107] Missing zero address validation for authorized signer in `WorldLibertyFinancialV2.initialize()`
+## [M-107] Missing zero address validation for authorized signer in `World Liberty Financial V2.initialize()`
 - Severity: `Medium`
 - Source report: `wlf.md`
 
@@ -7735,7 +7735,7 @@ Fixed in commit [b567696](https://github.com/worldliberty/usd1-protocol/blob/b56
 
 **Cyfrin:** Verified.
 
-## [M-108] WLFI owner can DoS legacy users through direct vester activation
+## [M-108] WLFI owner can Do S legacy users through direct vester activation
 - Severity: `Medium`
 - Source report: `wlf.md`
 
@@ -7814,7 +7814,7 @@ Fixed in commit [b567696](https://github.com/worldliberty/usd1-protocol/blob/b56
 
 **Cyfrin:** Verified. `ownerActivateVest` is removed.
 
-## [M-109] `Manager::_transferFee` returns invalid `feeShares` when `fee` is zero
+## [M-109] `Manager::_transfer Fee` returns invalid `fee Shares` when `fee` is zero
 - Severity: `Medium`
 - Source report: `yieldfi.md`
 

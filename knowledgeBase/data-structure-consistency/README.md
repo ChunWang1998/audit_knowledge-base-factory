@@ -2,7 +2,7 @@
 
 - Count: 16
 
-## F-2025-14458 - Mismatch Between Tier Assignment andEnumeration Breaks Tier Determinism
+## F-2025-14458 - Mismatch Between Tier Assignment and Enumeration Breaks Tier Determinism
 - 嚴重度：Medium
 - Report source：Acecoin.pdf
 
@@ -15,7 +15,7 @@ It is recommended to: redesign the tier calculation logic to take into account s
 ### 修補方式（實際）
 Fixed in 825eaaf. The `_addDownlines`() function was redesigned to properlycalculate the downlineTierCount value as follows: uint256 actualTier = newUserId / `TIER_SIZE`; // Same formula as `addToTier()` 28 line 30 if (!tierUsed[current.id][level][actualTier]) { tierUsed[current.id][level][actualTier] = true; // Mark tier as used downlineTierCount[current.id][level]++; // Increment unique tier count } … In addition to that the functions MemoryManager::`getTierCount()`, MemoryManager::`getPaginatedData()`, StakingAndRewards::`getUserStakeIds()` and StakingAndRewards::`getUserStakeIdsPaginated()` were removed from thecodebase. The calculation of the userStakeTierCount was removed from the StakingAndRewards::`stake()` function.
 
-## F-2025-14443 - Uninitialized minWithdrawAmount Allows Zero-Amount Forced Withdrawal Requests To Block Queue Processing -Medium
+## F-2025-14443 - Uninitialized min Withdraw Amount Allows Zero-Amount Forced Withdrawal Requests To Block Queue Processing - Medium
 - 嚴重度：Medium
 - Report source：BullBit.pdf
 
@@ -48,7 +48,7 @@ The mintGoldMembership function of the DOI_Gold contract is expected toallow use
 Fixed in commit ID 6a67ac3: the custom totalSupply() was removedfrom the code, using the parent's contract function in order to checkthe amount of existing token for sensitive operations, such as limitReached(). 21
 
 
-## F-2025-13317 - Excessive Token Mint due to Invalid Validation -Medium
+## F-2025-13317 - Excessive Token Mint due to Invalid Validation - Medium
 - 嚴重度：Medium
 - Report source：Digital Oro International.pdf
 
@@ -59,7 +59,7 @@ The mintGoldMembership function of the DOI_Gold contract is expected toallow use
 The Finding is ﬁxed in the commit c19b227. The check is changed to prevent excessive token minting. 25
 
 
-## F-2024-7595 - Pseudo-Randomness Enables Raﬄe OutcomeManipulation - High
+## F-2024-7595 - Pseudo-Randomness Enables Raﬄe Outcome Manipulation - High
 - 嚴重度：High
 - Report source：Digital Oro.pdf
 
@@ -70,7 +70,7 @@ The Raffle contract facilitates a raﬄe system where users participateby submit
 The Finding was ﬁxed in commit fdd11c068b6f01bd9169a4e6cc620b5c8a46cd72.The pseudo-random mechanism used to determine the raﬄe winnerwas replaced by Chainlink VRF (Veriﬁable Random Function) v2.5. Evidences PoC
 
 
-## F-2025-8353 - Multiple Payouts Possible Due to InsuﬃcientValidation in FinalizeWave() - Medium
+## F-2025-8353 - Multiple Payouts Possible Due to Insuﬃcient Validation in Finalize Wave() - Medium
 - 嚴重度：Medium
 - Report source：Digital Oro.pdf
 
@@ -103,7 +103,7 @@ During the remediation commit, it was observed that there is apossibility to com
 The EverValue team implemented the recommended check toeliminate this ﬁnding in given commit (4631b7). 10 Observation Details
 
 
-## F-2025-14265 - Winner Selection Ignores Assigned Payout PositionsDue To A Faulty If Condition - High
+## F-2025-14265 - Winner Selection Ignores Assigned Payout Positions Due To A Faulty If Condition - High
 - 嚴重度：High
 - Report source：RYT.pdf
 
@@ -125,7 +125,7 @@ The Komiti contract supports "Joint Contributors," where two users share asingle
 Fixed in 1829f31. The contributeAsJointMember() was removed from thecodebase making the current finding no longer applicable. Evidences PoC
 
 
-## F-2025-11651 - Precision Loss in Bonding Curve Calculations -High
+## F-2025-11651 - Precision Loss in Bonding Curve Calculations - High
 - 嚴重度：High
 - Report source：Seedify.fund.pdf
 
@@ -136,7 +136,7 @@ The calculateBuyCost function is designed to calculate the cost ofpurchasing a s
 In commit f6e452b, the ABDKMath64x64 library is utilized. Evidences PoC
 
 
-## F-2025-11654 - Flawed Rounding Logic in calculateBuyAmountLeads to Loss of Funds - Medium
+## F-2025-11654 - Flawed Rounding Logic in calculate Buy Amount Leads to Loss of Funds - Medium
 - 嚴重度：Medium
 - Report source：Seedify.fund.pdf
 
@@ -158,7 +158,7 @@ The buy function facilitates token purchases and subsequentlycalculates the buye
 In commit a893459, the TGE calculation logic is re-ordered, the newimplementation performs calculation before the current purchase isfactored in. 24
 
 
-## F-2025-11767 - Inconsistent State Change in autoRefund() AﬀectsTGE Unlock and Price Logic - Medium
+## F-2025-11767 - Inconsistent State Change in auto Refund() Aﬀects TGE Unlock and Price Logic - Medium
 - 嚴重度：Medium
 - Report source：Seedify.fund.pdf
 
@@ -168,7 +168,7 @@ The BondingCurve contract provides a mechanism for the default adminto refund us
 ### 修補方式（實際）
 Fixed in c4b53ea: the value of totalProjectTokenSold is now correctlyupdated by subtracting totalClaimAmount of the refunded users. 36
 
-## F-2025-13707 - ERC-7201 Storage Location Comment Does NotMatch Actual Value
+## F-2025-13707 - ERC-7201 Storage Location Comment Does Not Match Actual Value
 - 嚴重度：Medium
 - Report source：Vechain Foundation.pdf
 
@@ -326,7 +326,7 @@ Fixed in commit [5157351](https://github.com/suzaku-network/suzaku-core/pull/155
 
 **Cyfrin:** Verified.
 
-## [C-2] Incorrect summation of curator shares in `claimUndistributedRewards` leads to deficit in claimed undistributed rewards
+## [C-2] Incorrect summation of curator shares in `claim Undistributed Rewards` leads to deficit in claimed undistributed rewards
 - Severity: `Critical`
 - Source report: `core.md`
 
@@ -918,7 +918,7 @@ Fixed in commit [f9bfdf7](https://github.com/suzaku-network/suzaku-core/pull/155
 
 **Cyfrin:** Verified.
 
-## [M-4] `MyriadCTFExchange.filledAmounts` mapping slot and `hashOrder` computed multiple times per order
+## [M-4] `Myriad CTFExchange.filled Amounts` mapping slot and `hash Order` computed multiple times per order
 - Severity: `Medium`
 - Source report: `clob.md`
 
@@ -1036,7 +1036,7 @@ Fixed in commit [af8cbc7](https://github.com/PatrickAlphaC/safe-harbor/commit/af
 
 \clearpage
 
-## [M-8] Inconsistency in `currentPhase` between `pUSDeVault` and `yUSDeVault`
+## [M-8] Inconsistency in `current Phase` between `p USDe Vault` and `y USDe Vault`
 - Severity: `Medium`
 - Source report: `predeposit.md`
 
@@ -1065,7 +1065,7 @@ For example `pUSDeDepositor::getPhase` is only called by `deposit_sUSDe`. Changi
 
 **Cyfrin:** Verified.
 
-## [M-10] Unnecessarily complex iteration logic in `MetaVault::redeemMetaVaults` can be simplified
+## [M-10] Unnecessarily complex iteration logic in `Meta Vault::redeem Meta Vaults` can be simplified
 - Severity: `Medium`
 - Source report: `predeposit.md`
 
@@ -1109,7 +1109,7 @@ While this logic is still required for use in `MetaVault::removeVault`, where th
 
 \clearpage
 
-## [M-11] `SPBinaryPrompt::getScore` and `getResult` conflict on what score users who didn't participate should receive, `getScore` also rewards users who got the wrong answer
+## [M-11] `SPBinary Prompt::get Score` and `get Result` conflict on what score users who didn't participate should receive, `get Score` also rewards users who got the wrong answer
 - Severity: `Medium`
 - Source report: `protocol.md`
 
@@ -1127,7 +1127,7 @@ Fixed in commits [50657e9](https://github.com/Engage-Protocol/engage-protocol/co
 
 **Cyfrin:** Verified.
 
-## [M-12] Rename all `sessionId` to `gameId` or vice versa for consistency
+## [M-12] Rename all `session Id` to `game Id` or vice versa for consistency
 - Severity: `Medium`
 - Source report: `protocol.md`
 
@@ -1222,7 +1222,7 @@ Fixed in commit [75663d1](https://github.com/Engage-Protocol/engage-protocol/com
 
 **Cyfrin:** Verified.
 
-## [M-13] Refactor away unnecessary local variables in `SecuritizeAmmNavProvider::_curveBuy, _curveSell`
+## [M-13] Refactor away unnecessary local variables in `Securitize Amm Nav Provider::_curve Buy, _curve Sell`
 - Severity: `Medium`
 - Source report: `ramp.md`
 
@@ -1260,7 +1260,7 @@ function _curveSell(uint256 amountInBase) internal view initialized returns (uin
 
 \clearpage
 
-## [M-14] `TrustService::changeEntityOwner` can overwrite existing `_newOwner` record, breaking 1-1 relationship between owners and addresses
+## [M-14] `Trust Service::change Entity Owner` can overwrite existing `_new Owner` record, breaking 1-1 relationship between owners and addresses
 - Severity: `Medium`
 - Source report: `rebasing.md`
 
@@ -1323,7 +1323,7 @@ Run with: `npx hardhat test --grep "overwrite existing owner"`.
 
 **Cyfrin:** Verified.
 
-## [M-16] Unnecessary `_msgSender()` call in `_resolveVaultId` when `caller` parameter is available
+## [M-16] Unnecessary `_msg Sender()` call in `_resolve Vault Id` when `caller` parameter is available
 - Severity: `Medium`
 - Source report: `rwasegwrap.md`
 
@@ -1396,7 +1396,7 @@ Fixed in commit [732b1a8](https://github.com/Strata-Money/contracts-tranches/com
 
 \clearpage
 
-## [M-18] `Pocket::execWithValue` does not emit native transfer event
+## [M-18] `Pocket::exec With Value` does not emit native transfer event
 - Severity: `Medium`
 - Source report: `update.md`
 
@@ -1450,7 +1450,7 @@ BetFactory.sol
 
 **Cyfrin:** Verified.
 
-## [M-21] `bondFaceValue` read in `PerpetualBond::_convertToBond` can be cached
+## [M-21] `bond Face Value` read in `Perpetual Bond::_convert To Bond` can be cached
 - Severity: `Medium`
 - Source report: `yieldfi.md`
 
