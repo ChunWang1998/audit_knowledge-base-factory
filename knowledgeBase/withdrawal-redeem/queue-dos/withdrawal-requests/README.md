@@ -1,4 +1,4 @@
-# withdrawal-requests (14)
+# withdrawal-requests (9)
 
 > Issues where withdrawal requests can be stuck, front-run, overwritten, or improperly finalized.
 
@@ -25,13 +25,13 @@ Redesign away from a strict queue to a timelock plus user-pull model where each 
 **[中文版本]**
 
 **描述：**
-`BasisTradeVault::processWithdrawal` 每次仅处理队列头部的一条请求，并向用户地址发起最终的 ERC20 `safeTransfer`。若该转账回滚，整笔交易将随之回滚，队列头部条目保持不变。由于该函数始终针对 `queueHead` 且不提供任何跳过或隔离机制，一笔无法处理的提款将永久阻塞整个队列（队首阻塞）。常见回滚原因包括接收者被代币黑名单（如 USDC/USDT）或因舍入/费用导致 assets 计算为零而触发零值转账回滚。
+`BasisTradeVault::processWithdrawal` 每次僅處理隊列頭部的一筆請求，並向用戶地址發起最終的 ERC20 `safeTransfer`。如果這筆轉賬回滾，整個交易將回滾，隊列頭部條目保持不變。由於該函數始終針對 `queueHead` 並且不提供任何跳過或隔離機制，單筆無法處理的提現將永久阻塞整個隊列（隊首阻塞）。常見回滾原因包括接收方被代幣黑名單（如 USDC/USDT）或因捨入/手續費導致 assets 為零而觸發零額轉賬回滾。
 
 **影響：**
-所有排在阻塞请求后面的用户的提款处理将被无限期暂停，导致严重的提款延迟，直到合约升级或人工干预为止。
+所有排在被阻塞請求之後的用戶的提現處理將被無限期暫停，造成其他存款人嚴重的提現延遲。直到合約升級或人工干預，隊列才會恢復。
 
 **修復建議：**
-将严格队列重新设计为时间锁加用户主动拉取模式，让每位用户在时间锁到期后自行调用 `processWithdrawal`。或添加跳过/隔离机制：若队首提款失败，将其移入冻结集合并保留份额托管，推进 `queueHead`，允许其他人继续。同时提供允许用户更新收款地址及代理人在策略内重试/取消的函数。
+將嚴格隊列模式重設為時間鎖+用戶主動拉取模式，每位用戶在時間鎖期後自行調用 `processWithdrawal`。或增加跳過/隔離機制：隊首提現失敗時將其移入凍結集合並保留份額託管，推進 `queueHead`，允許其他用戶繼續。提供用戶更新收款地址和代理人重試/取消的函數。
 
 ---
 
@@ -54,13 +54,13 @@ Refactor the `Accounting::accrueFee` function to update the APR Target after eac
 **[中文版本]**
 
 **描述：**
-处理发送至 `SharesCooldown` 的提款请求时，系统会按已赎回的 Tranche Shares 总量收取费用，以燃烧份额的形式更新 Tranche NAV 和 `reserveNav`（执行路径：`SharesCooldown::requestRedeem` → `accrueFee` → `Tranche::burnSharesAsFee` → `CDO::accrueFee` → `Accounting::accrueFee`）。问题在于 NAV 发生变化后，各 Tranche 的 APR 目标并未随之重新计算，系统将继续使用过时的 APR 目标，直到下一次触发更新操作。
+處理發送至 `SharesCooldown` 的提現請求時，系統會根據贖回的 Tranche Shares 數量收取費用，以銷毀份額的形式更新 Tranche NAV 和 `reserveNav`（執行路徑：`SharesCooldown::requestRedeem` → `accrueFee` → `Tranche::burnSharesAsFee` → `CDO::accrueFee` → `Accounting::accrueFee`）。問題在於 NAV 變化後，各 Tranche 的 APR 目標並未重新計算，系統會持續使用過時 APR 目標直到有新操作觸發更新。
 
 **影響：**
-过时且偏高的 SR Tranche APR 目标将导致 JR Tranche 持有者获得的利息少于应得数额，因为系统错误估计了高级份额的预期收益。
+過時且高於實際值的 SR Tranche APR 目標使 JR Tranche 持有人獲得的利息少於應得，因系統誤估 senior tranche 的預期收益。
 
 **修復建議：**
-重构 `Accounting::accrueFee` 函数，在每次费用累计后更新 APR 目标，参考 `Accounting::updateBalanceFlow` 的实现方式。
+重構 `Accounting::accrueFee` 函數，使其在每次費用累計後更新 APR 目標，參考 `Accounting::updateBalanceFlow` 的做法。
 
 ---
 
@@ -83,46 +83,17 @@ Prevent changing a non-zero request to another non-zero value directly. Require 
 **[中文版本]**
 
 **描述：**
-`BasisTradeTailor::requestWithdrawal` 会无条件覆盖任何已有的提款请求，且没有提供明确的取消机制。当用户尝试修改已有请求时，最终结果完全取决于其修改交易与代理人 `processWithdrawal` 调用的执行顺序。若代理先处理原始请求，则用户的修改将创建一个全新请求，导致两笔金额被依次提取。原本想把 100 单位请求改为 50 单位的用户，可能最终提取了 150 单位。
+`BasisTradeTailor::requestWithdrawal` 會無條件覆蓋任何已有的提現請求，且未提供明確的取消機制。當用戶試圖修改現有請求時，最終結果完全取決於該修改交易和代理人 `processWithdrawal` 調用的順序。若代理人先處理原請求後用戶的修改才到，則用戶的修改會生成一筆全新請求，導致兩筆金額被依序提取。比如，想把 100 單位請求改成 50 的用戶，若代理先處理舊請求則實際總共會提取 150 單位。
 
 **影響：**
-由于用户修改交易与代理处理调用之间存在竞态条件，用户可能提取远超预期的金额，造成非预期的资金流出。
+用戶修改交易與代理人調用之間的競態條件可能導致超額提款，產生非預期資金流動。
 
 **修復建議：**
-禁止直接将非零请求修改为另一个非零值，要求先通过专用 `cancelWithdrawal` 函数显式取消现有请求。`requestWithdrawal` 函数在存在待处理请求时应回滚，强制用户先取消再创建新请求。
+禁止直接將非零請求改為另一非零值，要求用戶先顯式通過 `cancelWithdrawal` 函數取消，`requestWithdrawal` 檢查如有待處理請求則回滾，強制先取消後提交新請求。
 
 ---
 
-## 4. DOS for certain scenarios depending on the LTVs of the 2 positions
-
-**Severity:** 🟡 Medium
-**Source:** `sherlockPDFTXT/Vesu.txt`
-
-**Description:**
-The `Migrate.cairo` contract allows existing users to migrate their positions and requires them to choose a `max_ltv_delta` value to ensure their new position remains solvent. The final check in `create_v2_position` asserts that the resulting LTV falls within the range `from_ltv - max_ltv_delta` to `from_ltv + max_ltv_delta`. However, when `from_ltv` is zero (a position with collateral only and no debt), `max_ltv_delta` can only be zero to avoid an underflow revert. If the target position has any non-zero LTV after migration, the assertion `to_ltv <= from_ltv + max_ltv_delta` can never be satisfied since both terms are zero. This means migrations from debt-free positions into positions with existing debt are mathematically impossible under the current check.
-
-**Impact:**
-Migrations can never complete for certain position configurations depending on the LTVs before migration begins. Users with collateral-only positions migrating to pools where they would take on debt are permanently blocked.
-
-**Recommended Mitigation:**
-If `max_ltv_delta` is larger than `from_ltv`, skip the lower bound check to allow larger `max_ltv_delta` values for the upper bound check, enabling debt-free positions to migrate to positions with higher LTV.
-
----
-
-**[中文版本]**
-
-**描述：**
-`Migrate.cairo` 合约要求用户在迁移仓位时选择 `max_ltv_delta` 值以确保新仓位不会被清算。`create_v2_position` 中的最终检查要求迁移后的 LTV 落在 `from_ltv - max_ltv_delta` 至 `from_ltv + max_ltv_delta` 范围内。当 `from_ltv` 为零（纯抵押物仓位，无债务）时，为避免下溢回滚，`max_ltv_delta` 只能为零。若目标仓位迁移后的 LTV 大于零，则 `to_ltv <= from_ltv + max_ltv_delta` 永远无法满足，导致迁移操作不可能完成。
-
-**影響：**
-根据迁移前后仓位的 LTV 配置，某些仓位的迁移永远无法成功。纯抵押物仓位无法迁移至带债务的仓位。
-
-**修復建議：**
-若 `max_ltv_delta` 大于 `from_ltv`，则跳过下界检查，允许更大的 `max_ltv_delta` 值用于上界检查，使零债务仓位能够迁移至较高 LTV 的仓位。
-
----
-
-## 5. Direct YToken deposits can lock funds below minimum withdrawal threshold
+## 4. Direct YToken deposits can lock funds below minimum withdrawal threshold
 
 **Severity:** 🟡 Medium
 **Source:** `cyfrin/yieldfi.md`
@@ -141,17 +112,17 @@ Enforce the `minSharesInYToken` threshold in `YToken::_deposit` and `YTokenL2::_
 **[中文版本]**
 
 **描述：**
-`Manager::deposit` 通过最低份额检查强制要求存款产生的份额达到 `minSharesInYToken` 阈值，赎回流程也有相同要求。然而，直接向 `YToken` 合约存款时没有此类最低限制，`YToken::_deposit` 和 `YTokenL2::_deposit` 仅要求接收方非零且金额大于零。因此用户可以存入一笔导致份额低于 `minSharesInYToken` 的金额，由于 `Manager` 的最低提款检查，这些份额将无法通过正常途径提取。
+`Manager::deposit` 透過最低份額檢查強制要求存款產生的份額達到 `minSharesInYToken` 閾值，贖回也有同門檻。但直接向 `YToken` 合約存款時沒有此限制，`YToken::_deposit` 和 `YTokenL2::_deposit` 僅要求接收方非零且金額大於零。因此可存入導致份額低於 `minSharesInYToken` 的金額，而這些份額因 Manager 限制將無法正常提取。
 
 **影響：**
-用户可以绕过最低份额门槛直接向 `YToken` 存款，若产生的份额低于 `Manager` 允许提款的最低值，用户将无法退出仓位，导致资金被无意中锁定。
+用戶可繞過最低份額門檻存款，若產生份額低於 Manager 能提取的最低額，則無法退出資產造成資金鎖死。
 
 **修復建議：**
-在 `YToken::_deposit` 和 `YTokenL2::_deposit` 中强制执行 `minSharesInYToken` 阈值，防止低于门槛的存款。同时在提款后验证剩余余额，确保用户不会留下无法提取的零碎份额（要求剩余份额为零或高于最低阈值）。
+在 `YToken::_deposit` 與 `YTokenL2::_deposit` 強制檢查 `minSharesInYToken`，防止低於門檻的直接存款。提款後亦驗證餘額，確保剩餘份額為零或達門檻，無無法提取之零碎份額。
 
 ---
 
-## 6. Finalizing withdrawal requests on the SharesCooldown contract allows for third-parties to override user's chosen output token
+## 5. Finalizing withdrawal requests on the SharesCooldown contract allows for third-parties to override user's chosen output token
 
 **Severity:** 🟡 Medium
 **Source:** `cyfrin/cooldown.md`
@@ -170,46 +141,17 @@ Persist the user's chosen output token when creating the cooldown request and en
 **[中文版本]**
 
 **描述：**
-在 `Tranche::withdraw/redeem` 流程中，用户可以选择所需的输出代币。但当退出模式为 `SharesLock` 时，最终收到的代币不再由用户控制，因为 `SharesCooldown::finalize` 是无许可的——任何调用者都可以在最终结算时选择输出代币。第三方可以使用与用户原始意图不同的代币完成用户的提款请求。例如，若用户选择 `sUSDe` 作为输出代币，无许可的最终结算者可以指定 `USDe`，迫使用户在 `sUSDe` 合约上额外等待 unstaking 时间。
+`Tranche::withdraw/redeem` 流程中，用戶可選擇輸出代幣。但退出模式為 `SharesLock` 時，實際收到的代幣不再完全由用戶決定，原因是 `SharesCooldown::finalize` 是無權限限制的：任何人可選擇輸出代幣實施最終結算。第三方因此可覆蓋用戶原初偏好。例如用戶選擇 `sUSDe` 作為輸出，無許可執行者可以改為 `USDe`，強迫用戶再經歷一輪 sUSDe 解鎖等待。
 
 **影響：**
-任何第三方均可在最终结算时覆盖用户的输出代币偏好，可能显著延长用户等待资产的时间，迫使其承担超出预期的冷却或解锁期。
+用戶提現時的目標代幣偏好可能被第三方覆蓋，造成用戶等待超預期時間甚至二次冷卻。
 
 **修復建議：**
-在创建冷却请求时持久化用户选择的输出代币，并在无许可最终结算时强制执行该选择。只有用户本人应通过有许可的最终结算路径覆盖其代币选择。
+在創建冷卻請求時保存用戶選擇的代幣，並在無權限 finalize 強制執行此選擇，僅允許用戶本身有額外權限覆蓋其選擇。
 
 ---
 
-## 7. Forced Withdrawal Flow Is Not Fully Censorship-Resistant
-
-**Severity:** 🟡 Medium
-**Source:** `HackenPDFTXT/BullBit.txt`
-
-**Description:**
-The `InclusionQueue` contract is described as a core anti-censorship tool allowing users to register on-chain withdrawal requests that the Sequencer cannot ignore. However, the forced withdrawal flow has two critical weaknesses. First, the creation of forced withdrawal requests can be restricted or rendered economically infeasible because `feeAmount` and `minWithdrawAmount` parameters are controlled by a privileged role without upper bounds, enabling the role holder to set them to arbitrarily high values and block withdrawals entirely. Second, even if a withdrawal request is created, its finalization depends on the off-chain sequencer: if the internal balance is reduced after the request is created, the withdrawal path is skipped. The sequencer can also selectively process only specific users' requests while effectively delaying others, and can manipulate internal balances via `submitPoolUpdateBatch` or `submitVaultUpdateBatch` without user consent.
-
-**Impact:**
-The forced withdrawal mechanism that is advertised as censorship-resistant can in practice be blocked or indefinitely delayed by privileged roles and the off-chain sequencer. Withdrawal requests can be rendered unexecutable through balance manipulation, and users have no guaranteed fallback.
-
-**Recommended Mitigation:**
-Decouple forced withdrawals from cached balance snapshots and execute withdrawals based on the current internal balance at finalization time. When the balance is lower than the cached request amount, the withdrawal should succeed for the available balance rather than reverting or skipping execution.
-
----
-
-**[中文版本]**
-
-**描述：**
-`InclusionQueue` 合约被描述为核心抗审查工具，允许用户注册无法被 Sequencer 忽略的链上提款请求。然而该强制提款流程存在两个关键缺陷：其一，`feeAmount` 和 `minWithdrawAmount` 由特权角色控制且无上限，可被设置为极高值，从而封锁所有提款；其二，即使请求已创建，其最终执行仍依赖链下 Sequencer——若请求创建后余额减少，提款路径将被跳过。Sequencer 还可以选择性地仅处理特定用户的请求，并通过 `submitPoolUpdateBatch` 或 `submitVaultUpdateBatch` 在无用户同意的情况下修改内部余额。
-
-**影響：**
-标榜为抗审查的强制提款机制实际上可以被特权角色和链下 Sequencer 封锁或无限期延迟，提款请求可通过余额操控变为无法执行，用户没有有保障的后备手段。
-
-**修復建議：**
-将强制提款与缓存余额快照解耦，在最终结算时基于当前内部余额执行提款。当余额低于请求金额时，应按可用余额成功执行提款，而非回滚或跳过。
-
----
-
-## 8. Front-Running DoS on Batch Settlement via Rolling Hash Invalidation
+## 6. Front-Running DoS on Batch Settlement via Rolling Hash Invalidation
 
 **Severity:** 🟡 Medium
 **Source:** `HackenPDFTXT/Dexalot.txt`
@@ -228,17 +170,17 @@ Either decouple individual requests from the shared rolling hash using per-reque
 **[中文版本]**
 
 **描述：**
-`OmniVaultManager` 采用滚动哈希机制，每笔存款和提款请求都会追加到共享哈希中。结算时，`SETTLER_ROLE` 必须提供能精确重建滚动哈希的数据。任何用户均可提交新请求来改变滚动哈希——若此操作发生在结算方准备好结算交易之后但确认上链之前，结算交易将因哈希不匹配而回滚。攻击者因此可以抢先交易来无限期阻止结算，使用户无法收到份额或提取资产。
+`OmniVaultManager` 採用滾動哈希機制，每次存款與提現請求都會加入共用哈希。結算時，`SETTLER_ROLE` 必須提交可精確對上滾動哈希的數據。任何用戶均可插入新請求改變滾動哈希——如果這發生在結算方已準備好交易但尚未鏈上確認之間，結算會因哈希不符而失敗。攻擊者可以用搶跑方式無限期阻礙結算，致用戶無法獲得份額或資產。唯一恢復手段是等待 `MAX_PENDING_REQUESTS` 耗盡或 `RECLAIM_DELAY` 結束。
 
 **影響：**
-任何在结算交易同一区块内提交新请求的用户均可无限期阻塞批量结算，导致存款无法结算（用户无法获得份额）和提款无法结算（用户无法取回资产），造成临时资金锁定。
+任何用戶在結算同區塊提交新請求時可永遠阻礙結算，導致存款、提現暫時鎖死。
 
 **修復建議：**
-通过逐请求独立结算将各请求与共享滚动哈希解耦，或将请求提交与结算分为不同的时间窗口，在结算处理期间阻止新请求提交，以确保批量状态稳定。
+逐請求獨立結算解耦哈希連動，或強制將提交請求與結算分爲不同時段，在批結算期間禁止新請求提交，確保批結算狀態穩定。
 
 ---
 
-## 9. Increase in coverage can lead to a grief attack causing a DoS for previous withdrawal requests
+## 7. Increase in coverage can lead to a grief attack causing a DoS for previous withdrawal requests
 
 **Severity:** 🟡 Medium
 **Source:** `cyfrin/cooldown.md`
@@ -257,17 +199,17 @@ Create a new permissioned `finalize` function that only allows the withdrawer to
 **[中文版本]**
 
 **描述：**
-`coverage` 的增加（由大额 SR Tranche 提款或 JR 存款增加引起）可被用来攻击合法用户的冷却提款请求。当 coverage 改善时，后续提款会获得更短的冷却期。攻击者可以以受害者为接收方创建大量小额 SR Tranche 提款请求，这些请求冷却期较短，完成后会占用受害者的 `UnstakeCooldown` 队列槽位。通过反复创建并最终结算此类请求，攻击者可将受害者的 `UnstakeCooldown` 队列填满至上限，使受害者的原始提款在尝试最终结算时因 `ExternalReceiverRequestLimitReached` 错误而回滚。
+`coverage` 的提升（如大額 SR Tranche 提現或 JR 存款增加）可被用來攻擊其他用戶的冷卻期提現請求。當 coverage 增加時，之後的提現冷卻期更短。攻擊者可為受害者持續創建多筆較短冷卻期的小額 SR Tranche 提現請求，並設其為接收方，每次 finalize 都會佔用 UnstakeCooldown 槽位，持續填滿受害者隊列直到其原始請求失效（ExternalReceiverRequestLimitReached）。
 
 **影響：**
-请求 `USDe` 的合法 SR Tranche 提款可被临时 DoS 攻击。受害者的 `UnstakeCooldown` 槽位被占满，直到攻击者的请求到期释放槽位后才能完成最终结算。
+合法 SR Tranche 提現（如請求 USDe）可被暫時 DoS，受害者必須等攻擊者的請求過期才能繼續完成原始提現。
 
 **修復建議：**
-创建一个新的有许可 `finalize` 函数，仅允许提款人调用并允许其指定输出代币；无许可版本应保留用户的原始代币选择，同时防止此类攻击。
+新增有權限 finalize 函數，僅允許請求人自行 finalize 並自選輸出代幣；無權限路徑保存原始代幣選擇，避免遭濫用攻擊。
 
 ---
 
-## 10. Investors transferring all their balances among their wallets or self-transferring on the same wallet causes incorrectly decremented investor counters causing DoS for other investors' transfers
+## 8. Investors transferring all their balances among their wallets or self-transferring on the same wallet causes incorrectly decremented investor counters causing DoS for other investors' transfers
 
 **Severity:** 🟡 Medium
 **Source:** `cyfrin/rebasing.md`
@@ -286,17 +228,17 @@ Add a check in `recordTransfer` to determine whether the sender and receiver bel
 **[中文版本]**
 
 **描述：**
-`ComplianceServiceRegulated::recordTransfer` 在接收方为新投资人或发送方正在转移全部余额时调整投资人计数器。但该函数没有检查发送方和接收方是否属于同一投资人。当投资人在自己的钱包之间转移全部余额，或向自身转账时，函数会错误地递减投资人计数器，误判该投资人已离开系统。
+`ComplianceServiceRegulated::recordTransfer` 在接收方為新投資人或發送方全部轉移餘額時調整投資人計數器，但未檢查發送方和接收方是否同為一投資人。若投資人在自有錢包間全部轉移或自轉，會錯誤遞減計數，實際上該投資人未離開系統。
 
 **影響：**
-投资人计数器被错误递减，可能导致其他投资人转账 DoS。同时由于计数器不再准确追踪真实投资人数量，投资人数量限制也可能被绕过。
+投資人計數可能被錯誤遞減，造成其他人轉賬 DoS，另因計數錯誤可繞過投資人數上限。
 
 **修復建議：**
-在 `recordTransfer` 中添加检查，判断发送方和接收方是否属于同一投资人，若是则不做计数器调整。
+在 `recordTransfer` 增加同投資人檢查，若雙方同屬一投資人則不調整計數。
 
 ---
 
-## 11. Lack of Limits and Delay in Forced Withdrawal Parameter Updates
+## 9. Lack of Limits and Delay in Forced Withdrawal Parameter Updates
 
 **Severity:** 🟡 Medium
 **Source:** `HackenPDFTXT/BullBit.txt`
@@ -315,97 +257,10 @@ Enforce reasonable upper bounds for `feeAmount` and `minWithdrawAmount`, and int
 **[中文版本]**
 
 **描述：**
-`InclusionQueue` 合约的 `setAmount` 函数允许所有者在没有任何上限限制的情况下更新 `minWithdrawAmount` 和 `feeAmount`，且更改立即生效，没有任何延迟或时间锁。这带来两重风险：一是设置过高的值可阻止小额存款提款或完全封锁所有提款；二是即时生效使得抢先交易成为可能，用户提交请求时基于旧费率，执行时却面对被提高的费率。
+`InclusionQueue` 合約中的 `setAmount` 函數允許所有人無上限設定 `minWithdrawAmount` 及 `feeAmount`，且新值立即生效無延遲或時鎖。兩大風險：一、可將數值設過高完全阻止小額提現或封禁所有提款；二、即時生效造成搶跑，申請時與兌現時費率差異極大。
 
 **影響：**
-所有者可以将 `feeAmount` 和 `minWithdrawAmount` 设置为任意高值，使强制提款请求在经济上不可行。即时参数变更还允许抢先交易，导致用户支付超预期的手续费或请求因新阈值而被拒绝。
+合約所有者可以隨意設定 `feeAmount` 及 `minWithdrawAmount`，讓強制提現申請在經濟上無法實現。參數即時變更還可能導致使用者支付超預期手續費或因新門檻被拒。
 
 **修復建議：**
-为 `feeAmount` 和 `minWithdrawAmount` 设置合理上限，并引入时间锁或延迟机制用于参数更新，以提高可预期性并降低抢先交易风险。
-
----
-
-## 12. Missing revert of LST withdrawal when L1MessageService balance is exactly equal to required value
-
-**Severity:** 🟡 Medium
-**Source:** `cyfrin/manager.md`
-
-**Description:**
-`LineaRollupYieldExtension::claimMessageWithProofAndWithdrawLST` is designed to withdraw LST tokens from a yield provider only when the `L1MessageService` balance is insufficient to fulfil message delivery. The function documentation states it should revert if the `L1MessageService` has sufficient balance. However, the balance check uses a strict less-than operator (`<`) rather than less-than-or-equal-to (`<=`). As a result, when `_params.value` is exactly equal to `address(this).balance`, the condition evaluates to false and the function proceeds with LST withdrawal despite the contract having exactly sufficient balance to fulfil the claim without touching the yield provider.
-
-**Impact:**
-When the contract balance exactly matches the claim value, the function incorrectly withdraws LST from the yield provider instead of reverting. This results in unnecessary LST withdrawal when funds are already available, gas waste for the caller, violation of the stated invariant, and potential operational inefficiencies in the yield management system.
-
-**Recommended Mitigation:**
-Change the comparison operator from `<` to `<=` to ensure the function reverts when the balance is sufficient, including the edge case where it is exactly equal to the required value.
-
----
-
-**[中文版本]**
-
-**描述：**
-`LineaRollupYieldExtension::claimMessageWithProofAndWithdrawLST` 设计用于仅在 `L1MessageService` 余额不足以完成消息投递时才从收益提供方提取 LST。但余额检查使用了严格小于运算符 `<` 而非小于等于 `<=`。当 `_params.value` 恰好等于 `address(this).balance` 时，条件为假，函数继续执行 LST 提取，尽管合约余额已足够完成提款请求。
-
-**影響：**
-当合约余额恰好等于提款所需金额时，函数错误地从收益提供方提取 LST，造成不必要的 LST 提取、调用方浪费 gas、违反设计不变量，以及收益管理系统的潜在运营效率损失。
-
-**修復建議：**
-将比较运算符从 `<` 改为 `<=`，确保在余额充足（包括恰好相等的边界情况）时函数正确回滚。
-
----
-
-## 13. Pending Force Withdrawal Requests Removed On Balance Update
-
-**Severity:** 🟡 Medium
-**Source:** `HackenPDFTXT/BullBit.txt`
-
-**Description:**
-The `Vault` contract implements a force withdrawal flow for use when the off-chain Sequencer is inactive. During `initiateForceWithdrawal`, a `ForcedWithdrawalRequest` is created and stored, caching the user's balance at that time. After a `forceWithdrawDelay`, the user can call `finalizeForceWithdrawal` to receive those cached funds. However, between initiation and finalization, the `applyStateChanges` function — callable only by the Verifier — deletes the `forcedWithdrawalRequests` mapping entry for any user whose balance is modified, even if the modification is a credit (balance increase). Any balance change at all, even by 1 wei, silently removes the pending forced withdrawal request, requiring the user to restart the entire process and wait through the delay again.
-
-**Impact:**
-The Sequencer can arbitrarily affect the forced withdrawal flow by applying minimal balance changes to users with pending requests. Even legitimate balance updates can inadvertently destroy pending force withdrawal requests, undermining the censorship-resistant guarantees of the mechanism.
-
-**Recommended Mitigation:**
-Remove the deletion of `ForcedWithdrawalRequest` entries within `applyStateChanges`. The `finalizeForceWithdrawal` function should withdraw the user's current balance rather than the cached balance from initiation, ensuring that pending requests are not removed when balances change.
-
----
-
-**[中文版本]**
-
-**描述：**
-`Vault` 合约实现了用于链下 Sequencer 不活跃时的强制提款流程。`initiateForceWithdrawal` 创建 `ForcedWithdrawalRequest` 并缓存用户当时的余额，经过 `forceWithdrawDelay` 后用户可调用 `finalizeForceWithdrawal` 提取缓存资金。但在发起和最终结算之间，仅由 Verifier 可调用的 `applyStateChanges` 函数会删除余额发生变更的用户的 `forcedWithdrawalRequests` 条目，即使变更是充值（余额增加）也不例外。任何余额变动（哪怕 1 wei）都会悄无声息地删除待处理的强制提款请求，迫使用户重新发起并再次等待延迟时间。
-
-**影響：**
-Sequencer 可通过对持有待处理请求的用户施加微小余额变动来任意影响强制提款流程，合法的余额更新也可能无意中销毁待处理的强制提款请求，破坏该机制的抗审查性保证。
-
-**修復建議：**
-在 `applyStateChanges` 中移除对 `ForcedWithdrawalRequest` 条目的删除操作。`finalizeForceWithdrawal` 应基于用户当前余额而非发起时的缓存余额执行提款，确保余额变化时待处理请求不被删除。
-
----
-
-## 14. Withdrawal queue RequestPrice can be front run in case of defaults
-
-**Severity:** 🟡 Medium
-**Source:** `cyfrin/accountable.md`
-
-**Description:**
-When `processingMode == ProcessingMode.RequestPrice` in `AccountableWithdrawalQueue`, a redeem request's value is fixed at the request-time share price, regardless of the price at which it is eventually processed. In normal operation, requesters are typically disadvantaged because the price usually rises as interest accrues, meaning locking in a request-time price forfeits subsequent gains. More critically, in a default scenario, informed requesters can front-run the delinquency or default event by submitting withdrawal requests just before it occurs, locking in the pre-default (higher) price. This allows them to drain liquidity at the higher price, pushing losses onto remaining liquidity providers.
-
-**Impact:**
-Front-running a default with a withdrawal request at `RequestPrice` mode allows sophisticated actors to extract value at the pre-default share price, worsening loss socialization at precisely the moment fairness matters most for the remaining depositors.
-
-**Recommended Mitigation:**
-Remove `ProcessingMode.RequestPrice` and the associated `processingMode` configuration entirely so that redemption value is always determined at processing time. Alternatively implement a safeguard for large price movements that invalidates redeem requests created when the share price was significantly higher than the current processing price.
-
----
-
-**[中文版本]**
-
-**描述：**
-当 `AccountableWithdrawalQueue` 处于 `ProcessingMode.RequestPrice` 模式时，赎回请求的价值在请求发起时即被锁定，与最终处理时的价格无关。在正常操作中，请求者通常处于不利地位（因利息累计价格上涨，锁定请求时价格意味着错失后续收益）。更危险的是，在违约场景下，知情请求者可以在违约发生前抢先提交提款请求，锁定违约前（较高）的价格，以较高价格耗尽流动性，将损失转嫁给剩余流动性提供者。
-
-**影響：**
-在 `RequestPrice` 模式下通过抢先交易在违约前提交提款请求，使成熟参与者能以违约前的份额价格提取价值，在最需要公平损失分担的时刻加剧了损失集中化。
-
-**修復建議：**
-完全移除 `ProcessingMode.RequestPrice` 及相关的 `processingMode` 配置，使赎回价值始终在处理时确定。或者实现大幅价格波动保护机制，使在份额价格显著高于当前处理价格时创建的赎回请求自动失效。
+對 `feeAmount` 及 `minWithdrawAmount` 設定合理上限，並新增參數時鎖/延遲機制以減少搶跑風險並提升預測性。

@@ -4,4 +4,4 @@
 
 ## Subcategories
 
-- [bridge-receiver](./bridge-receiver/) (4)
+- [bridge-receiver](./bridge-receiver/) (3)

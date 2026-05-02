@@ -1,0 +1,23 @@
+Activate @.cursor/rules/blockchain-security-auditor.mdc mode
+highly cross-referencing to @knowledgeBase/access-control,
+and based on folder name, which is exploit type to find the issues and generate a readme
+Only listed the most two highest-severity exploitable issues with english and chinese
+the issue format:
+knowledgeBase type: (based on the folder name ex: access-control/role-model/blacklsted-users)
+The main reference issue title in knowledgeBase:(ex: if this issue mainly refer to the issue ` Lack of Access Control Enabling Unauthorized Credential Issuance and Revocation` in access-control/role-model/blacklsted-users readme, the content should be this)
+File Location: 
+Issue Description: 
+Attack scenario:
+
+---------------------------------------------
+when finding vulnerabilities, always follow README.md, only check the contracts in `Files in scope` part
+focus on `Areas of concern (where to focus for bugs)` part in README.md
+v12 test result is in @v12.txt, the issue overlap with @v12.txt findings is not allowed.
+
+repeat the same workflow,  but this time select the top 2 issues by strongly mapping them to @knowledgeBase/accounting, keep the existing content and append the new section
+double check the issue is not repeated in @v12.txt
+double check the issue in @test/c4/README.md is in Areas of concern (where to focus for bugs) in @README.md
+
+(check again with the constraint in the readme)
+
+list the most 3 reasonable, highest-severity exploitable issues based on the `Areas of concern` in readme

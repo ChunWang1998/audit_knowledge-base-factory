@@ -1,4 +1,4 @@
-# bridge-receiver (4)
+# bridge-receiver (3)
 
 > Issues where bridge receiver functions fail due to pausing, missing fee handling, or supply reduction side effects.
 
@@ -32,35 +32,6 @@ Revise the `AaveHandler::supply()` delta calculation for `totalSuppliedCollatera
 
 **修復建議：**
 修改 `AaveHandler::supply()` 中 `totalSuppliedCollateral` 的差值计算逻辑，单独追踪已跨链转出的总量 `totalBridgedOut`，使用 `totalSupply() + totalBridgedOut` 作为有效的全局供给上限，防止跨链供给变化导致算术下溢。
-
----
-
-## 2. Pause modifier in bridge receiver functions causes receiver failures for in-flight messages
-
-**Severity:** 🟡 Medium
-**Source:** `cyfrin/bridge.md`
-
-**Description:**
-`USDCBridge::receivePayloadAndUSDC` and `SecuritizeBridge::receiveWormholeMessages` are both protected by the `whenNotPaused` modifier. When either bridge contract is paused, these receiver functions revert. According to Wormhole documentation, when receiver functions revert the message status becomes "Receiver Failure" and there is no automatic retry mechanism. The only recovery path is to restart the entire cross-chain process from the source chain. This creates a scenario where funds associated with messages that were already in-flight at the time of pausing become stuck, requiring manual intervention to recover.
-
-**Impact:**
-Funds associated with in-flight cross-chain messages that arrive while the bridge contract is paused are permanently stuck in a "Receiver Failure" state. Users cannot retrieve their tokens without manual admin action and potentially a new source-chain transaction, resulting in a degraded user experience and potential fund loss if the recovery mechanism is unavailable.
-
-**Recommended Mitigation:**
-Remove the `whenNotPaused` modifier from receiver functions to prevent receiver failures for in-flight messages. Additionally, consider implementing a message tracking mechanism that records failed receipts and allows the admin to retry them after the pause is lifted.
-
----
-
-**[中文版本]**
-
-**描述：**
-`USDCBridge::receivePayloadAndUSDC` 和 `SecuritizeBridge::receiveWormholeMessages` 均受 `whenNotPaused` 修饰符保护。当桥接合约被暂停时，这些接收函数会回滚。根据 Wormhole 文档，接收函数回滚后消息状态变为"接收失败"，且没有自动重试机制，唯一恢复路径是从源链重新发起整个跨链流程，导致暂停期间在途消息关联的资金被卡死。
-
-**影響：**
-暂停期间到达的在途跨链消息相关资金陷入"接收失败"状态，用户无法在没有管理员人工干预的情况下取回代币，可能导致资金损失。
-
-**修復建議：**
-从接收函数中移除 `whenNotPaused` 修饰符，防止在途消息接收失败。同时考虑实现消息追踪机制，记录失败接收并允许管理员在解除暂停后重试。
 
 ---
 
