@@ -83,4 +83,18 @@ flow:
    5. 可以學起來的地方(名詞概念)
 2. 用grok `export` go through knowledgebase 的folder, 參考上述"highly cross-referencing..."
 3. 了解用AI 找到的對應的knowledge base 內容
-4. 將1, 2 的結果可以整理成一份note, 用該note 進行篩選(可以用test file 重現, 符合readme scope),用篩選過的issue 來完成audit
+4. 將1, 2 的結果可以整理成一份note, 用該note 進行篩選(可以用test file 重現, 符合readme scope)
+5. 用篩選過的issue 來寫test, 在cursor 做比較好, 不然會常常compile fail from grok
+
+
+Issue #1
+knowledgeBase type: token-transfer/cross-chain-accounting  
+The main reference issue title in knowledgeBase: cross-chain-accounting (4)  
+File Location: src/core/MonetrixAccountant.sol, src/core/PrecompileReader.sol, src/core/MonetrixVault.sol (functions: _readL1Backing, settleDailyPnL, injectYield)  
+Issue Description: Cross-chain token transfers (bridge inflows/outflows) are recorded via HyperCore precompile without verifying the exact transferred amount against the reported L1 event. A mismatch between the amount the bridge actually delivered and the Accountant-recorded value is never reconciled, breaking the 4-gate pipeline invariants.  
+Issue Description (中文): 跨鏈代幣轉移（橋接流入/流出）是通過 HyperCore precompile 記錄，卻未將實際轉移數量與 L1 事件報告進行核對。橋接到賬量與會計記錄間差異永不補償，導致 4-gate 管線不再可靠。
+Attack scenario: During a high-volume redemption period (Areas of concern #3), an attacker or bridge delay causes a partial transfer (e.g., 1 wei short due to L1 gas). The Accountant still credits the full amount in totalBackingSigned(), letting the Operator declare inflated proposedYield. This creates unbacked yield injection into sUSDM, permanently diluting all stakers while the real backing is lower than reported.  
+Attack scenario (中文): 在高贖回期（關注重點 #3），攻擊者或橋故意延遲導致實際僅部分轉帳（如因 L1 gas 損耗而短 1 wei）。會計仍按全額記入 totalBackingSigned()，讓 Operator 報告溢出收益。如此會將無底層資產支持的收益注入 sUSDM，永久稀釋所有持有人份額，實際支持低於報告。
+
+
+https://grok.com/c/4210bf54-577c-4e97-9ba9-beea3d3eeecd?rid=8228556b-d292-4802-ae4c-90f16490d86d

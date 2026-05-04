@@ -21,3 +21,8 @@ double check the issue in @test/c4/README.md is in Areas of concern (where to fo
 (check again with the constraint in the readme)
 
 list the most 3 reasonable, highest-severity exploitable issues based on the `Areas of concern` in readme
+
+
+
+grok:
+https://grok.com/c/8cd03560-1fd7-4ca0-a93a-16c161c210be?rid=4bc640de-3420-4c6f-9332-4d209de4ce38
