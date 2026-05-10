@@ -1,7 +1,7 @@
-# access-control (55)
+# access-control (26)
 
-> Issues where privilege checks, admin roles, or signature/permit enforcement were bypassed or misconfigured.
+> Issues where privilege checks, elevated roles, or signature/permit enforcement were bypassed or misconfigured.
 
 ## Subcategories
 
-- [role-model](./role-model/) (55)
+- [role-model](./role-model/) (26)

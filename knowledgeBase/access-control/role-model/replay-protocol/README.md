@@ -1,6 +1,6 @@
-# replay-protocol (8)
+# replay-protocol (6)
 
-> Issues involving cross-chain or cross-session signature replay, and admin role transfer guard bypasses.
+> Issues involving cross-chain or cross-session signature replay and hook/fee automation failures.
 
 Severity legend: 🔴 Critical  🟠 High  🟡 Medium
 
@@ -93,65 +93,7 @@ Include the EntryPoint address in the user operation hash computation, consisten
 
 ---
 
-## 4. AdminRegistry::acceptAdmin Leaves Other Roles on the Outgoing Admin
-
-**Severity:** 🟡 Medium
-**Source:** `cyfrin/clob.md`
-
-**Description:**
-When the pending admin calls `AdminRegistry::acceptAdmin`, the function revokes `DEFAULT_ADMIN_ROLE` from the previous admin and grants it to the new admin. However, the outgoing admin may have granted themselves other protocol roles during their tenure — specifically `MARKET_ADMIN_ROLE`, `OPERATOR_ROLE`, `FEE_ADMIN_ROLE`, or `RESOLUTION_ADMIN_ROLE` — using the privileges of their `DEFAULT_ADMIN_ROLE`. These non-default roles are not revoked as part of the `acceptAdmin` process. After the handoff completes, the former admin retains any additional roles they had assigned to themselves. The new admin may not be aware of this residual access and may not know to revoke those roles, leaving the outgoing admin with ongoing operational privileges they should no longer hold.
-
-**Impact:**
-An outgoing admin retains all non-default protocol roles after the admin transfer completes. This is inconsistent with the intent of a full admin transition. The former admin continues to hold market administration, operator, fee administration, or resolution administration capabilities, which could be exploited or create conflicts with the new admin's operations.
-
-**Recommended Mitigation:**
-Explicitly revoke all protocol roles from the outgoing admin within `acceptAdmin` before completing the handoff. Revoke `DEFAULT_ADMIN_ROLE`, `MARKET_ADMIN_ROLE`, `OPERATOR_ROLE`, `FEE_ADMIN_ROLE`, and `RESOLUTION_ADMIN_ROLE` from `oldAdmin` to ensure a clean transfer of all privileges to the incoming admin.
-
----
-
-**[中文版本]**
-
-**描述：**
-當待定管理員調用 `AdminRegistry::acceptAdmin` 時，函數從前任管理員撤銷 `DEFAULT_ADMIN_ROLE` 並授予新管理員。然而，離任管理員在任期間可能通過其 `DEFAULT_ADMIN_ROLE` 特權向自己授予了其他協議角色，如 `MARKET_ADMIN_ROLE`、`OPERATOR_ROLE`、`FEE_ADMIN_ROLE` 或 `RESOLUTION_ADMIN_ROLE`。這些非默認角色在 `acceptAdmin` 過程中不會被撤銷，離任管理員在交接完成後仍保留這些附加角色，新管理員可能不知道需要撤銷這些角色。
-
-**影響：**
-離任管理員在管理員轉移完成後保留所有非默認協議角色，與完整管理員過渡的意圖不符，可能被利用或與新管理員的操作產生衝突。
-
-**修復建議：**
-在 `acceptAdmin` 完成移交之前，從離任管理員撤銷所有協議角色，包括 `DEFAULT_ADMIN_ROLE`、`MARKET_ADMIN_ROLE`、`OPERATOR_ROLE`、`FEE_ADMIN_ROLE` 和 `RESOLUTION_ADMIN_ROLE`，確保所有特權的乾淨轉移。
-
----
-
-## 5. AdminRegistry Inherited grantRole/revokeRole Bypass the Two-Step Transfer Guard
-
-**Severity:** 🟡 Medium
-**Source:** `cyfrin/clob.md`
-
-**Description:**
-`AdminRegistry` inherits from OpenZeppelin `AccessControl`, which exposes public `grantRole` and `revokeRole` functions callable by the role admin. For `DEFAULT_ADMIN_ROLE`, the role admin is itself, meaning the current admin can call `grantRole(DEFAULT_ADMIN_ROLE, newAdmin)` followed by `revokeRole(DEFAULT_ADMIN_ROLE, address(this))` in two direct transactions, completely bypassing the two-step `proposeAdmin` / `acceptAdmin` mechanism. The two-step transfer guard intended to prevent accidental handoffs and ensure the new admin actively accepts the role provides no protection because the inherited one-step paths remain accessible and unoverride. Additionally, the inherited `grantRole` allows `DEFAULT_ADMIN_ROLE` to be granted to multiple addresses simultaneously, creating a split-brain state where multiple addresses hold `DEFAULT_ADMIN_ROLE` but the `admin` state variable tracks only one.
-
-**Impact:**
-The two-step transfer safety guarantee is illusory. Any admin can intentionally or accidentally complete a role transfer in a single transaction, skipping the confirmation step that validates the new admin has correct access and intention to accept. The `admin` state variable can diverge from the true `DEFAULT_ADMIN_ROLE` holder(s), creating inconsistency between on-chain role state and the tracked admin.
-
-**Recommended Mitigation:**
-Override `grantRole` and `revokeRole` to revert when called with `DEFAULT_ADMIN_ROLE`, forcing all `DEFAULT_ADMIN_ROLE` transfers through the two-step `proposeAdmin`/`acceptAdmin` mechanism. This ensures the safety guard cannot be circumvented via the inherited OpenZeppelin paths.
-
----
-
-**[中文版本]**
-
-**描述：**
-`AdminRegistry` 繼承自 OpenZeppelin 的 `AccessControl`，後者公開了可由角色管理員調用的 `grantRole` 和 `revokeRole` 函數。對於 `DEFAULT_ADMIN_ROLE`，角色管理員是自身，這意味著當前管理員可直接調用 `grantRole(DEFAULT_ADMIN_ROLE, newAdmin)` 再調用 `revokeRole(DEFAULT_ADMIN_ROLE, address(this))`，完全繞過旨在防止意外移交的兩步 `proposeAdmin`/`acceptAdmin` 機制。此外，繼承的 `grantRole` 允許將 `DEFAULT_ADMIN_ROLE` 同時授予多個地址，導致多個地址持有該角色但 `admin` 狀態變量只跟蹤一個地址的分裂腦狀態。
-
-**影響：**
-兩步移交安全保障是虛幻的——任何管理員可在單筆交易中完成角色移交，跳過確認新管理員具有正確訪問和接受意圖的確認步驟；`admin` 狀態變量可能與真實的 `DEFAULT_ADMIN_ROLE` 持有者不一致。
-
-**修復建議：**
-覆蓋 `grantRole` 和 `revokeRole`，使其在以 `DEFAULT_ADMIN_ROLE` 調用時回滾，強制所有 `DEFAULT_ADMIN_ROLE` 轉移通過兩步 `proposeAdmin`/`acceptAdmin` 機制，確保安全防護無法通過繼承的 OpenZeppelin 路徑被繞過。
-
----
-
-## 6. All Swaps Will Revert if the Dynamic Protocol Fee Is Enabled Since hook-config.sol Does Not Encode the afterSwapReturnDelta Permission
+## 4. All Swaps Will Revert if the Dynamic Protocol Fee Is Enabled Since hook-config.sol Does Not Encode the afterSwapReturnDelta Permission
 
 **Severity:** 🟡 Medium
 **Source:** `cyfrin/angstrom.md`
@@ -180,7 +122,7 @@ Add `afterSwapReturnDelta = true` to the required hook permissions in `hook-conf
 
 ---
 
-## 7. Automation DoS via Blacklisted or Reverting Fee Recipients
+## 5. Automation DoS via Blacklisted or Reverting Fee Recipients
 
 **Severity:** 🟡 Medium
 **Source:** `cyfrin/octodefi.md`
@@ -209,7 +151,7 @@ Switch from a push pattern to a pull pattern where each fee recipient accumulate
 
 ---
 
-## 8. Protocol Vulnerable to Cross-Chain Signature Replay
+## 6. Protocol Vulnerable to Cross-Chain Signature Replay
 
 **Severity:** 🟡 Medium
 **Source:** `cyfrin/cryptoart.md`

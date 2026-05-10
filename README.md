@@ -58,25 +58,33 @@ https://github.com/ChunWang1998/audit_knowledge-base-factory/tree/main
 
 
 grok2:
-highly cross-referencing all the files/issues in knowledgeBase repo [FOLDER_NAME]
+highly cross-referencing all the files/issues in knowledgeBase repo knowledgebase/access-control
 and based on folder name (which is the exploit type) + conceptual similarity to find the most relevant issues (even if the title is not 1:1 exact match).
-Only listed the most two highest-severity exploitable issues with english and chinese
+Always list exactly the top 2 most relevant issues (High or Medium severity is fine; do not skip Medium if it is conceptually strong).
+Output them in English and Chinese using this exact issue format:
 
-the issue format:
 knowledgeBase type: (based on the folder name ex: access-control/role-model/blacklisted-users — must be at least 3 layers)
 The main reference issue title in knowledgeBase: (use the closest matching / conceptually strongest title from the KB README; if no perfect match, use a clear descriptive title that best represents the concept)
 File Location: 
 Issue Description: 
 Attack scenario: 
 
-before you log the data, double check that:
+Before logging the data, double-check these rules:
 1. knowledgeBase type should be at least 3 layers
 2. The main reference issue title in knowledgeBase field should be the strongest conceptual match (semantic similarity based on exploit type/folder name) — exact wording is NOT required
-3. the issue you found is a real violation / risk in the target code and does not violate any design-accepted assumptions in the bug bounty scope
+3. the issue you found is a real violation / risk in the target code, is in-scope for the bug bounty, and does NOT rely on violating the explicit "Out-of-Scope" or "Design-Accepted & Trust Assumptions" sections (but Medium griefing / edge-case issues are still valid if they can cause real operational impact or fund risk).
+
+If you find fewer than 2 strong matches, still list the 2 closest conceptual ones and note the severity clearly.
 
 
 grok3:
-repeat the same workflow,  but this time select the top 2 issues by strongly mapping them to knowledgeBase/withdrawal-redeem
+repeat the same workflow on knowledgeBase/accounting, Strongly map the top 2 most relevant issues (High or Medium severity is fine) using folder name + conceptual similarity. Report even if they are borderline or Medium — as long as they are in-scope and exploitable.
+
+knowledgeBase/dos-liveness
+knowledgeBase/oracle-pricing
+knowledgeBase/token-transfer
+knowledgeBase/upgrade-config
+knowledgeBase/withdrawal-redeem
 ---------------------------------------------
 
 
@@ -109,3 +117,10 @@ Q:
 3. 將1, 2 的結果可以整理成一份note, 用該note 進行篩選(可以用test file 重現, 符合readme scope)
 4. 用篩選過的issue 來寫test, 在cursor 做比較好, 不然會常常compile fail from grok
 
+
+
+knowledgeBase type: token-transfer/erc20-edge-cases/fee-on-transfer
+The main reference issue title in knowledgeBase: Fee-on-Transfer Token Dust in Forwarder Flush
+File Location: contracts/ForwarderV4.sol (flushTokens、batchFlushERC20Tokens) 與 contracts/WalletSimple.sol (flushForwarderTokens)
+Issue Description: Forwarder 合約會先查詢 ERC20 目前餘額，再使用 TransferHelper.safeTransfer 嘗試轉出全額。對於 fee-on-transfer 代幣，接收方（parent wallet）實際收到的金額會少於預期，導致 forwarder 內留下 dust 並造成預期資金與實際資金的 accounting desynchronization（與 fee-on-transfer 模式高度概念吻合）。
+Attack scenario: 用戶或攻擊者向 Forwarder 地址發送 fee-on-transfer 代幣。呼叫 flushTokens 時，parent 只收到少於 balanceOf 的金額。重複 flush 會累積 dust 或在 BitGo 託管系統中造成對帳錯誤（Medium 等級資金管理風險，完全符合 in-scope）。

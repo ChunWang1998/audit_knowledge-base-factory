@@ -1,6 +1,6 @@
 # KnowledgeBase — Issue Index
 
-Automatically generated index of **682** fixed security issues (Critical / High / Medium).
+Automatically generated index of **643** fixed security issues (Critical / High / Medium).
 Sources: `HackenPDFTXT/`, `sherlockPDFTXT/`, `cyfrin/`
 
 Severity legend: 🔴 Critical  🟠 High  🟡 Medium
@@ -9,9 +9,9 @@ Severity legend: 🔴 Critical  🟠 High  🟡 Medium
 
 ## Table of Contents
 
-- [access-control](#access-control) (55)
+- [access-control](#access-control) (26)
 - [accounting](#accounting) (57)
-- [dos-liveness](#dos-liveness) (437)
+- [dos-liveness](#dos-liveness) (427)
 - [oracle-pricing](#oracle-pricing) (11)
 - [token-transfer](#token-transfer) (40)
 - [upgrade-config](#upgrade-config) (32)
@@ -19,78 +19,21 @@ Severity legend: 🔴 Critical  🟠 High  🟡 Medium
 
 ---
 
-## access-control (55)
-> Issues where privilege checks, admin roles, or signature/permit enforcement were bypassed or misconfigured.
+## access-control (26)
+> Issues where privilege checks, elevated roles, or signature/permit enforcement were bypassed or misconfigured.
 
-### role-model (55)
+### role-model (26)
 
-#### `owner-admin` (20)
-
-- 🟠 **In `DelegatorFactory` new entity can be created for a blacklisted implementation**  
-  `cyfrin/core.md`
-- 🟠 **Incorrect `owner` passed to `Manager::redeem` in YToken withdrawal flow**  
-  `cyfrin/yieldfi.md`
-- 🟠 **Users Can Renounce BLACKLISTED_ROLE and Bypass**  
-  `HackenPDFTXT/Overlayer.txt`
-- 🟡 **Admin Can Arbitrarily Decrease User’s Vesting Amount**  
-  `HackenPDFTXT/A Two Tech Limited.txt`
-- 🟡 **Blacklist Enforcement Bypassed When Recipient Is**  
-  `HackenPDFTXT/Knoxnet.txt`
-- 🟡 **Combination of Ownable and AccessControl can cause loss of admin functionality**  
-  `cyfrin/trade.md`
-- 🟡 **DEFAULT_ADMIN_ROLE` can be mistakenly granted to an account when granting permission to call `fallback` on any contract**  
-  `cyfrin/tranches.md`
-- 🟡 **Default Admin Can Assign Blacklisted Role Without Enforcing**  
-  `HackenPDFTXT/Overlayer.txt`
-- 🟡 **Guardian can override owner's emergency pause**  
-  `cyfrin/wlf.md`
-- 🟡 **Misleading owner field in OnMetaWithdraw event**  
-  `cyfrin/cooldown.md`
-- 🟡 **Owner Authorization Allows Arbitrary Burning of Soulbound**  
-  `HackenPDFTXT/RYT-2.txt`
-- 🟡 **Owner Rights Can Be Renounced While Contract Is Paused**  
-  `HackenPDFTXT/Node Meta.txt`
-- 🟡 **Owner can chain admin calls for same-block drains**  
-  `cyfrin/sherpa.md`
-- 🟡 **Owner can front-run depositors by call-**  
-  `sherlockPDFTXT/Prodigy Finance.txt`
-- 🟡 **Owner can not burn tokens from blacklisted addresses**  
-  `cyfrin/syntetika.md`
-- 🟡 **Owner can rescue the vault’s own share tokens**  
-  `cyfrin/sherpa.md`
-- 🟡 **StandardToken::transferWithPermit` can be DoS attacked by front-running to directly call `ERC20PermitMixin::permit**  
-  `cyfrin/registry.md`
-- 🟡 **TrustService::removeRole` doesn't delete already owned entities so address which lost role can still manage existing entities**  
-  `cyfrin/rebasing.md`
-- 🟡 **Untrusted Contract Remains Callable via Whitelisted**  
-  `HackenPDFTXT/Dexalot.txt`
-- 🟡 **WLFI owner can DoS legacy users through direct vester activation**  
-  `cyfrin/wlf.md`
-
-#### `blacklisted-users` (16)
+#### `blacklisted-users` (9)
 
 - 🔴 **Lack of Access Control Enabling Unauthorized Credential**  
   `HackenPDFTXT/RYT-2.txt`
 - 🟠 **Blacklisted Token Recipient Permanently Blocks FIFO Forced**  
   `HackenPDFTXT/BullBit.txt`
-- 🟡 **Admin void with arbitrary payout ratios allows buy then redeem profit**  
-  `cyfrin/clob.md`
-- 🟡 **Allow users to increment their nonce to void their signatures**  
-  `cyfrin/cryptoart.md`
-- 🟡 **Authorizable::_verify` should use EIP-712 typed structured data hashing**  
-  `cyfrin/accountable.md`
-- 🟡 **Blacklisted shares continue earning re-**  
-  `sherlockPDFTXT/Tori Finance.txt`
 - 🟡 **Blacklisted users can claim withdrawn assets after the cooldown period**  
   `cyfrin/syntetika.md`
 - 🟡 **ComplianceServiceGlobalWhitelisted::getComplianceTransferableTokens` returns positive token amount for blacklisted users**  
   `cyfrin/registry.md`
-- 🟡 **Excessive Admin Control Over Critical Staking Parameters**  
-  `HackenPDFTXT/A Two Tech Limited.txt`
-- 🟡 **Inability for users to permissionlessly stake and earn yield**  
-  `cyfrin/syntetika.md`
-- 🟡 **Prevent accidental ownership and admin renouncement**  
-  `cyfrin/accountable.md`
 - 🟡 **Remove unused `ExecutePreApprovedTransaction::nonce**  
   `cyfrin/registry.md`
 - 🟡 **Shared Proof Replay-Prevention State Across Multiple**  
@@ -127,7 +70,7 @@ Severity legend: 🔴 Critical  🟠 High  🟡 Medium
 - 🟡 **Weak signature validation in account activation**  
   `cyfrin/wlf.md`
 
-#### `replay-protocol` (8)
+#### `replay-protocol` (6)
 
 - 🔴 **After the upgrade permissionless attacker can fully drain the L1 `TokenBridge` of `ERC20` tokens currently valued around $29M USD**  
   `cyfrin/upgrade.md`
@@ -135,10 +78,6 @@ Severity legend: 🔴 Critical  🟠 High  🟡 Medium
   `cyfrin/upgrade.md`
 - 🟠 **EntryPoint not included in user operation hash creates the possibility of Replay Attacks**  
   `cyfrin/DelegationFramework1.md`
-- 🟡 **AdminRegistry::acceptAdmin` leaves other roles on the outgoing admin**  
-  `cyfrin/clob.md`
-- 🟡 **AdminRegistry` inherited `grantRole`/`revokeRole` bypass the two-step transfer guard**  
-  `cyfrin/clob.md`
 - 🟡 **All swaps will revert if the dynamic protocol fee is enabled since `hook-config.sol` does not encode the `afterSwapReturnDelta` permission**  
   `cyfrin/angstrom.md`
 - 🟡 **Automation DoS via blacklisted or reverting fee recipients**  
@@ -284,12 +223,12 @@ Severity legend: 🔴 Critical  🟠 High  🟡 Medium
 - 🟡 **Inconsistent stake calculation due to mutable `vaultManager` reference in `AvalancheL1Middleware**  
   `cyfrin/core.md`
 
-## dos-liveness (437)
+## dos-liveness (427)
 > Issues that block normal protocol operation — including griefing of funds/rewards/fees and irreversible revert-locks.
 
-### griefing (405)
+### griefing (396)
 
-#### `return-script` (39)
+#### `return-script` (34)
 
 - 🔴 **All CCIP messages reverts when decoded**  
   `cyfrin/yieldfi.md`
@@ -305,10 +244,6 @@ Severity legend: 🔴 Critical  🟠 High  🟡 Medium
   `cyfrin/update.md`
 - 🟡 **Cap Semantics Mismatch: _cap Enforces**  
   `sherlockPDFTXT/Fluent (2).txt`
-- 🟡 **Chainlink router configured twice**  
-  `cyfrin/yieldfi.md`
-- 🟡 **Check return value when calling `Allowlist::exchangeAllowed` and `RemoraToken::_exchangeAllowed` to prevent unauthorized transfers**  
-  `cyfrin/pledge.md`
 - 🟡 **Collision between rebalance order consideration tokens and am-AMM fees for Bunni pools using Bunni tokens**  
   `cyfrin/bunni.md`
 - 🟡 **CompensationPriceFinder::getZeroForOne` may compute smaller effective prices than expected**  
@@ -343,8 +278,6 @@ Severity legend: 🔴 Critical  🟠 High  🟡 Medium
   `cyfrin/manager.md`
 - 🟡 **Remove obsolete `onlyTokenOwner` from `_transferToNftReceiver**  
   `cyfrin/cryptoart.md`
-- 🟡 **Remove or resolve TODO**  
-  `cyfrin/escrow.md`
 - 🟡 **Remove return value from `DSToken::updateInvestorBalance` as it is never checked**  
   `cyfrin/rebasing.md`
 - 🟡 **Return fast in `ComplianceServiceRegulated::checkHoldUp` if platform wallet**  
@@ -365,12 +298,8 @@ Severity legend: 🔴 Critical  🟠 High  🟡 Medium
   `cyfrin/wannabetv2.md`
 - 🟡 **Withdrawals priced at execution problematic during large price swings**  
   `cyfrin/trade.md`
-- 🟡 **finalizeWithFee lacks race conditioning protection**  
-  `cyfrin/cooldown.md`
-- 🟡 **transferOwnership Does Not Update Privileged Exemptions**  
-  `HackenPDFTXT/Knoxnet.txt`
 
-#### `named-explicitly` (26)
+#### `named-explicitly` (23)
 
 - 🟠 **All updated pools will have the wrong pr**  
   `sherlockPDFTXT/EasyA Kickstart.txt`
@@ -378,12 +307,8 @@ Severity legend: 🔴 Critical  🟠 High  🟡 Medium
   `cyfrin/rebasing.md`
 - 🟡 **Calculation of available liquidity in `CollateralLiquidityProvider::availableLiquidity` assumes 1:1 ratio between collateral asset and liquidity tokens**  
   `cyfrin/bridge.md`
-- 🟡 **Changing investor country to the same country inflates investor count erroneously triggering max investor errors**  
-  `cyfrin/rebasing.md`
 - 🟡 **Cooldown contracts underreport the real balance of users because they only consider the balance of requests whose cooldown period is over**  
   `cyfrin/tranches.md`
-- 🟡 **Deployment script requires unencrypted private keys**  
-  `cyfrin/trade.md`
 - 🟡 **Dynamic LP fees will remain zero by default unless explicitly updated**  
   `cyfrin/angstrom.md`
 - 🟡 **External LST liability settlements are lost to the protocol when ossification and yield provider removal precedes yield reporting**  
@@ -418,8 +343,6 @@ Severity legend: 🔴 Critical  🟠 High  🟡 Medium
   `cyfrin/protocol.md`
 - 🟡 **Use named mappings to explicitly indicate the purpose of keys and values**  
   `cyfrin/wannabetv2.md`
-- 🟡 **YieldManager::fundYieldProvider` and `LidoStVaultYieldProvider::fundYieldProvider` don't enforce `isStakingPaused` and `isOssificationInitiated` allowing unsafe staking**  
-  `cyfrin/manager.md`
 - 🟡 **eciesjs major version mismatch between dApp SDK and mobile wallet creates untested cryptographic interoperability risk**  
   `cyfrin/connect.md`
 - 🟡 **yUSDeVault` edge cases should be explicitly handled to prevent view functions from reverting**  
@@ -523,8 +446,6 @@ Severity legend: 🔴 Critical  🟠 High  🟡 Medium
   `cyfrin/vii.md`
 - 🟡 **IBeforeInitializeHook` should be added to the `AngstromL2` inheritance chain**  
   `cyfrin/angstrom.md`
-- 🟡 **In `RemoraToken::adminClaimPayout`, `adminTransferFrom` don't call `hasSignedDocs` when `checkTC == false**  
-  `cyfrin/pledge.md`
 - 🟡 **Incorrect link to Angle contracts across protocol**  
   `cyfrin/parallel3.1.md`
 - 🟡 **Lack of `_disableInitializers` in upgradeable contracts**  
@@ -825,8 +746,6 @@ Severity legend: 🔴 Critical  🟠 High  🟡 Medium
   `cyfrin/clob.md`
 - 🟡 **Operators can lose their reward share**  
   `cyfrin/core.md`
-- 🟡 **PaymentSettler::claimAllPayouts` doesn't validate input `tokens` addresses are legitimate contracts before calling `adminClaimPayout` on them**  
-  `cyfrin/pledge.md`
 - 🟡 **Same user can join the same game multiple times increasing their chance of winning by preventing other players from participating**  
   `cyfrin/protocol.md`
 - 🟡 **Seizing payouts for frozen users can lead to double spending if the holder is unfrozen in subsequent distributions**  
@@ -996,14 +915,12 @@ Severity legend: 🔴 Critical  🟠 High  🟡 Medium
 - 🟡 **_receiverGas` check excludes minimum acceptable value**  
   `cyfrin/yieldfi.md`
 
-#### `unused-remove` (11)
+#### `unused-remove` (10)
 
 - 🟡 **Remove `< 0` comparison for unsigned integers**  
   `cyfrin/pledge.md`
 - 🟡 **Remove setting deprecated `lastUpdatedBy` in RegistryService**  
   `cyfrin/rebasing.md`
-- 🟡 **Remove todo comments**  
-  `cyfrin/manager.md`
 - 🟡 **Remove unused constant `CryptoartNFT::ROYALTY_BASE**  
   `cyfrin/cryptoart.md`
 - 🟡 **Remove useless function `ComplianceServiceRegulated::adjustTransferCounts**  
@@ -1189,9 +1106,9 @@ Severity legend: 🔴 Critical  🟠 High  🟡 Medium
 - 🟡 **Weak structural validation of connectionRequest from deeplink**  
   `cyfrin/connect.md`
 
-### revert-lock (32)
+### revert-lock (31)
 
-#### `revert-permanently` (18)
+#### `revert-permanently` (17)
 
 - 🟠 **Expired Tokens Permanently Trapped**  
   `HackenPDFTXT/S3 Markets.txt`
@@ -1201,8 +1118,6 @@ Severity legend: 🔴 Critical  🟠 High  🟡 Medium
   `HackenPDFTXT/Fabstir.txt`
 - 🟠 **Staking Capacity Permanently Lost as Stakes Complete**  
   `HackenPDFTXT/Acecoin.txt`
-- 🟡 **AdminRegistry::proposeAdmin` self-proposal permanently removes `DEFAULT_ADMIN_ROLE**  
-  `cyfrin/clob.md`
 - 🟡 **Don't add duplicate `documentHash` to `DocumentManager::DocumentStorage::_docHashes` when overwriting via `_setDocument` as this causes panic revert when calling `_removeDocument**  
   `cyfrin/pledge.md`
 - 🟡 **Excess Contributions Become Permanently Locked Due to**  
