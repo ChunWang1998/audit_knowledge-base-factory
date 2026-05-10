@@ -1,4 +1,4 @@
-# accounting (57)
+# accounting (61)
 
 > Issues involving rounding/precision errors, state desynchronisation, or incorrect share/NAV calculations.
 
@@ -6,4 +6,4 @@
 
 - [rounding-precision](./rounding-precision/) (27)
 - [share-price-nav](./share-price-nav/) (7)
-- [state-sync](./state-sync/) (23)
+- [state-sync](./state-sync/) (27)

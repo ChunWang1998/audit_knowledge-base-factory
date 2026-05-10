@@ -10,12 +10,12 @@ Severity legend: 🔴 Critical  🟠 High  🟡 Medium
 ## Table of Contents
 
 - [access-control](#access-control) (26)
-- [accounting](#accounting) (57)
-- [dos-liveness](#dos-liveness) (427)
-- [oracle-pricing](#oracle-pricing) (11)
-- [token-transfer](#token-transfer) (40)
+- [accounting](#accounting) (61)
+- [dos-liveness](#dos-liveness) (31)
+- [external-dependencies](#external-dependencies) (11)
+- [griefing-attacks](#griefing-attacks) (455)
+- [token-transfer](#token-transfer) (36)
 - [upgrade-config](#upgrade-config) (32)
-- [withdrawal-redeem](#withdrawal-redeem) (50)
 
 ---
 
@@ -85,7 +85,7 @@ Severity legend: 🔴 Critical  🟠 High  🟡 Medium
 - 🟡 **Protocol vulnerable to cross-chain signature replay**  
   `cyfrin/cryptoart.md`
 
-## accounting (57)
+## accounting (61)
 > Issues involving rounding/precision errors, state desynchronisation, or incorrect share/NAV calculations.
 
 ### rounding-precision (27)
@@ -169,7 +169,7 @@ Severity legend: 🔴 Critical  🟠 High  🟡 Medium
 - 🟡 **pUSDeVault::maxWithdraw` doesn't account for withdrawal pausing, in violation of EIP-4626 which can break protocols integrating with `pUSDeVault**  
   `cyfrin/predeposit.md`
 
-### state-sync (23)
+### state-sync (27)
 
 #### `accounting-inconsistent` (18)
 
@@ -223,10 +223,20 @@ Severity legend: 🔴 Critical  🟠 High  🟡 Medium
 - 🟡 **Inconsistent stake calculation due to mutable `vaultManager` reference in `AvalancheL1Middleware**  
   `cyfrin/core.md`
 
-## dos-liveness (427)
-> Issues that block normal protocol operation — including griefing of funds/rewards/fees and irreversible revert-locks.
+#### `cross-chain-accounting` (4)
 
-### griefing (396)
+- 🟠 **Hub Chain OverLayer Supply Reduction After OFT Transfers**  
+  `HackenPDFTXT/Overlayer.txt`
+- 🟡 **Pause modifier in bridge receiver functions causes receiver failures for in-flight messages**  
+  `cyfrin/bridge.md`
+- 🟡 **Settlement of liabilities and obligations lacks optimization for priority repayment, leading to accumulation of unpaid negative yield in the system**  
+  `cyfrin/manager.md`
+- 🟡 **depositTokenFromContract Cannot Pay Bridge Fees**  
+  `HackenPDFTXT/Dexalot.txt`
+
+## dos-liveness (31)
+> Issues where protocol state becomes permanently locked — tokens trapped, functions permanently reverting, or irrecoverable state.
+### revert-lock (31)
 
 #### `return-script` (34)
 
@@ -1106,7 +1116,11 @@ Severity legend: 🔴 Critical  🟠 High  🟡 Medium
 - 🟡 **Weak structural validation of connectionRequest from deeplink**  
   `cyfrin/connect.md`
 
-### revert-lock (31)
+## griefing-attacks (455)
+
+> Active griefing vectors — issues that allow an attacker or misconfigured logic to block, drain, or misroute protocol operations, including withdrawal queue DoS patterns.
+
+### griefing (396)
 
 #### `revert-permanently` (17)
 
@@ -1176,8 +1190,8 @@ Severity legend: 🔴 Critical  🟠 High  🟡 Medium
 - 🟡 **Wrong revert reason In `onSlash` functionality**  
   `cyfrin/core.md`
 
-## oracle-pricing (11)
-> Issues involving stale oracle data, timestamp manipulation, or price manipulation attacks.
+## external-dependencies (11)
+> Issues involving external system dependencies such as stale oracle data, timestamp manipulation, or price manipulation attacks.
 
 ### price-manipulation (3)
 
@@ -1211,21 +1225,8 @@ Severity legend: 🔴 Critical  🟠 High  🟡 Medium
 - 🟡 **lastTotalAssets` stores stale value due to update before penalty accrual**  
   `cyfrin/pr50.md`
 
-## token-transfer (40)
-> Issues with ERC-20 token behaviour (fee-on-transfer, rebasing, burn) and cross-chain transfer accounting.
-
-### cross-chain-accounting (4)
-
-#### `bridge-receiver` (4)
-
-- 🟠 **Hub Chain OverLayer Supply Reduction After OFT Transfers**  
-  `HackenPDFTXT/Overlayer.txt`
-- 🟡 **Pause modifier in bridge receiver functions causes receiver failures for in-flight messages**  
-  `cyfrin/bridge.md`
-- 🟡 **Settlement of liabilities and obligations lacks optimization for priority repayment, leading to accumulation of unpaid negative yield in the system**  
-  `cyfrin/manager.md`
-- 🟡 **depositTokenFromContract Cannot Pay Bridge Fees**  
-  `HackenPDFTXT/Dexalot.txt`
+## token-transfer (36)
+> Issues with ERC-20 token behaviour (fee-on-transfer, rebasing, burn) and token transfer edge cases.
 
 ### erc20-edge-cases (36)
 
@@ -1390,8 +1391,8 @@ Severity legend: 🔴 Critical  🟠 High  🟡 Medium
 - 🟡 **In Solidity don't initialize to default values**  
   `cyfrin/protocol.md`
 
-## withdrawal-redeem (50)
-> Issues that block or grief the withdrawal/redemption queue.
+## griefing-attacks / withdrawal-redeem (50)
+> Issues that block or grief the withdrawal/redemption queue. This topic is now nested under `griefing-attacks/withdrawal-redeem` in the folder structure.
 
 ### queue-dos (50)
 

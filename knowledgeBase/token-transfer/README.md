@@ -1,8 +1,7 @@
-# token-transfer (40)
+# token-transfer (36)
 
-> Issues with ERC-20 token behaviour (fee-on-transfer, rebasing, burn) and cross-chain transfer accounting.
+> Issues with ERC-20 token behaviour (fee-on-transfer, rebasing, burn) and token transfer edge cases.
 
 ## Subcategories
 
-- [cross-chain-accounting](./cross-chain-accounting/) (4)
 - [erc20-edge-cases](./erc20-edge-cases/) (36)

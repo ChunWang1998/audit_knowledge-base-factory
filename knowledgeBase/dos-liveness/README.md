@@ -1,8 +1,7 @@
-# dos-liveness (437)
+# dos-liveness (32)
 
-> Issues that block normal protocol operation — including griefing of funds/rewards/fees and irreversible revert-locks.
+> Issues where protocol state becomes permanently locked, usually through irreversible revert paths.
 
 ## Subcategories
 
-- [griefing](./griefing/) (405)
 - [revert-lock](./revert-lock/) (32)

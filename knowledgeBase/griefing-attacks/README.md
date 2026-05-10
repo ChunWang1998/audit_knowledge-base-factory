@@ -1,4 +1,4 @@
-# griefing (405)
+# griefing-attacks (455)
 
 > Active griefing vectors — issues that allow an attacker or misconfigured logic to block, drain, or misroute protocol operations.
 
@@ -34,3 +34,4 @@
 - [consistently-consider](./consistently-consider/) (4)
 - [function-voting](./function-voting/) (3)
 - [validation-weak](./validation-weak/) (3)
+- [withdrawal-redeem](./withdrawal-redeem/) (50)
