@@ -1,0 +1,35 @@
+Issue 1
+knowledgeBase type: knowledgeBase/dos-liveness/gas-griefing/enumerable-set-values
+The main reference issue title in knowledgeBase: Gas exhaustion DoS through large EnumerableSet iteration in multiple public getter functions (strongest conceptual match from dos-liveness patterns)
+File Location: contracts/global/BytecodeRepository.sol (getAuditors, getPublicDomains, getSystemDomains, getVersions functions)
+Issue Description: Multiple public view getters return .values() of several EnumerableSets (_auditorsSet, domain sets, version sets) without pagination or size limits, allowing the sets to grow arbitrarily large through normal/authorized operations.
+Attack scenario: Once sets become large (via adding many auditors, domains, or versions), calls to these getters become prohibitively expensive, causing DoS on any UI, indexer, or contract that queries contract state, leading to liveness degradation across the protocol.
+Mandatory code verification & mitigation check (rules 4-7 applied):
+Inspected actual source code in contracts/global/BytecodeRepository.sol. Relevant snippets (multiple similar patterns):
+solidityfunction getAuditors() external view returns (address[] memory) {
+    return _auditorsSet.values();
+}
+// similarly for:
+function getPublicDomains() external view returns (bytes32[] memory);
+function getSystemDomains() external view returns (bytes32[] memory);
+function getVersions(bytes32 cType) external view returns (bytes32[] memory);
+No upper bounds, no pagination, no view-function gas mitigations. Internal loops in submitAuditReport/isBytecodeAudited also present. No strong mitigation present. Real exploitable Medium griefing/liveness issue. Fully in-scope (Medium: Griefing / Unbounded gas consumption per bug bounty scope).
+
+Issue 2
+knowledgeBase type: knowledgeBase/external-dependencies/price-manipulation/token-behavior
+The main reference issue title in knowledgeBase: Trusting external ERC20 data sources without fee-on-transfer or non-standard token validation (strongest conceptual match from price-manipulation and external-source-trust patterns)
+File Location: contracts/market/TreasurySplitter.sol (_distribute internal function)
+Issue Description: The contract performs proportional fund distribution based on live balanceOf() of an arbitrary ERC20 token without any checks or adjustments for non-standard token behaviors such as fee-on-transfer or rebasing.
+Attack scenario: An attacker (or any user) sends a fee-on-transfer token to the TreasurySplitter. When distribute() is called, the calculated transfer amounts (based on pre-transfer balance) exceed the actual amounts received by receivers due to transfer fees, resulting in permanent dust loss inside the contract and under-delivery to intended receivers (theft of unclaimed yield or permanent freezing of small amounts).
+Mandatory code verification & mitigation check (rules 4-7 applied):
+Inspected actual source code in contracts/market/TreasurySplitter.sol. Relevant snippet proving the vulnerability:
+solidityuint256 balance = IERC20(token).balanceOf(address(this));
+uint256 balanceDiff = balance - insuranceAmount;
+for (uint256 i = 0; i < len; ++i) {
+    address receiver = split.receivers[i];
+    uint16 proportion = split.proportions[i];
+    if (receiver != address(this)) {
+        IERC20(token).safeTransfer(receiver, proportion * balanceDiff / PERCENTAGE_FACTOR);
+    }
+}
+SafeERC20 is used (prevents revert-on-failure), proportions are validated to sum to PERCENTAGE_FACTOR, and live balanceOf() is read. However, no post-transfer balance verification, no fee adjustment logic, and no token whitelist or standard ERC20 enforcement. No strong mitigation present for this external dependency. Real violation. Fully in-scope (Medium: Theft of unclaimed yield / permanent freezing of funds per bug bounty scope Primacy of Impact).

@@ -29,7 +29,11 @@ https://code4rena.com/audits
 a. Monetrix
 
 2. immunefi 
-https://immunefi.com/bug-bounty/?filter=language%3DSolidity
+https://immunefi.com/bug-bounty/?filter=language%3DSolidity%26programType%3DSmart%2BContract
+幾乎都是很古早發的
+記得先去submit 看看是否需要很高的whitehat才能提交
+
+a. Gearbox
 
 3. Cantina (幾乎都deposit required)
 
@@ -39,14 +43,9 @@ a. BitGo
 
 5. sherlock (要先deposit 250U 進去!)
 
-## Use knowledgebase to audit 
-根據 https://github.com/msitarzewski/agency-agents/blob/main/specialized/blockchain-security-auditor.md
-只要在cursor 説 "Activate Blockchain Security Auditor mode, ...." 然後搭配筆記(auditor 找到並且被接受的漏洞)
+## Audit approach
 
-1. 下載目標repo
-2. 把knowledgeBase/ 放到repo 中
-3. install auditor agent: /Users/leo_1/Documents/GitHub/superpredict/agency-agents/scripts/install.sh --tool cursor
-4. 下prompt: 
+1. use knowledgeBase create by myself in Grok
    
 grok1:
 我接下來要進行audit bug bounty
@@ -73,20 +72,45 @@ Before logging the data, double-check these rules:
 1. knowledgeBase type should be at least 3 layers
 2. The main reference issue title in knowledgeBase field should be the strongest conceptual match (semantic similarity based on exploit type/folder name) — exact wording is NOT required
 3. the issue you found is a real violation / risk in the target code, is in-scope for the bug bounty, and does NOT rely on violating the explicit "Out-of-Scope" or "Design-Accepted & Trust Assumptions" sections (but Medium griefing / edge-case issues are still valid if they can cause real operational impact or fund risk).
+4. **Mandatory code verification step**: Before reporting ANY issue, you MUST first inspect the actual source code of the mentioned files/functions in the target repo. Quote or describe the relevant code snippets that prove the vulnerability actually exists.
 
+5. "PRIVILEGED-ACCESS FILTER (MANDATORY): Only report issues that can be triggered by unprivileged / external callers. Explicitly exclude anything that requires onlyOwner, auditor signatures. If it needs privileged access → immediately mark INVALID and do not list."
+
+6. **If a strong mitigation exists, do NOT report the issue** unless the mitigation itself is broken or bypassable. Clearly state “mitigation present” and move on. Only report issues that survive this verification.
+
+7. **False-positive avoidance**: If the KB concept is conceptually similar but the implementation already addresses it, note it as “false positive due to X mitigation” and do not list it as a valid bug.
 If you find fewer than 2 strong matches, still list the 2 closest conceptual ones and note the severity clearly.
 
 
-grok3:
+grok3: 
 repeat the same workflow on knowledgeBase/accounting, Strongly map the top 2 most relevant issues (High or Medium severity is fine) using folder name + conceptual similarity. Report even if they are borderline or Medium — as long as they are in-scope and exploitable.
 
+---------------------------------------------
+knowledgeBase/accounting
 knowledgeBase/dos-liveness
-knowledgeBase/oracle-pricing
+knowledgeBase/external-dependencies
+knowledgeBase/griefing-attacks/gas-griefing
+knowledgeBase/griefing-attacks/logic-griefing
+knowledgeBase/griefing-attacks/withdrawal-griefing
 knowledgeBase/token-transfer
 knowledgeBase/upgrade-config
-knowledgeBase/withdrawal-redeem
----------------------------------------------
 
+
+然後:
+1. 手動移除標有false positive 的issue, 重新給這些issues 編號
+2.double check founded issues on Cursor, make sure it's make sense on current codebase:
+這些issues 在目前的codebase 都是valid的嗎? 都是符合scope 規範嗎? 列出一個表格整理valid/invalid 還有嚴重等級
+3. 將filter 好的issue 存在issues.txt
+4. 在cursor run:
+generate a report.txt, 根據 @submitField.txt 來完成 @issues.txt 提到的issues. 如果issues 中的內容和 contracts/ 不同, 以contracts 為主來調整report 內容 
+5. 換個model ask:
+這份report 有符合 scope.txt 嗎? 根據 contracts , 內容是正確的嗎?
+
+
+
+
+2. use md file in cursor
+Activate @.cursor/rules/blockchain-security-auditor.mdc mode 
 
 
 
@@ -111,16 +135,3 @@ Q:
 - 根據test file 給出基本的work flow
 - 介紹專案中一些比較重要的名詞和概念
 
-
-1. 用grok `export` go through knowledgebase 的folder, 參考上述"highly cross-referencing..."
-2. 了解用AI 找到的對應的knowledge base 內容
-3. 將1, 2 的結果可以整理成一份note, 用該note 進行篩選(可以用test file 重現, 符合readme scope)
-4. 用篩選過的issue 來寫test, 在cursor 做比較好, 不然會常常compile fail from grok
-
-
-
-knowledgeBase type: token-transfer/erc20-edge-cases/fee-on-transfer
-The main reference issue title in knowledgeBase: Fee-on-Transfer Token Dust in Forwarder Flush
-File Location: contracts/ForwarderV4.sol (flushTokens、batchFlushERC20Tokens) 與 contracts/WalletSimple.sol (flushForwarderTokens)
-Issue Description: Forwarder 合約會先查詢 ERC20 目前餘額，再使用 TransferHelper.safeTransfer 嘗試轉出全額。對於 fee-on-transfer 代幣，接收方（parent wallet）實際收到的金額會少於預期，導致 forwarder 內留下 dust 並造成預期資金與實際資金的 accounting desynchronization（與 fee-on-transfer 模式高度概念吻合）。
-Attack scenario: 用戶或攻擊者向 Forwarder 地址發送 fee-on-transfer 代幣。呼叫 flushTokens 時，parent 只收到少於 balanceOf 的金額。重複 flush 會累積 dust 或在 BitGo 託管系統中造成對帳錯誤（Medium 等級資金管理風險，完全符合 in-scope）。
