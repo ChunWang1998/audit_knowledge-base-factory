@@ -22,26 +22,20 @@ resouce: https://github.com/peckshield/publications/tree/master/audit_reports
 scope: 
 
 ## Bug bounty platform rank
-1. code4rena (可以提交兩次)(POC 不用整個file! function 即可)
-https://code4rena.com/bounties
-https://code4rena.com/audits
-
-a. Monetrix
-
-2. immunefi 
+1. immunefi 
 https://immunefi.com/bug-bounty/?filter=language%3DSolidity%26programType%3DSmart%2BContract
 幾乎都是很古早發的
 記得先去submit 看看是否需要很高的whitehat才能提交
 
 a. Gearbox
 
-3. Cantina (幾乎都deposit required)
+2. Cantina (幾乎都deposit required)
 
 a. BitGo
 
-4. HackenProof (要求的reputation 很高)
+3. HackenProof (要求的reputation 很高)
 
-5. sherlock (要先deposit 250U 進去!)
+4. sherlock (要先deposit 250U 進去!)
 
 ## Audit approach
 
@@ -57,7 +51,7 @@ https://github.com/ChunWang1998/audit_knowledge-base-factory/tree/main
 
 
 grok2:
-highly cross-referencing all the files/issues in knowledgeBase repo knowledgebase/access-control
+highly cross-referencing "each issue" in knowledgeBase repo knowledgebase/access-control
 and based on folder name (which is the exploit type) + conceptual similarity to find the most relevant issues (even if the title is not 1:1 exact match).
 Always list exactly the top 2 most relevant issues (High or Medium severity is fine; do not skip Medium if it is conceptually strong).
 Output them in English and Chinese using this exact issue format:
@@ -80,7 +74,20 @@ Before logging the data, double-check these rules:
 
 7. **False-positive avoidance**: If the KB concept is conceptually similar but the implementation already addresses it, note it as “false positive due to X mitigation” and do not list it as a valid bug.
 If you find fewer than 2 strong matches, still list the 2 closest conceptual ones and note the severity clearly.
-
+8. **GOVERNANCE-CONTROLLED STATE FILTER (MANDATORY)**: If the vulnerable 
+   state (array length, parameter value, list size, etc.) can ONLY grow 
+   or change via a privileged role (governance, multisig, admin), AND the 
+   attack path requires that role to act negligently or maliciously, 
+   mark the issue INVALID. Specifically:
+   - DoS/gas issues on arrays/lists that are exclusively populated by 
+     governance → INVALID (governance is trusted not to bloat them)
+   - Precision/math issues that only manifest when a governance-set 
+     parameter hits an extreme value → INVALID
+   - Exception: if you can demonstrate that the array/parameter CAN grow 
+     through unprivileged user actions (e.g., anyone can push to the 
+     array), it remains VALID.
+   Always check: "Who controls the size/value of the vulnerable state?" 
+   If the answer is only governance/admin → mark INVALID.
 
 grok3: 
 repeat the same workflow on knowledgeBase/accounting, Strongly map the top 2 most relevant issues (High or Medium severity is fine) using folder name + conceptual similarity. Report even if they are borderline or Medium — as long as they are in-scope and exploitable.
@@ -118,7 +125,10 @@ Activate @.cursor/rules/blockchain-security-auditor.mdc mode
 ## murmur
 - 不知道哪一種類型的vulnerability 最容易被接受?
 - 就算沒找到問題 也至少要更熟knowledge base 的內容
-- 勁量用grok 代替cursor 來問問題找問題, grok 讀得到public repo
+- 大部分bug bounty 的out of scope都在說什麼? 拒絕的理由? 是否可以用來filter 目前的knowledge base
+- 新增reports?
+- 是否在report 中加入issue reference 比較有機會?
+- 現在的指令可能還沒有很好, 多透過"舊的repo" 和 "auditor md" 找漏洞來回測
 flow:
 1. 深入了解該repo, 第一輪先用grok 亂問,把不懂的名詞問一問丟給notebookLM(可以開三個copilot 來問比較好貼), 第二輪再寫一些note, 重點:
    1. 類型

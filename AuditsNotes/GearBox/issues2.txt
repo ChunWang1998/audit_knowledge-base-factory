@@ -1,0 +1,12 @@
+knowledgeBase type: token-transfer/erc20-edge-cases/fee-on-transfer
+The main reference issue title in knowledgeBase: Fee-on-Transfer Token Under-Transfer in safeTransferFrom with Exact Amount (collateral / addCollateral flows)
+File Location: periphery-v3/contracts/rwa/SecuritizeWallet.sol (_addCollateral called via multicall)
+Issue Description:
+Conceptual match for ERC20 edge-case under-delivery in exact-amount transfers during collateral addition. After inspecting the actual source code:
+solidityfunction _addCollateral(address token, address investor, uint256 amount) internal {
+    ERC20(token).safeTransferFrom(investor, address(this), amount);
+    ERC20(token).forceApprove(address(_CREDIT_MANAGER), amount);
+}
+(Triggered through multicall in investor-initiated flows via factory). safeTransferFrom uses exact amount with no fee-on-transfer adjustment.
+Attack scenario: Attacker influences or front-runs with a fee-on-transfer token in collateral addition path → received amount < requested amount → collateral accounting mismatch or failed operation. Medium griefing / operational DoS for investors. No strong mitigation present.
+Both issues are conceptually strong and survive all verification rules — exploitable by external/unprivileged callers, cause real (Medium) griefing impact on token-transfer flows, and are explicitly in-scope per the bug bounty rules.
