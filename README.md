@@ -43,81 +43,53 @@ a. BitGo
    
 grok1:
 我接下來要進行audit bug bounty
-根據以下網站回答問題:
-https://github.com/ChunWang1998/audit_knowledge-base-factory/tree/main
+這是需要被進行audit 的repo:
 ...
+這個repo是我主要要拿來當作參考的資料庫(接下來簡稱knowledgeBase) 
+https://github.com/ChunWang1998/audit_knowledge-base-factory/tree/main
+
 這是bug bounty 的內容, 之後都簡稱為bug bounty scope:
 
-
-
-grok2:
-highly cross-referencing "each issue" in knowledgeBase repo knowledgebase/access-control
-and based on folder name (which is the exploit type) + conceptual similarity to find the most relevant issues (even if the title is not 1:1 exact match).
-Always list exactly the top 2 most relevant issues (High or Medium severity is fine; do not skip Medium if it is conceptually strong).
-Output them in English and Chinese using this exact issue format:
-
-knowledgeBase type: (based on the folder name ex: access-control/role-model/blacklisted-users — must be at least 3 layers)
-The main reference issue title in knowledgeBase: (use the closest matching / conceptually strongest title from the KB README; if no perfect match, use a clear descriptive title that best represents the concept)
-File Location: 
-Issue Description: 
-Attack scenario: 
-
-Before logging the data, double-check these rules:
-1. knowledgeBase type should be at least 3 layers
-2. The main reference issue title in knowledgeBase field should be the strongest conceptual match (semantic similarity based on exploit type/folder name) — exact wording is NOT required
-3. the issue you found is a real violation / risk in the target code, is in-scope for the bug bounty, and does NOT rely on violating the explicit "Out-of-Scope" or "Design-Accepted & Trust Assumptions" sections (but Medium griefing / edge-case issues are still valid if they can cause real operational impact or fund risk).
-4. **Mandatory code verification step**: Before reporting ANY issue, you MUST first inspect the actual source code of the mentioned files/functions in the target repo. Quote or describe the relevant code snippets that prove the vulnerability actually exists.
-
-5. "PRIVILEGED-ACCESS FILTER (MANDATORY): Only report issues that can be triggered by unprivileged / external callers. Explicitly exclude anything that requires onlyOwner, auditor signatures. If it needs privileged access → immediately mark INVALID and do not list."
-
-6. **If a strong mitigation exists, do NOT report the issue** unless the mitigation itself is broken or bypassable. Clearly state “mitigation present” and move on. Only report issues that survive this verification.
-
-7. **False-positive avoidance**: If the KB concept is conceptually similar but the implementation already addresses it, note it as “false positive due to X mitigation” and do not list it as a valid bug.
-If you find fewer than 2 strong matches, still list the 2 closest conceptual ones and note the severity clearly.
-8. **GOVERNANCE-CONTROLLED STATE FILTER (MANDATORY)**: If the vulnerable 
-   state (array length, parameter value, list size, etc.) can ONLY grow 
-   or change via a privileged role (governance, multisig, admin), AND the 
-   attack path requires that role to act negligently or maliciously, 
-   mark the issue INVALID. Specifically:
-   - DoS/gas issues on arrays/lists that are exclusively populated by 
-     governance → INVALID (governance is trusted not to bloat them)
-   - Precision/math issues that only manifest when a governance-set 
-     parameter hits an extreme value → INVALID
-   - Exception: if you can demonstrate that the array/parameter CAN grow 
-     through unprivileged user actions (e.g., anyone can push to the 
-     array), it remains VALID.
-   Always check: "Who controls the size/value of the vulnerable state?" 
-   If the answer is only governance/admin → mark INVALID.
-
-grok3: 
-repeat the same workflow on knowledgeBase/accounting, Strongly map the top 2 most relevant issues (High or Medium severity is fine) using folder name + conceptual similarity. Report even if they are borderline or Medium — as long as they are in-scope and exploitable.
-
----------------------------------------------
-knowledgeBase/accounting
-knowledgeBase/dos-liveness
-knowledgeBase/external-dependencies
-knowledgeBase/griefing-attacks/gas-griefing
-knowledgeBase/griefing-attacks/logic-griefing
-knowledgeBase/griefing-attacks/withdrawal-griefing
-knowledgeBase/token-transfer
-knowledgeBase/upgrade-config
+根據以上內容回答我接下來的問題：
 
 
 然後:
 1. 手動移除標有false positive 的issue, 重新給這些issues 編號
 2.double check founded issues on Cursor, make sure it's make sense on current codebase:
 這些issues 在目前的codebase 都是valid的嗎? 都是符合scope 規範嗎? 列出一個表格整理valid/invalid 還有嚴重等級
-3. 將filter 好的issue 存在issues.txt
-4. 在cursor run:
+1. 將filter 好的issue 存在issues.txt
+2. 在cursor run:
 generate a report.txt, 根據 @submitField.txt 來完成 @issues.txt 提到的issues. 如果issues 中的內容和 contracts/ 不同, 以contracts 為主來調整report 內容 
-5. 換個model ask:
+1. 換個model ask:
 這份report 有符合 scope.txt 嗎? 根據 contracts , 內容是正確的嗎?
 
 
 
 
 2. use md file in cursor
-Activate @.cursor/rules/blockchain-security-auditor.mdc mode 
+
+You are the Blockchain Security Auditor as defined in the complete [blockchain-security-auditor.md](https://github.com/msitarzewski/agency-agents/blob/main/specialized/blockchain-security-auditor.md) document (now loaded as your core identity and methodology). You are performing a professional, paranoid, adversarial smart contract security audit for an official bug bounty program.
+Repository to audit: https://github.com/dextrade-solutions/UP10-Smart-Contracts/tree/def382048e4739ae306f1aaa603f0db08af024b8
+Bug Bounty Scope: contracts/
+Strict rules you MUST obey at all times:
+
+Report bugs that map directly to Critical, High, Medium, or Low severity impacts defined in the scope (Critical/High prioritized for rewards, Medium/Low also fully accepted).
+Apply Primacy of Impact for all Critical and High smart contract findings.
+Exclude every known issue listed in the scope’s GitHub links, disclosures folder, or previously reported bugs.
+PoC is mandatory for every finding: provide complete, compilable Solidity + Foundry/Hardhat code that reproduces the issue on a local fork only.
+
+For every potential vulnerability, output exactly: (1) file path + exact line numbers, (2) clear title, (3) detailed attack scenario with realistic conditions, (4) estimated funds-at-risk / economic impact, (5) full working PoC code, (6) exact severity mapping to the bounty scope (Critical/High/Medium/Low), (7) recommended fix that does not introduce new issues.
+
+Systematically apply EVERY section and checklist from blockchain-security-auditor.md: access control, reentrancy & callbacks, oracle manipulation, token accounting & flow tracing, flash-loan vectors, composability & integration risks, invariant breaking, MEV extraction, griefing, unbounded gas, upgradeability/pausability, cross-contract interactions, and all edge-case business logic.
+Workflow:
+
+First list all main contracts in the repo and their primary functions.
+Perform static + manual line-by-line analysis on the highest-risk contracts.
+Conduct full composability review across multiple contracts.
+End with a clean summary table of all Critical/High/Medium/Low findings (sorted by severity). 
+
+Be extremely thorough and think like a sophisticated attacker with unlimited flash loans and perfect protocol knowledge. Begin the audit now.
+
 
 
 
@@ -127,8 +99,7 @@ Activate @.cursor/rules/blockchain-security-auditor.mdc mode
 - 就算沒找到問題 也至少要更熟knowledge base 的內容
 - 大部分bug bounty 的out of scope都在說什麼? 拒絕的理由? 是否可以用來filter 目前的knowledge base
 - 新增reports?
-- 是否在report 中加入issue reference 比較有機會?
-- 現在的指令可能還沒有很好, 多透過"舊的repo" 和 "auditor md" 找漏洞來回測
+- 增加機會: 加入參考的reference issue, 內容口語避免被歸類為AI report
 flow:
 1. 深入了解該repo, 第一輪先用grok 亂問,把不懂的名詞問一問丟給notebookLM(可以開三個copilot 來問比較好貼), 第二輪再寫一些note, 重點:
    1. 類型
@@ -145,3 +116,6 @@ Q:
 - 根據test file 給出基本的work flow
 - 介紹專案中一些比較重要的名詞和概念
 
+- 現在的prompt還沒有很好, 多透過"舊的repo" 和 "auditor md" 找漏洞來回測, 直到可以用很general 的方式回測找到為止
+- 要先做deep architecure 分析?
+https://grok.com/c/2533847a-996d-46dc-8bcb-c1b7efe5132b?rid=d82afc71-165f-40e3-a03f-1ccb7e71ad77

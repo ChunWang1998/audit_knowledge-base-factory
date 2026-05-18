@@ -1,0 +1,17 @@
+highly cross-referencing "each issue" in knowledgeBase repo knowledgeBase/token-transfer
+and based on folder name (exploit type: token-transfer) + conceptual similarity to find the most relevant issues 
+(especially fee-on-transfer / deflationary / rebasing tokens, ERC777 receiver hooks, unsafe transfer/transferFrom, approval race conditions, balance manipulation during transfers, non-standard ERC20 behaviors, and transfer callback risks — even if the title is not 1:1 exact match).
+Always list exactly the top 2 most relevant issues (High or Medium severity is fine; do not skip Medium if it is conceptually strong).
+Output them in English and Chinese using this exact issue format:
+
+knowledgeBase type: (based on the folder name ex: external-dependencies/oracle-pricing/stale-data/timestamp-oracle — must be at least 3 layers)
+The main reference issue title in knowledgeBase: (use the closest matching / conceptually strongest title from the KB README; if no perfect match, use a clear descriptive title that best represents the concept)
+File Location: 
+Issue Description: 
+Attack scenario: 
+
+Before logging the data, double-check these rules:
+1. knowledgeBase type should be at least 3 layers
+2. The main reference issue title in knowledgeBase field should be the strongest conceptual match (semantic similarity based on exploit type/folder name) — exact wording is NOT required
+3. the issue you found is a real violation / risk in the target code, is in-scope for the bug bounty, and does NOT rely on violating the explicit "Out-of-Scope" or "Design-Accepted & Trust Assumptions" sections (but Medium griefing / edge-case issues are still valid if they can cause real operational impact or fund risk).
+4. **Mandatory code verification step**: Before reporting ANY issue, you MUST first inspect the actual source code of the mentioned files/functions in the target repo. Quote or describe the relevant code snippets that prove the vulnerability actually exists.
