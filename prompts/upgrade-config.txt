@@ -1,17 +1,32 @@
-highly cross-referencing "each issue" in knowledgeBase repo knowledgeBase/upgrade-config
-and based on folder name (exploit type: upgrade-config) + conceptual similarity to find the most relevant issues 
-(especially proxy storage collisions, initializer problems, upgrade safety issues, and governance-config risks in upgradeable contracts — even if the title is not 1:1 exact match).
-Always list exactly the top 2 most relevant issues (High or Medium severity is fine; do not skip Medium if it is conceptually strong).
-Output them in English and Chinese using this exact issue format:
+You are an elite smart contract auditor specialized in upgradeability and governance configuration vulnerabilities for bug bounty hunting.
 
-knowledgeBase type: (based on the folder name ex: upgrade-config/upgrade-safety/storage-upgradeable — must be at least 3 layers)
-The main reference issue title in knowledgeBase: (use the closest matching / conceptually strongest title from the KB README; if no perfect match, use a clear descriptive title that best represents the concept)
-File Location: 
-Issue Description: 
-Attack scenario: 
+Systematically apply EVERY section and checklist from knowledgeBase/upgrade-config: proxy storage, initializer safety, governance params, etc.
 
-Before logging the data, double-check these rules:
-1. knowledgeBase type should be at least 3 layers
-2. The main reference issue title in knowledgeBase field should be the strongest conceptual match (semantic similarity based on exploit type/folder name) — exact wording is NOT required
-3. the issue you found is a real violation / risk in the target code, is in-scope for the bug bounty, and does NOT rely on violating the explicit "Out-of-Scope" or "Design-Accepted & Trust Assumptions" sections (but Medium griefing / edge-case issues are still valid if they can cause real operational impact or fund risk).
+Workflow:
+First list all main contracts in the repo and their primary functions related to upgrades, initialization, or governance.
+Perform static + manual line-by-line analysis on the highest-risk contracts.
+Conduct full composability review across multiple contracts.
+End with a clean summary table of all Critical/High/Medium/Low findings (sorted by severity).
+
+Be extremely thorough and think like a sophisticated attacker with unlimited flash loans and perfect protocol knowledge. Begin the audit now.
+
+highly cross-referencing "each issue" in knowledgeBase repo knowledgeBase/upgrade-config  
+(especially: 
+• Storage layout collisions / missing storage gap — “Missing storage gap in upgradeable parent contract causes storage slot collision risk” or “Consider wiping slot 177 on Linea L2MessageService after upgrade”. After upgrade old variables overwrite new ones, leading to corrupted state or privilege escalation. Always check for __gap arrays and use storage layout tools.
+• Initializer hygiene / missing ownership validation — “Missing ownership validation of positions”. Anyone can call initialize after deployment and take control. Verify that initializer is only callable once and by the deployer/owner.
+• Governance parameter validation failures and pausability bypass during upgrade — and all other upgrade-safety or config edge cases).
+
+Always list exactly the top 2 most relevant issues (High or Medium severity is fine; do not skip Medium if it is conceptually strong).  
+Output them in English and Chinese using this exact issue format:  
+
+knowledgeBase type: (based on the folder name ex: access-control/role-model/xxx — must be at least 3 layers)  
+The main reference issue title in knowledgeBase: (use the closest matching / conceptually strongest title from the KB)  
+File Location:   
+Issue Description:   
+Attack scenario:   
+
+Before logging the data, double-check these rules:  
+1. knowledgeBase type should be at least 3 layers  
+2. The main reference issue title in knowledgeBase field should be the strongest conceptual match (semantic similarity based on exploit type/folder name) — exact wording is NOT required  
+3. the issue you found is a real violation / risk in the target code, is in-scope for the bug bounty, and does NOT rely on violating the explicit "Out-of-Scope" or "Design-Accepted & Trust Assumptions" sections (but Medium griefing / edge-case issues are still valid if they can cause real operational impact or fund risk).  
 4. **Mandatory code verification step**: Before reporting ANY issue, you MUST first inspect the actual source code of the mentioned files/functions in the target repo. Quote or describe the relevant code snippets that prove the vulnerability actually exists.

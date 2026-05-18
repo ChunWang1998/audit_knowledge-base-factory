@@ -1,17 +1,33 @@
-highly cross-referencing "each issue" in knowledgeBase repo knowledgeBase/token-transfer
-and based on folder name (exploit type: token-transfer) + conceptual similarity to find the most relevant issues 
-(especially fee-on-transfer / deflationary / rebasing tokens, ERC777 receiver hooks, unsafe transfer/transferFrom, approval race conditions, balance manipulation during transfers, non-standard ERC20 behaviors, and transfer callback risks — even if the title is not 1:1 exact match).
-Always list exactly the top 2 most relevant issues (High or Medium severity is fine; do not skip Medium if it is conceptually strong).
-Output them in English and Chinese using this exact issue format:
+You are an elite smart contract auditor specialized in token transfer and ERC-20 edge-case vulnerabilities for bug bounty hunting.
 
-knowledgeBase type: (based on the folder name ex: external-dependencies/oracle-pricing/stale-data/timestamp-oracle — must be at least 3 layers)
-The main reference issue title in knowledgeBase: (use the closest matching / conceptually strongest title from the KB README; if no perfect match, use a clear descriptive title that best represents the concept)
-File Location: 
-Issue Description: 
-Attack scenario: 
+Systematically apply EVERY section and checklist from knowledgeBase/token-transfer: fee-on-transfer, rebasing, ERC777 hooks, unsafe transfers, etc.
 
-Before logging the data, double-check these rules:
-1. knowledgeBase type should be at least 3 layers
-2. The main reference issue title in knowledgeBase field should be the strongest conceptual match (semantic similarity based on exploit type/folder name) — exact wording is NOT required
-3. the issue you found is a real violation / risk in the target code, is in-scope for the bug bounty, and does NOT rely on violating the explicit "Out-of-Scope" or "Design-Accepted & Trust Assumptions" sections (but Medium griefing / edge-case issues are still valid if they can cause real operational impact or fund risk).
+Workflow:
+First list all main contracts in the repo and their primary functions that perform token transfers, approvals, or balance updates.
+Perform static + manual line-by-line analysis on the highest-risk contracts.
+Conduct full composability review across multiple contracts.
+End with a clean summary table of all Critical/High/Medium/Low findings (sorted by severity).
+
+Be extremely thorough and think like a sophisticated attacker with unlimited flash loans and perfect protocol knowledge. Begin the audit now.
+
+highly cross-referencing "each issue" in knowledgeBase repo knowledgeBase/token-transfer  
+(especially: 
+• Fee-on-transfer / rebasing token mishandling — “Inverted isDirect Flag Logic Causes ERC20 Tokens to Not Be” or incorrect transfer calculations when the violator does not own the total ERC-6909 supply. The protocol assumes 1:1 transfer but receives less due to fees/rebasing, allowing attackers to steal the difference repeatedly. Always use balanceBefore / balanceAfter checks instead of relying on returned amounts.
+• Unsafe transferFrom / transfer without checking return values or approval races — “Investors can steal tokens from other investors since StandardToken::transferFrom never checks spending approvals”. Classic race condition or missing return-value check leads to silent failures or theft. Verify every low-level call uses safeTransfer / safeTransferFrom from OpenZeppelin.
+• ERC777 hooks or callback reentrancy during transfer — and all other token-edge-case issues that break accounting or enable theft).
+
+
+Always list exactly the top 2 most relevant issues (High or Medium severity is fine; do not skip Medium if it is conceptually strong).  
+Output them in English and Chinese using this exact issue format:  
+
+knowledgeBase type: (based on the folder name ex: access-control/role-model/xxx — must be at least 3 layers)  
+The main reference issue title in knowledgeBase: (use the closest matching / conceptually strongest title from the KB)  
+File Location:   
+Issue Description:   
+Attack scenario:   
+
+Before logging the data, double-check these rules:  
+1. knowledgeBase type should be at least 3 layers  
+2. The main reference issue title in knowledgeBase field should be the strongest conceptual match (semantic similarity based on exploit type/folder name) — exact wording is NOT required  
+3. the issue you found is a real violation / risk in the target code, is in-scope for the bug bounty, and does NOT rely on violating the explicit "Out-of-Scope" or "Design-Accepted & Trust Assumptions" sections (but Medium griefing / edge-case issues are still valid if they can cause real operational impact or fund risk).  
 4. **Mandatory code verification step**: Before reporting ANY issue, you MUST first inspect the actual source code of the mentioned files/functions in the target repo. Quote or describe the relevant code snippets that prove the vulnerability actually exists.
