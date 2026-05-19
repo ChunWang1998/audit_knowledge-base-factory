@@ -29,6 +29,10 @@ https://immunefi.com/bug-bounty/?filter=language%3DSolidity%26programType%3DSmar
 
 a. Gearbox
 
+b. Linea
+
+c. Enzyme Onyx
+
 2. Cantina (幾乎都deposit required)
 
 a. BitGo
@@ -51,6 +55,11 @@ https://github.com/ChunWang1998/audit_knowledge-base-factory/tree/main
 這是bug bounty 的內容, 之後都簡稱為bug bounty scope:
 
 根據以上內容回答我接下來的問題：
+
+
+
+
+
 
 
 然後:
