@@ -27,7 +27,7 @@ Be ruthless and think like a top-tier bug bounty hunter with unlimited flash loa
 
 Always list exactly the top 2 most relevant issues (High or Medium). Output in English and Chinese using this exact format:
 
-knowledgeBase type: (access-control/role-model/blacklisted-users/xxx or access-control/validation-access/xxx — at least 3 layers)
+knowledgeBase type: (access-control/role-model/blacklisted-users/xxx or access-control/role-model/validation-access/xxx — at least 3 layers)
 The main reference issue title in knowledgeBase: (closest conceptual match)
 File Location: 
 Issue Description: 

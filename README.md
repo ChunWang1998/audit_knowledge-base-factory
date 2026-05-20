@@ -104,7 +104,6 @@ Be extremely thorough and think like a sophisticated attacker with unlimited fla
 
 
 ## murmur
-- 不知道哪一種類型的vulnerability 最容易被接受?
 - 就算沒找到問題 也至少要更熟knowledge base 的內容
 - 大部分bug bounty 的out of scope都在說什麼? 拒絕的理由? 是否可以用來filter 目前的knowledge base
 - 新增reports?
