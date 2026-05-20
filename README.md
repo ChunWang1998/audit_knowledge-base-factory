@@ -52,7 +52,7 @@ grok1:
 這個repo是我主要要拿來當作參考的資料庫(接下來簡稱knowledgeBase) 
 https://github.com/ChunWang1998/audit_knowledge-base-factory/tree/main
 
-這是bug bounty 的內容, 之後都簡稱為bug bounty scope:
+任何回答都要嚴格遵照 scope.txt 和 Immutifi Feasibility Limitations.md
 
 根據以上內容回答我接下來的問題：
 
