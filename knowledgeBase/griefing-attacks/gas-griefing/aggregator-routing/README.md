@@ -1,0 +1,183 @@
+# aggregator-routing (6)
+
+> Swap aggregator and router griefing — wrong external calls, native/WETH routing, weight caps, and fee paths that lock or drain funds.
+
+Severity legend: 🔴 Critical  🟠 High  🟡 Medium
+
+---
+
+## 1. ZkSwap Router Mismatch: Calls Non-Existent exactInputSingle On Monad
+
+**Severity:** 🟠 High
+**Source:** `HackenPDFTXT/Dirol.txt`
+
+**Description:**
+The `CoreAggregator` adapter targets zkSwap on Monad using a Uniswap V3-style `IZkSwapV3Router` interface and calls `exactInputSingle`. However, zkSwap on Monad exposes a Universal/Smart router, not a standalone V3 SwapRouter. The `exactInputSingle` function does not exist on the deployed zkSwap router, so every swap routed through this adapter reverts at runtime with a call to a non-existent function selector.
+
+**Impact:**
+The zkSwap routing path is completely unusable on Monad. Any swap that attempts to use the zkSwap adapter will revert, effectively causing a denial-of-service for that router type. Users cannot execute trades through this path.
+
+**Recommended Mitigation:**
+Switch to zkSwap's Universal Router ABI for Monad, encoding the route type (V2/V3/Stable) in `pathData` or via a distinct `RouterType`. Bind router addresses to their expected ABIs in a registry and validate compatibility at registration time to reject mismatches before deployment.
+
+---
+
+**[中文版本]**
+
+**描述：**
+`CoreAggregator` 适配器使用 Uniswap V3 风格的 `IZkSwapV3Router` 接口并调用 `exactInputSingle`，但 Monad 上的 zkSwap 部署的是 Universal/Smart 路由器而非独立的 V3 SwapRouter，不存在 `exactInputSingle` 函数，导致所有 zkSwap 路由在运行时回滚。
+
+**影響：**
+zkSwap 路由路径在 Monad 上完全不可用，所有通过该适配器的交换均会回滚，造成该路由类型的拒绝服务。
+
+**修復建議：**
+改用 zkSwap 的 Universal Router ABI，在 `pathData` 或专用 `RouterType` 中编码路由类型；在注册中心将路由器地址与期望的 ABI 绑定并在注册时验证兼容性。
+
+---
+
+## 2. Missing Check for Residual Input Tokens When Route Weights Are Incomplete
+
+**Severity:** 🟠 High
+**Source:** `HackenPDFTXT/Dirol.txt`
+
+**Description:**
+`CoreAggregator._executeSwap` splits a swap across multiple routes based on their `weight`. Each route consumes a proportional share of the total `amountIn` based on the remaining weight. However, there is no final validation to ensure that the cumulative weights of all provided routes sum to `MAX_WEIGHT` (10,000). If routes are submitted with weights totaling less than `MAX_WEIGHT`, the leftover input tokens that were never routed remain locked in the contract with no path to reclaim or return them. The function neither reverts nor refunds the unrouted residual.
+
+**Impact:**
+Users who submit incomplete route weights permanently lose the portion of `amountIn` that was not routed. The tokens are locked in the aggregator contract with no recovery mechanism.
+
+**Recommended Mitigation:**
+After the routes loop, validate that the sum of weights for each unique `tokenIn` group equals `MAX_WEIGHT`. If the total weight is not fully allocated, revert with an `InvalidRoutes` error to ensure the full input amount is always either fully routed or the transaction fails cleanly.
+
+---
+
+**[中文版本]**
+
+**描述：**
+`CoreAggregator._executeSwap` 根據 `weight` 將兌換拆分到多條路由。每條路由根據剩餘權重消耗 `amountIn` 的相應份額。然而，沒有最終驗證確保所有提供路由的累積權重總和等於 `MAX_WEIGHT`（10,000）。如果提交的路由權重總和小於 `MAX_WEIGHT`，未被路由的剩餘輸入代幣將被鎖定在合約中，沒有任何途徑回收或退還。該函數既不回滾也不退款。
+
+**影響：**
+提交不完整路由權重的用戶將永久損失 `amountIn` 中未被路由的部分。這些代幣被鎖定在聚合器合約中，無法回收。
+
+**修復建議：**
+在路由循環後，驗證每個唯一 `tokenIn` 組的權重總和等於 `MAX_WEIGHT`。如果總權重未完全分配，以 `InvalidRoutes` 錯誤回滾，確保全部輸入金額要麼完全路由要麼交易清晰失敗。
+
+---
+
+## 3. Native Input Routed as Zero for Native-Send Routes
+
+**Severity:** 🔴 Critical
+**Source:** `HackenPDFTXT/Dirol.txt`
+
+**Description:**
+When `tokenIn == NATIVE`, `swap()` wraps all ETH to WETH up-front, setting the contract's native ETH balance to zero. Later, `_executeSwap` computes each route's input amount using the native ETH balance for `NATIVE` legs (`address(this).balance`), which is now zero after wrapping. For Kuru routes marked to send native ETH (`isNativeSend[0] == true`) with `tokenIn == NATIVE`, the computed `routeAmountIn` becomes zero, and the call is made with `{value: 0}`. The user's provided ETH was wrapped to WETH and is never consumed; the route produces no output, and the user receives nothing while their WETH remains trapped inside the aggregator.
+
+**Impact:**
+Users sending native ETH through native-send routes receive no swap output. Their ETH is converted to WETH inside the aggregator contract and cannot be recovered through the normal swap flow.
+
+**Recommended Mitigation:**
+Make routing WETH-centric internally and explicitly unwrap for native-send legs: use WETH balance to compute route amounts, and unwrap WETH to ETH only for legs that require native ETH delivery.
+
+---
+
+**[中文版本]**
+
+**描述：**
+当 `tokenIn == NATIVE` 时，`swap()` 将所有 ETH 预先封装为 WETH，使合约的原生 ETH 余额归零。之后 `_executeSwap` 使用原生 ETH 余额计算 `NATIVE` 路由的输入量，但该余额已为零。对于标记为发送原生 ETH 的 Kuru 路由，计算出的 `routeAmountIn` 为零，调用以 `{value: 0}` 执行。用户提供的 ETH 被封装为 WETH 后被困在聚合器中，无法通过正常交换流程取回。
+
+**影響：**
+通过原生发送路由发送原生 ETH 的用户不会收到任何交换输出，其 ETH 被转换为 WETH 滞留在聚合器合约中。
+
+**修復建議：**
+在内部以 WETH 为中心进行路由，仅在需要原生 ETH 交付的路段明确解封装：使用 WETH 余额计算路由金额，仅为需要原生 ETH 的路段解封装。
+
+---
+
+## 4. Improper Weight Reset on tokenIn Change Allows Bypassing MAX_WEIGHT Cap
+
+**Severity:** 🟠 High
+**Source:** `HackenPDFTXT/Dirol.txt`
+
+**Description:**
+The `_executeSwap()` function in `CoreAggregator` enforces a `MAX_WEIGHT = 10,000` cap per contiguous sequence of routes using the same `tokenIn` via a `remainingWeight` variable. When `routeTokenIn != currentTokenIn`, `remainingWeight` is reset back to `MAX_WEIGHT`. While intended for legitimate token chaining (e.g., WETH → USDC → DAI), this logic can be exploited by a malicious user who oscillates `tokenIn` values between routes, resetting the weight allowance repeatedly. This results in unbounded cumulative weight usage across multiple routes, far exceeding the intended 100%.
+
+**Impact:**
+An attacker can cause the aggregator to use more tokens than the user expected or authorized across a swap execution. The total tokens consumed can far exceed the `MAX_WEIGHT` cap, potentially draining more funds than intended.
+
+**Recommended Mitigation:**
+Track cumulative weight per `tokenIn` using a mapping and enforce global `MAX_WEIGHT` constraints per `tokenIn` instead of resetting blindly on each token change.
+
+---
+
+**[中文版本]**
+
+**描述：**
+`CoreAggregator` 中的 `_executeSwap()` 通过 `remainingWeight` 变量对同一 `tokenIn` 的连续路由序列强制执行 `MAX_WEIGHT = 10,000` 上限。当 `tokenIn` 改变时 `remainingWeight` 被重置为 `MAX_WEIGHT`，恶意用户可通过在路由间交替切换 `tokenIn` 值来反复重置权重配额，导致无限制的累计权重使用量，远超预期的 100% 上限。
+
+**影響：**
+攻击者可导致聚合器在交换执行中消耗超出用户预期或授权的代币，累计消耗量可远超 `MAX_WEIGHT` 上限。
+
+**修復建議：**
+使用映射按 `tokenIn` 追踪累计权重，并为每个 `tokenIn` 强制执行全局 `MAX_WEIGHT` 约束，而不是在每次代币变更时盲目重置。
+
+---
+
+## 5. Double Taxation on Liquidity ETH Removal via Router
+
+**Severity:** 🟠 High
+**Source:** `HackenPDFTXT/Node Meta.txt`
+
+**Description:**
+The NTE token implements two taxation mechanisms: an AMM tax applied to buy/sell operations involving the liquidity pair, and a transfer tax for direct P2P transfers. During liquidity ETH removal via `removeLiquidityETHSupportingFeeOnTransferTokens`, tokens flow from the pair to the router (triggering buy tax) and then from the router to the user (triggering transfer tax). This results in double taxation for a single liquidity removal operation, as the same token transfer is taxed twice under two different tax categories.
+
+**Impact:**
+Liquidity providers pay both the buy tax and the transfer tax when removing liquidity with ETH, effectively suffering double fees on a single operation. This discourages liquidity provision and causes more tokens to be burned/collected than intended.
+
+**Recommended Mitigation:**
+Exempt the router address from the transfer tax when acting as an intermediary during liquidity removal, or detect the router-to-user transfer and apply only one tax tier.
+
+---
+
+**[中文版本]**
+
+**描述：**
+NTE 代币在流动性 ETH 移除时被双重征税：代币从交易对转到路由器触发买入税，再从路由器转给用户触发转账税，同一流动性移除操作被征税两次。
+
+**影響：**
+流动性提供者在移除 ETH 流动性时需承担买入税和转账税双重费用，严重影响流动性激励。
+
+**修復建議：**
+在流动性移除操作中豁免路由器地址的转账税，或检测路由器中转场景，只应用一种税率。
+
+---
+
+## 6. Native Balance Sweep via Absolute Balance on NATIVE
+
+**Severity:** 🟠 High
+**Source:** `HackenPDFTXT/Dirol.txt`
+
+**Description:**
+In the aggregator's `_executeSwap`, the per-route input amount for `NATIVE` legs is derived from `address(this).balance` (the contract's total raw ETH balance) rather than the delta from the user's `msg.value`. When any pre-existing ETH is on the contract (from prior operations, accidental transfers, or owner funding), a malicious caller can send 1 wei with `tokenIn = NATIVE` and route it through a path that sends native ETH. The contract uses its entire ETH balance as the route input, forwarding all existing ETH to the destination router.
+
+**Impact:**
+An attacker can drain all ETH currently held in the aggregator contract with a minimal input (1 wei), receiving the entire native balance as their swap output.
+
+**Recommended Mitigation:**
+Track per-swap NATIVE input using the delta between pre-swap and post-swap balances, or use wrapped WETH and unwrap as needed, avoiding absolute balance reads for NATIVE inputs.
+
+---
+
+**[中文版本]**
+
+**描述：**
+聚合器的 `_executeSwap` 对 NATIVE 路由使用 `address(this).balance` 计算输入金额，而非用户提供的增量。如果合约持有任何 ETH，攻击者只需发送 1 wei 即可触发路由，使用合约全部 ETH 余额作为输入。
+
+**影響：**
+攻击者仅需 1 wei 即可耗尽合约中全部 ETH 余额。
+
+**修復建議：**
+使用交换前后余额差值追踪 NATIVE 输入，避免使用绝对余额读取。
+
+---
+
+---

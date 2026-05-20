@@ -1,7 +1,3 @@
-# parameter-validation (5)
-
-> Issues where governance parameters lacked validation, allowing zero addresses, incorrect inputs, or missing ownership checks.
-
 Severity legend: 🔴 Critical  🟠 High  🟡 Medium
 
 ---
@@ -149,17 +145,7 @@ Add the `indexed` keyword to the three most important parameters in each event d
 **修復建議：**
 为 `IGlobalRegistryService` 中每个事件的最多三个最重要参数添加 `indexed` 关键字，优先对地址和角色标识符等常用过滤条件进行索引。
 
----
-
-# storage-upgradeable (15)
-
-> Issues with ERC-7201 namespaced storage, missing storage gaps, and unsafe upgrade slot usage.
-
-Severity legend: 🔴 Critical  🟠 High  🟡 Medium
-
----
-
-## 1. Consider wiping slot 177 on Linea L2MessageService after upgrade
+## 6. Consider wiping slot 177 on Linea L2MessageService after upgrade
 
 **Severity:** 🔴 Critical
 **Source:** `cyfrin/upgrade.md`
@@ -188,7 +174,7 @@ Linea 的 `L2MessageService` 升级后，存储槽 177 被重新用作 `__gap_Re
 
 ---
 
-## 2. AtomicBatcher uses placeholder ERC-7201 namespace
+## 7. AtomicBatcher uses placeholder ERC-7201 namespace
 
 **Severity:** 🟡 Medium
 **Source:** `cyfrin/pr50.md`

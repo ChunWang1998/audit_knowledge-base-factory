@@ -106,24 +106,6 @@ Be extremely thorough and think like a sophisticated attacker with unlimited fla
 ## murmur
 - 就算沒找到問題 也至少要更熟knowledge base 的內容
 - 大部分bug bounty 的out of scope都在說什麼? 拒絕的理由? 是否可以用來filter 目前的knowledge base
+- 在cursor run 的篩選部分, 可以把篩選理由也放進prompt
 - 新增reports?
 - 增加機會: 加入參考的reference issue, 內容口語避免被歸類為AI report
-flow:
-1. 深入了解該repo, 第一輪先用grok 亂問,把不懂的名詞問一問丟給notebookLM(可以開三個copilot 來問比較好貼), 第二輪再寫一些note, 重點:
-   1. 類型
-   2. 通常該類型可能會有的問題
-   3. 特別點
-   4. 最核心的file 和functions note
-   5. key word in repo
-   6. 一些基本的work flow
-   7. 可以學起來的地方(名詞概念)
-
-Q:
-- 根據repo readme 說明該專案的目的
-- 列出三個最核心的smart contract 並介紹
-- 根據test file 給出基本的work flow
-- 介紹專案中一些比較重要的名詞和概念
-
-- 現在的prompt還沒有很好, 多透過"舊的repo" 和 "auditor md" 找漏洞來回測, 直到可以用很general 的方式回測找到為止
-- 要先做deep architecure 分析?
-https://grok.com/c/2533847a-996d-46dc-8bcb-c1b7efe5132b?rid=d82afc71-165f-40e3-a03f-1ccb7e71ad77
