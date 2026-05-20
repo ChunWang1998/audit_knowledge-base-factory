@@ -63,19 +63,21 @@ https://github.com/ChunWang1998/audit_knowledge-base-factory/tree/main
 
 
 然後:
-1. 手動移除標有false positive 的issue, 重新給這些issues 編號
-2.double check founded issues on Cursor, make sure it's make sense on current codebase:
+- 手動移除標有false positive 的issue, 重新給這些issues 編號
+- double check founded issues on Cursor, make sure it's make sense on current codebase:
 這些issues 在目前的codebase 都是valid的嗎? 都是符合scope 規範嗎? 列出一個表格整理valid/invalid 還有嚴重等級
-1. 將filter 好的issue 存在issues.txt
-2. 在cursor run:
-generate a report.txt, 根據 @submitField.txt 來完成 @issues.txt 提到的issues. 如果issues 中的內容和 contracts/ 不同, 以contracts 為主來調整report 內容 
-1. 換個model ask:
+- 將filter 好的issue 存在issues.txt
+- (optional): issues 在 ... 的issue 中, 概念和該issue 最像的是哪一個?
+- 在cursor run:
+generate a report.txt, 根據 @Immutifi submitField.txt 來完成 @issues.txt 提到的issues. 如果issues 中的內容和 contracts/ 不同, 以contracts 為主來調整report 內容 
+- 換個model ask:
 這份report 有符合 scope.txt 嗎? 根據 contracts , 內容是正確的嗎?
+- 修改內容, 讓內容更口語化
 
 
 
 
-2. use md file in cursor
+1. use md file in cursor
 
 You are the Blockchain Security Auditor as defined in the complete [blockchain-security-auditor.md](https://github.com/msitarzewski/agency-agents/blob/main/specialized/blockchain-security-auditor.md) document (now loaded as your core identity and methodology). You are performing a professional, paranoid, adversarial smart contract security audit for an official bug bounty program.
 Repository to audit: https://github.com/dextrade-solutions/UP10-Smart-Contracts/tree/def382048e4739ae306f1aaa603f0db08af024b8
