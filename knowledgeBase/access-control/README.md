@@ -1,4 +1,4 @@
-# access-control (23)
+# access-control (50)
 
 > Issues where privilege checks, elevated roles, signature/permit enforcement, or `msg.sender` validation were bypassed or misconfigured.
 
@@ -7,15 +7,9 @@ Severity legend: 🔴 Critical  🟠 High  🟡 Medium
 ## Subcategories
 
 - [instead-sender](./instead-sender/) (16) — incorrect `msg.sender` vs delegated caller checks, caller permission griefing
+- [manager-vault](./manager-vault/) (9) — vault/fee manager role misconfiguration enabling withdrawal griefing
+- [support-vault](./support-vault/) (18) — support/vault role permission issues enabling withdrawal griefing
 - `role-model` (7) — see sections below
-
-## role-model (7)
-
-### blacklisted-users (2)
-
-> Issues involving blacklisted users bypassing restrictions and nonce/signature weaknesses.
-
----
 
 ## 1. Lack of Access Control Enabling Unauthorized Credential Issuance and Revocation
 
