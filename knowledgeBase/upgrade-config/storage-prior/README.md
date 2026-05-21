@@ -1,6 +1,6 @@
 # storage-prior (9)
 
-> Issues where storage reads/writes or state updates were not correctly ordered, causing stale data or reentrancy risk.
+> Storage slot ordering and priority collisions across upgrade versions. Part of [upgrade-config](../README.md).
 
 Severity legend: 🔴 Critical  🟠 High  🟡 Medium
 

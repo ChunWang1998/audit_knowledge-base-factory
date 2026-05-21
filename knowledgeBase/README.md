@@ -12,28 +12,25 @@ Severity legend: 🔴 Critical  🟠 High  🟡 Medium
 
 ## Table of Contents
 
-- [access-control](#access-control) (7)
+- [access-control](#access-control) (23)
 - [accounting](#accounting) (51)
 - [dos-liveness](#dos-liveness) (6)
 - [external-dependencies](#external-dependencies) (3)
-- [griefing-attacks](#griefing-attacks) (314)
+- [griefing-attacks](#griefing-attacks) (250)
 - [token-transfer](#token-transfer) (36)
-- [upgrade-config](#upgrade-config) (1)
+- [upgrade-config](#upgrade-config) (49)
 
 ---
 
-## access-control (7)
-> Issues where privilege checks, elevated roles, or signature/permit enforcement were bypassed or misconfigured.
+## access-control (23)
+> Issues where privilege checks, elevated roles, signature/permit enforcement, or `msg.sender` validation were bypassed or misconfigured.
 
 Full write-ups: [access-control](./access-control/)
 
 ### Subcategories
 
-- `role-model` (7)
-
-- `blacklisted-users` (2)
-- `validation-access` (2)
-- `replay-protocol` (3)
+- [instead-sender](./access-control/instead-sender/) (16)
+- `role-model` (7) — `blacklisted-users` (2), `validation-access` (2), `replay-protocol` (3)
 
 ---
 
@@ -64,27 +61,23 @@ Full write-ups: [access-control](./access-control/)
 
 ---
 
-## griefing-attacks (314)
+## griefing-attacks (250)
 > Active griefing vectors — issues that allow an attacker or misconfigured logic to block, drain, or misroute protocol operations.
 
 ### Subcategories
 
-- [gas-griefing](./griefing-attacks/gas-griefing/) (12) — `aggregator-routing` (6), `missing-checks` (6)
-- [logic-griefing](./griefing-attacks/logic-griefing/) (133) — `consistently-consider` (4), `contracts-upgradeable` (19), `event-updates` (15), `function-voting` (3), `instead-sender` (16), `return-remove` (7), `return-script` (12), `sell-never` (13), `storage-function` (20), `storage-prior` (9), `time-session` (8), `variables-return` (7)
 - [withdrawal-griefing](./griefing-attacks/withdrawal-griefing/) (169) — `assets-withdraw` (10), `hardcoded-overpayment` (14), `logic-reward` (11), `manager-vault` (9), `payouts-holder` (14), `rewards-referral` (18), `support-vault` (18), `tranche-withdrawers` (13), `user-tokens` (17), `withdrawal-redeem` (45)
+- [logic-griefing](./griefing-attacks/logic-griefing/) (69) — `consistently-consider` (4), `event-updates` (15), `function-voting` (3), `return-remove` (7), `return-script` (12), `sell-never` (13), `time-session` (8), `variables-return` (7)
+- [gas-griefing](./griefing-attacks/gas-griefing/) (12) — `aggregator-routing` (6), `missing-checks` (6)
 
 #### logic-griefing leaf topics
 
 - [consistently-consider](./griefing-attacks/logic-griefing/consistently-consider/) (4)
-- [contracts-upgradeable](./griefing-attacks/logic-griefing/contracts-upgradeable/) (19)
 - [event-updates](./griefing-attacks/logic-griefing/event-updates/) (15)
 - [function-voting](./griefing-attacks/logic-griefing/function-voting/) (3)
-- [instead-sender](./griefing-attacks/logic-griefing/instead-sender/) (16)
 - [return-remove](./griefing-attacks/logic-griefing/return-remove/) (7)
 - [return-script](./griefing-attacks/logic-griefing/return-script/) (12)
 - [sell-never](./griefing-attacks/logic-griefing/sell-never/) (13)
-- [storage-function](./griefing-attacks/logic-griefing/storage-function/) (20)
-- [storage-prior](./griefing-attacks/logic-griefing/storage-prior/) (9)
 - [time-session](./griefing-attacks/logic-griefing/time-session/) (8)
 - [variables-return](./griefing-attacks/logic-griefing/variables-return/) (7)
 
@@ -106,10 +99,17 @@ Full write-ups: [access-control](./access-control/)
 
 ---
 
-## upgrade-config (1)
-> Issues related to upgradeable contracts, proxy storage layout, and configuration management.
+## upgrade-config (49)
+> Issues related to upgradeable contracts, proxy storage layout, slot collisions, and configuration management.
 
-- [upgrade-config](./upgrade-config/) (1) — all issues in this file
+Full write-ups: [upgrade-config](./upgrade-config/)
+
+### Subcategories
+
+- [contracts-upgradeable](./upgrade-config/contracts-upgradeable/) (19)
+- [storage-function](./upgrade-config/storage-function/) (20)
+- [storage-prior](./upgrade-config/storage-prior/) (9)
+- root README (1) — missing ownership validation on migration
 
 ---
 

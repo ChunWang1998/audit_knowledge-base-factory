@@ -1,6 +1,6 @@
 # instead-sender (16)
 
-> Issues where msg.sender was used incorrectly instead of a delegated caller, or where gas/storage optimizations were missing.
+> Issues where `msg.sender` was used incorrectly instead of a delegated caller (`msgSender` / `operator`), or where caller permission checks enabled griefing. Part of [access-control](../README.md).
 
 Severity legend: 🔴 Critical  🟠 High  🟡 Medium
 

@@ -1,6 +1,6 @@
 # contracts-upgradeable (19)
 
-> Issues specific to upgradeable contract patterns — missing modifiers, incorrect inheritance, or interface non-compliance.
+> Issues specific to upgradeable contract patterns — missing modifiers, incorrect inheritance, or interface non-compliance. Part of [upgrade-config](../README.md).
 
 Severity legend: 🔴 Critical  🟠 High  🟡 Medium
 

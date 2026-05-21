@@ -1,8 +1,13 @@
-# access-control (7)
+# access-control (23)
 
-> Issues where privilege checks, elevated roles, or signature/permit enforcement were bypassed or misconfigured.
+> Issues where privilege checks, elevated roles, signature/permit enforcement, or `msg.sender` validation were bypassed or misconfigured.
 
 Severity legend: 🔴 Critical  🟠 High  🟡 Medium
+
+## Subcategories
+
+- [instead-sender](./instead-sender/) (16) — incorrect `msg.sender` vs delegated caller checks, caller permission griefing
+- `role-model` (7) — see sections below
 
 ## role-model (7)
 

@@ -1,6 +1,6 @@
 # storage-function (20)
 
-> Issues related to missing events, storage inefficiencies, or incorrect function behavior.
+> Storage layout conflicts when adding functions or variables during upgrades. Part of [upgrade-config](../README.md).
 
 Severity legend: 🔴 Critical  🟠 High  🟡 Medium
 

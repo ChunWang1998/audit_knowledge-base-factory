@@ -1,4 +1,14 @@
+# upgrade-config (49)
+
+> Issues related to upgradeable contracts, proxy storage layout, slot collisions, and configuration management.
+
 Severity legend: 🔴 Critical  🟠 High  🟡 Medium
+
+## Subcategories
+
+- [contracts-upgradeable](./contracts-upgradeable/) (19) — missing modifiers, incorrect inheritance, interface non-compliance
+- [storage-function](./storage-function/) (20) — storage layout conflicts when adding functions or variables during upgrades
+- [storage-prior](./storage-prior/) (9) — storage slot ordering and priority collisions across upgrade versions
 
 ---
 
