@@ -1,0 +1,18 @@
+# Title 
+
+# Description
+(Please add any and all bugs you find below. Your submission will be sent to the protocol team for verification, and they will contact you once verified.
+
+Please note that the PoC should be added as a code block inside the report. It should not be added as a gist or a file.)
+
+Vulnerability Detail
+{Detailed explanation of the vulnerability. Include root cause, affected code paths, and relevant context.}
+
+POC
+{Steps to reproduce, test setup, and/or Foundry test code.}
+
+Impact
+{Describe who is affected, fund loss / protocol risk, and downstream consequences.}
+
+Recommendation
+{Concrete mitigation or fix suggestion.}

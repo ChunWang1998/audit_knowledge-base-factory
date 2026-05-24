@@ -38,12 +38,13 @@ c. Enzyme Onyx
 a. BitGo
 
 3. HackenProof 
-先submit 看看需不需要 reputation
+先submit 看看需不需要 reputation 或是fee
 
 a. Hyperbridge Protocol
 
 
-4. sherlock (要先deposit 250U 進去!)
+4. sherlock 
+幾乎都要先deposit 250U 進去
 
 ## Audit approach
 
@@ -114,4 +115,4 @@ Be extremely thorough and think like a sophisticated attacker with unlimited fla
 - 大部分bug bounty 的out of scope都在說什麼? 拒絕的理由? 是否可以用來filter 目前的knowledge base
 - 在cursor run 的篩選部分, 可以把篩選理由也放進prompt
 - 新增reports?
-- 增加機會: 加入參考的reference issue, 內容口語避免被歸類為AI report
+- 從拿去codebase 做issue review 產生的review.txt 來優化prompt, 不過可能要多搜集一點review.txt 才知道prompt 會犯什麼通病

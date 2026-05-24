@@ -1,0 +1,64 @@
+File Location: src/spoke/Spoke.sol (_processUserAccountData lines 706–813; _notifyRiskPremiumUpdate lines 822–849; entry points: liquidationCall line 354, borrow line 296, withdraw lines 263–265, setUsingAsCollateral line 407, updateUserRiskPremium line 419, updateUserDynamicConfig line 428)
+Issue Description:
+Two internal functions — _processUserAccountData and _notifyRiskPremiumUpdate — iterate over every one of a user's active positions using unbounded while (true) loops. Each iteration of _processUserAccountData makes an external call to IAaveOracle(ORACLE).getReservePrice(reserveId) and, for every collateral position, a second external call to reserve.hub.previewRemoveByShares(). After the main traversal, a second for loop over all active collateral entries computes the risk-premium. _notifyRiskPremiumUpdate adds a further while loop over all borrow positions, making external Hub calls (getAssetDrawnIndex, refreshPremium) per iteration. The gas cost of these paths scales linearly with the number of positions a user holds.
+
+Position counts are bounded only by the immutable MAX_USER_RESERVES_LIMIT set at constructor time. The protocol includes an explicit bypass: when MAX_USER_RESERVES_LIMIT equals MAX_ALLOWED_USER_RESERVES_LIMIT (type(uint16).max = 65535), the per-borrow and per-collateral count checks are skipped entirely, leaving no enforced ceiling.
+
+Any user can fill their own position list up to this limit by opening dust collateral or borrow positions across different reserves — a fully permissionless action requiring no elevated role. Once a user's position list is maximally bloated, every protocol interaction that triggers _processUserAccountData or _notifyRiskPremiumUpdate (liquidationCall, borrow, withdraw, repay risk-premium update, setUsingAsCollateral, updateUserRiskPremium, updateUserDynamicConfig) will execute the enlarged loops.
+
+Primary Attack Vector — Liquidation Evasion:
+The most economically damaging scenario is self-inflicted position bloat to evade liquidation. A borrower whose position is approaching under-collateralization opens the maximum number of dust collateral positions (each requiring only a non-zero supply of a listed asset). When a liquidator subsequently calls liquidationCall, the full oracle-heavy loop runs for every position. As position count grows, the gas required by the liquidator (loop + oracle calls + Hub reads + risk-premium update loop) eventually exceeds the liquidation reward. At that point, no rational liquidator will attempt the call, leaving the undercollateralized position unliquidated and accumulating bad debt that socialises losses across all liquidity providers.
+
+Secondary Attack Vectors:
+1. A malicious approved position manager can bloat another user's position list, permanently degrading that user's ability to withdraw collateral (collateral withdrawal triggers the loop via _refreshAndValidateUserAccountData), borrow additional assets, or have their position liquidated.
+2. Any call that triggers _notifyRiskPremiumUpdate after position bloat amplifies the cost further because the borrow-position loop also makes per-iteration Hub external calls.
+
+Exact code quote proving the vulnerability:
+
+// _processUserAccountData — two nested traversals with external calls per iteration
+while (true) {
+  (reserveId, borrowing, collateral) = positionStatus.next(reserveId);
+  if (reserveId == PositionStatusMap.NOT_FOUND) break;
+
+  uint256 assetPrice = IAaveOracle(ORACLE).getReservePrice(reserveId);  // external oracle call per position
+
+  if (collateral) {
+    uint256 userCollateralValue = reserve.hub.previewRemoveByShares(  // external Hub call per collateral position
+      reserve.assetId, suppliedShares
+    ).toValue({ decimals: assetDecimals, price: assetPrice });
+    collateralInfo.add(accountData.activeCollateralCount, reserve.collateralRisk, userCollateralValue);
+    ...
+  }
+  if (borrowing) {
+    UserPositionUtils.DebtComponents memory debtComponents =
+      userPosition.getDebtComponents(reserve.hub, reserve.assetId);  // external Hub call per borrow position
+    ...
+  }
+}
+// second loop — risk-premium accumulation over all active collateral entries
+for (uint256 index = 0; index < collateralInfo.length(); ++index) {
+  accountData.riskPremium += userCollateralValue * collateralRisk;
+  ...
+}
+
+// _notifyRiskPremiumUpdate — additional external-call loop over all borrow positions
+while ((reserveId = positionStatus.nextBorrowing(reserveId)) != PositionStatusMap.NOT_FOUND) {
+  hub.getAssetDrawnIndex(assetId);      // external Hub call per borrow position
+  hub.refreshPremium(assetId, premiumDelta);  // external Hub call per borrow position
+  ...
+}
+
+// MAX_USER_RESERVES_LIMIT bypass — limit check is entirely skipped when limit == type(uint16).max
+require(
+  MAX_USER_RESERVES_LIMIT == MAX_ALLOWED_USER_RESERVES_LIMIT ||
+    positionStatus.borrowCount(_reserveCount) < MAX_USER_RESERVES_LIMIT,
+  MaximumUserReservesExceeded()
+);
+
+Entry points that trigger the full loop chain (Spoke.sol):
+- liquidationCall (line 354): _calculateUserAccountData → _processUserAccountData
+- borrow (line 296): _refreshAndValidateUserAccountData → _processUserAccountData + _notifyRiskPremiumUpdate
+- withdraw (line 263): _refreshAndValidateUserAccountData (when reserve used as collateral)
+- setUsingAsCollateral (line 407): _refreshAndValidateUserAccountData
+- updateUserRiskPremium (line 419): _calculateUserAccountData + _notifyRiskPremiumUpdate
+- updateUserDynamicConfig (line 428): _refreshAndValidateUserAccountData + _notifyRiskPremiumUpdate
