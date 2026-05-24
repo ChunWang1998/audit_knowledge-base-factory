@@ -1,0 +1,20 @@
+IN SCOPE VULNERABILITIES: Runtime, Pallets and Smart Contracts
+We are looking for evidence and reasons for incorrect behavior of the runtime, pallets and smart contracts, which could cause unintended functionality:
+
+Stealing or loss of funds
+Unauthorized transaction
+Transaction manipulation
+Attacks on logic (behavior of the code is different from the business description)
+Reentrancy
+Reordering
+Over and underflows
+OUT OF SCOPE VULNERABILITIES: Runtime, Pallets and Smart Contracts
+Theoretical vulnerabilities without any proof or demonstration
+Old compiler version
+The compiler version is not locked
+Vulnerabilities in imported contracts
+Code style guide violations
+Redundant code
+Gas optimizations
+Best practice issues
+Vulnerabilities that can be exploited through front-run attacks only

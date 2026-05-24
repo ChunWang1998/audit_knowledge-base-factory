@@ -37,7 +37,11 @@ c. Enzyme Onyx
 
 a. BitGo
 
-3. HackenProof (要求的reputation 很高)
+3. HackenProof 
+先submit 看看需不需要 reputation
+
+a. Hyperbridge Protocol
+
 
 4. sherlock (要先deposit 250U 進去!)
 
@@ -52,7 +56,7 @@ grok1:
 這個repo是我主要要拿來當作參考的資料庫(接下來簡稱knowledgeBase) 
 https://github.com/ChunWang1998/audit_knowledge-base-factory/tree/main
 
-任何回答都要嚴格遵照 scope.txt 和 Immutifi Feasibility Limitations.md
+任何回答都要嚴格遵照 scope.txt
 
 根據以上內容回答我接下來的問題：
 
@@ -69,7 +73,7 @@ https://github.com/ChunWang1998/audit_knowledge-base-factory/tree/main
 - 將filter 好的issue 存在issues.txt
 - (optional): issues 在 ... 的issue 中, 概念和該issue 最像的是哪一個?
 - 在cursor run:
-generate a report.txt, 根據 @Immutifi submitField.txt 來完成 @issues.txt 提到的issues. 如果issues 中的內容和 contracts/ 不同, 以contracts 為主來調整report 內容 
+generate a report.txt, 根據 @submitField.txt 來完成 @issues.txt 提到的issues. 如果issues 中的內容和 contracts/ 不同, 以contracts 為主來調整report 內容 
 - 換個model ask:
 這份report 有符合 scope.txt 嗎? 根據 contracts , 內容是正確的嗎?
 - 修改內容, 讓內容更口語化
