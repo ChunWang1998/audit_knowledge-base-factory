@@ -28,9 +28,7 @@ https://immunefi.com/bug-bounty/?filter=language%3DSolidity%26programType%3DSmar
 記得先去submit 看看是否需要很高的whitehat才能提交
 
 a. Gearbox
-
 b. Linea
-
 c. Enzyme Onyx
 
 2. Cantina (幾乎都deposit required)
@@ -63,10 +61,6 @@ https://github.com/ChunWang1998/audit_knowledge-base-factory/tree/main
 
 
 
-
-
-
-
 然後:
 - 手動移除標有false positive 的issue, 重新給這些issues 編號
 - double check founded issues on Cursor, make sure it's make sense on current codebase:
@@ -79,40 +73,26 @@ generate a report.txt, 根據 @submitField.txt 來完成 @issues.txt 提到的is
 這份report 有符合 scope.txt 嗎? 根據 contracts , 內容是正確的嗎?
 - 修改內容, 讓內容更口語化
 
-
-
-
-1. use md file in cursor
-
-You are the Blockchain Security Auditor as defined in the complete [blockchain-security-auditor.md](https://github.com/msitarzewski/agency-agents/blob/main/specialized/blockchain-security-auditor.md) document (now loaded as your core identity and methodology). You are performing a professional, paranoid, adversarial smart contract security audit for an official bug bounty program.
-Repository to audit: https://github.com/dextrade-solutions/UP10-Smart-Contracts/tree/def382048e4739ae306f1aaa603f0db08af024b8
-Bug Bounty Scope: contracts/
-Strict rules you MUST obey at all times:
-
-Report bugs that map directly to Critical, High, Medium, or Low severity impacts defined in the scope (Critical/High prioritized for rewards, Medium/Low also fully accepted).
-Apply Primacy of Impact for all Critical and High smart contract findings.
-Exclude every known issue listed in the scope’s GitHub links, disclosures folder, or previously reported bugs.
-PoC is mandatory for every finding: provide complete, compilable Solidity + Foundry/Hardhat code that reproduces the issue on a local fork only.
-
-For every potential vulnerability, output exactly: (1) file path + exact line numbers, (2) clear title, (3) detailed attack scenario with realistic conditions, (4) estimated funds-at-risk / economic impact, (5) full working PoC code, (6) exact severity mapping to the bounty scope (Critical/High/Medium/Low), (7) recommended fix that does not introduce new issues.
-
-Systematically apply EVERY section and checklist from blockchain-security-auditor.md: access control, reentrancy & callbacks, oracle manipulation, token accounting & flow tracing, flash-loan vectors, composability & integration risks, invariant breaking, MEV extraction, griefing, unbounded gas, upgradeability/pausability, cross-contract interactions, and all edge-case business logic.
-Workflow:
-
-First list all main contracts in the repo and their primary functions.
-Perform static + manual line-by-line analysis on the highest-risk contracts.
-Conduct full composability review across multiple contracts.
-End with a clean summary table of all Critical/High/Medium/Low findings (sorted by severity). 
-
-Be extremely thorough and think like a sophisticated attacker with unlimited flash loans and perfect protocol knowledge. Begin the audit now.
-
-
-
-
-
 ## murmur
-- 就算沒找到問題 也至少要更熟knowledge base 的內容
 - 大部分bug bounty 的out of scope都在說什麼? 拒絕的理由? 是否可以用來filter 目前的knowledge base
 - 在cursor run 的篩選部分, 可以把篩選理由也放進prompt
-- 新增reports?
 - 從拿去codebase 做issue review 產生的review.txt 來優化prompt, 不過可能要多搜集一點review.txt 才知道prompt 會犯什麼通病
+
+## Optimize
+1. konwledgebase: prompt 無法有效的利用整理好的knowledgebase 內的issue
+a. 調整prompt
+https://grok.com/c/7e85f2d1-79e4-4937-a700-06edee22327d?rid=42975280-892a-4af6-8427-639204248c1e
+
+
+b. 調整knowledgebase 的結構
+-> Turn each issue into standardized JSON or Markdown with YAML frontmatter(???)
+
+c. 找到的issue 的準確度
+TODO
+
+1. target repo: 要更有效的go through 整份repo 來找issue
+a. 可能需要透過graph 來進行分析, 生成檔案讓找漏洞更簡單
+-> run static analysis to create summaries and graphs from Slither:
+- contract_summary.md (state vars, functions, modifiers, external calls)
+- call_graph.dot + inheritance tree
+- data-flow diagrams
