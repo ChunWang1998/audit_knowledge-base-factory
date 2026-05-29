@@ -14,11 +14,42 @@ Paper: SkillOpt — Executive Strategy for Self-Evolving Agent Skills (arXiv:260
 ENGLISH VERSION
 ================================================================================
 
+## Current Repo Layout (as of 2026-05)
+
+This repo is a monorepo. SkillOpt is vendored inside it; you do NOT need a
+separate clone.
+
+```
+audit_knowledge-base-factory/
+├── knowledgeBase/              ← canonical dataset (358 issues, hierarchical)
+│   ├── accounting/
+│   │   ├── payout-errors/hardcoded-overpayment/issues.json
+│   │   └── ...
+│   ├── griefing-attacks/
+│   └── ...
+├── prompts/                    ← seed skills to optimize
+│   ├── accounting.txt
+│   ├── access-control.txt
+│   ├── griefing-attacks/
+│   │   ├── gas-griefing.txt
+│   │   ├── logic-griefing.txt
+│   │   └── withdrawal-griefing.txt
+│   └── ...
+├── dataSetResource/            ← raw audit reports (Hacken, Sherlock, Cyfrin, …)
+├── scripts/
+│   └── prepare_audit_dataset.py   ← bridge script (knowledgeBase → SkillOpt items)
+└── skillopt/                   ← vendored SkillOpt engine (from joshhu/skillopt-qa)
+    ├── skillopt/               ← core package (agent, evaluator, trainer, optimizer)
+    ├── configs/
+    ├── data/audit/             ← generated train/val splits (do not edit by hand)
+    └── outputs/                ← training artifacts
+```
+
 ## Background: What SkillOpt Does
 
-The joshhu/skillopt-qa repo is a re-implementation of Microsoft SkillOpt — a text-space
-optimizer that trains a deployable natural-language "skill" (a .md / .txt prompt file) for
-a frozen LLM without touching model weights. The loop is:
+SkillOpt is a text-space optimizer that trains a deployable natural-language
+"skill" (a .md / .txt prompt file) for a frozen LLM without touching model
+weights. The loop is:
 
   Seed Skill
       │
@@ -32,23 +63,23 @@ a frozen LLM without touching model weights. The loop is:
       └─ NO → Reject (optimizer memorizes rejected version)
 
 Mapping to this project:
-  - prompts/*.txt          = the "skill"
-  - knowledgeBaseJson/     = the dataset (358 issues in index.json)
-  - Audit agent task       = given vulnerable code, identify vulnerability category + tags
-  - EM/F1 evaluator        = tag recall evaluator
-  - Train/Val/Test split   = 50% train / 50% val per category + external test set
+  - prompts/*.txt               = the "skill"
+  - knowledgeBase/**/issues.json = the dataset (358 issues total)
+  - Audit agent task            = given vulnerable code, identify vulnerability tags
+  - Evaluator (to implement)    = tag recall
+  - Train/Val/Test split        = 50% train / 50% val per category + external test set
 
 ## Step 1 — Understand Current Assets
 
 | SkillOpt Component   | This Project Equivalent                                      |
 |----------------------|--------------------------------------------------------------|
 | best_skill.md        | prompts/accounting.txt, prompts/access-control.txt, etc.     |
-| HotpotQA items       | 358 issues in knowledgeBaseJson/index.json                   |
+| HotpotQA items       | 358 issues in knowledgeBase/**/issues.json                   |
 | Agent task (QA)      | Audit: given code snippet, identify vulnerability tags       |
-| EM/F1 evaluator      | Recall: % of issues where agent output matches expected tags |
+| EM/F1 evaluator      | Tag recall (to replace evaluator.py)                         |
 | Train/Val/Test       | 50% train + 50% val per category; external data for test     |
 
-Issue distribution (index.json, 358 total):
+Issue distribution (358 total, grouped by issue["category"]):
   - Griefing Attacks:     120
   - Accounting:           108
   - DoS / Liveness:        51
@@ -57,39 +88,59 @@ Issue distribution (index.json, 358 total):
   - Access Control:        10
   - External Dependencies:  3
 
-Train ONE skill file per category (e.g. optimize prompts/accounting.txt using only
-the 108 Accounting issues).
+Each `issues.json` file is an array of issue objects with fields:
+  id, source, category, severity, contract_name, functions_affected,
+  description, impact, code_snippet, location, recommendation, tags, patterns
 
-## Step 2 — Fork and Adapt skillopt-qa
+The taxonomy path (e.g. accounting/payout-errors/hardcoded-overpayment) is
+derived from the file path under knowledgeBase/, not stored as a flat index.
 
-Clone https://github.com/joshhu/skillopt-qa and change only:
-  - data loader
-  - agent
-  - evaluator
+Train ONE skill file per top-level category (e.g. optimize prompts/accounting.txt
+using only the 108 Accounting issues). Griefing Attacks currently has three
+sub-prompts under prompts/griefing-attacks/; start with a single combined
+prompt or pick one sub-prompt per sub-taxonomy later.
 
-Keep optimizer.py and trainer.py intact.
+## Step 2 — Adapt the Vendored skillopt/
 
-### 2a. Data Preparation Script
+The engine lives at `skillopt/`. Keep optimizer.py and trainer.py intact.
+Change only:
+  - agent.py      (audit prompt instead of HotpotQA QA)
+  - evaluator.py  (tag recall instead of EM/F1)
+  - configs/      (audit-specific YAML per category)
 
-Create scripts/prepare_audit_dataset.py:
+data.py already supports local splits via load_split(); no HotpotQA download
+is needed once prepare_audit_dataset.py has run.
 
-  - Read knowledgeBaseJson/index.json
-  - Group issues by category
+### 2a. Data Preparation Script (DONE)
+
+`scripts/prepare_audit_dataset.py` reads the hierarchical knowledge base and
+writes SkillOpt items.
+
+What it does:
+  - Walk knowledgeBase/**/issues.json
+  - Group issues by top-level category slug
+  - Skip issues with empty code_snippet
   - Per category: shuffle (seed=42), split 50/50 → train / val
-  - Convert each issue to SkillOpt item format:
+  - Write manifest.json with per-category counts
+
+Item format:
 
     {
       "id": issue["id"],
       "question": "Audit this Solidity code:\n```solidity\n{code_snippet}\n```\nContract: {contract_name}\nFunctions: {functions_affected}",
       "context": issue["description"],
-      "answers": issue["tags"],          // ground truth for evaluator
-      "category": "accounting",          // slug mapped from category field
-      "severity": issue["severity"]
+      "answers": issue["tags"],
+      "category": "accounting",
+      "taxonomy_path": "accounting/payout-errors/hardcoded-overpayment",
+      "severity": issue["severity"],
+      "source": issue["source"],
+      "location": issue["location"]
     }
 
-  - Write to:
-      data/audit/{category}/train/items.json
-      data/audit/{category}/val/items.json
+Output paths:
+  skillopt/data/audit/{category}/train/items.json
+  skillopt/data/audit/{category}/val/items.json
+  skillopt/data/audit/manifest.json
 
 Category slug map:
   Accounting            → accounting
@@ -100,10 +151,26 @@ Category slug map:
   Upgrade / Config        → upgrade-config
   External Dependencies   → external-dependencies
 
-### 2b. Replace Data Loader (skillopt/data.py)
+Run from repo root:
 
-Swap HotpotQA download for local read of data/audit/{category}/.
-Item schema stays: {"id", "question", "context", "answers"}.
+  python scripts/prepare_audit_dataset.py
+  python scripts/prepare_audit_dataset.py --category accounting
+  python scripts/prepare_audit_dataset.py --kb-root knowledgeBase --out-root skillopt/data/audit
+
+Generated split sizes (seed=42):
+  accounting:            54 train / 54 val
+  griefing-attacks:      60 train / 60 val
+  dos-liveness:          25 train / 26 val
+  token-transfer:        18 train / 18 val
+  upgrade-config:        15 train / 15 val
+  access-control:         5 train /  5 val
+  external-dependencies:  1 train /  2 val
+
+### 2b. Data Loader (skillopt/data.py)
+
+No change required for audit use. load_split(split_dir, "train"|"val"|"test")
+reads {split_dir}/{name}/items.json. HotpotQA download (build_split) remains
+for the original benchmark only.
 
 ### 2c. Replace Agent (skillopt/agent.py)
 
@@ -123,7 +190,8 @@ Item schema stays: {"id", "question", "context", "answers"}.
   - Explanation: (1-2 sentences)
   """
 
-The skill (prompts/*.txt) is injected into BASE_INSTRUCTIONS at runtime.
+The skill (prompts/*.txt) is injected into BASE_INSTRUCTIONS at runtime via
+cfg.seed_skill (loaded from file in the audit config).
 
 ### 2d. Replace Evaluator (skillopt/evaluator.py)
 
@@ -136,32 +204,41 @@ Use tag recall instead of EM/F1:
               return 1.0
       return 0.0
 
-  def evaluate_batch(outputs, items) -> float:
-      return mean(score(out, item["answers"]) for out, item in zip(outputs, items))
+Wire recall into EvalResult so cfg.metric = "recall" works with trainer.py.
 
 Target: val recall ≥ 0.80 (80% of validation issues correctly tagged).
 
 ### 2e. Config Files
 
-Create configs/audit/accounting.yaml (clone from configs/hotpotqa/default.yaml):
+Create skillopt/configs/audit/accounting.yaml (clone from
+configs/hotpotqa/default.yaml, adjust fields to match Config dataclass):
+
+  benchmark: audit
+  metric: recall
+  seed_skill: ""   # leave empty; load from ../prompts/accounting.txt in a wrapper, or paste path via CLI
 
   model:
-    target_model: gpt-4o              # frozen audit agent
-    optimizer_model: gpt-4o           # model that edits the skill
+    target_model: gpt-4o
+    optimizer_model: gpt-4o
     base_url: https://api.openai.com/v1
 
-  training:
+  train:
     num_epochs: 5
     batch_size: 10
-    val_size: 54                      # half of 108 Accounting issues
+    val_size: 54        # half of 108 Accounting issues (see manifest.json)
+    patience: 4
+    seed: 42
 
-  skill:
-    seed_path: prompts/accounting.txt
-    output_path: outputs/audit/accounting/best_skill.txt
+Repeat per category with matching seed_skill path and val_size from manifest.
 
-  metric: recall
-
-Repeat per category with matching seed_path and val_size.
+Suggested seed_skill paths (relative to repo root):
+  accounting              → prompts/accounting.txt
+  access-control          → prompts/access-control.txt
+  griefing-attacks        → prompts/griefing-attacks/gas-griefing.txt (or combine sub-prompts)
+  dos-liveness            → prompts/dos-liveness.txt
+  token-transfer          → prompts/token-transfer.txt
+  upgrade-config          → prompts/upgrade-config.txt
+  external-dependencies   → prompts/external-dependencies.txt
 
 ## Step 3 — Training Loop (End-to-End)
 
@@ -183,39 +260,41 @@ Repeat per category with matching seed_path and val_size.
           └─ NO → reject, tell optimizer not to repeat this edit
           │
           ▼
-  outputs/audit/accounting/best_skill.txt   ← deployable result
+  skillopt/outputs/audit/accounting/best_skill.md   ← deployable result
 
-Stopping: 4 consecutive rejections OR val recall ≥ 0.80.
+Stopping: 4 consecutive rejections (train.patience) OR val recall ≥ 0.80.
 
 ## Step 4 — Test Set Strategy
 
 Goal: 50% recall on external test set (unseen data).
 
 Use audit reports NOT yet in knowledgeBase:
-  - New Sherlock reports after current scope (post 2026.03)
+  - New Sherlock reports after current scope (post 2026.03) from dataSetResource/
   - New Cyfrin reports not yet ingested
   - Any fresh Hacken / Peckshield reports
 
 Convert to same item format and store at:
-  data/audit/{category}/test/items.json
+  skillopt/data/audit/{category}/test/items.json
 
 Test set must never be seen during train or val optimization.
 
 ## Step 5 — Run Order
 
-  # 1. Clone and install skillopt-qa
-  git clone https://github.com/joshhu/skillopt-qa
-  cd skillopt-qa
+  # 1. Install SkillOpt (from repo root)
+  cd skillopt
   uv venv && uv pip install -e ".[dev]"
 
-  # 2. Prepare audit dataset (from this project root)
+  # 2. Prepare audit dataset (from repo root)
+  cd ..
   python scripts/prepare_audit_dataset.py
 
-  # 3. Train accounting prompt
+  # 3. Train accounting prompt (from skillopt/)
+  cd skillopt
   uv run skillopt-train \
       --config configs/audit/accounting.yaml \
       --split-dir data/audit/accounting \
-      --out-root outputs/audit/accounting
+      --out-root outputs/audit/accounting \
+      --metric recall
 
   # 4. Repeat per category
   uv run skillopt-train --config configs/audit/access-control.yaml ...
@@ -224,28 +303,35 @@ Test set must never be seen during train or val optimization.
   uv run skillopt-train --config configs/audit/token-transfer.yaml ...
   uv run skillopt-train --config configs/audit/upgrade-config.yaml ...
 
-  # 5. Final test evaluation
-  uv run skillopt-test \
-      --skill outputs/audit/accounting/best_skill.txt \
-      --data data/audit/accounting/test/items.json
+  # 5. Final test evaluation (after agent/evaluator adapted)
+  uv run skillopt-train \
+      --config configs/audit/accounting.yaml \
+      --split-dir data/audit/accounting \
+      --out-root outputs/audit/accounting \
+      --no-test   # or run test split manually once test/items.json exists
+
+  # 6. Deploy optimized prompt back to prompts/
+  cp outputs/audit/accounting/<run>/best_skill.md ../prompts/accounting.txt
 
 ## Step 6 — Key Design Decisions
 
 | Decision                    | Recommendation                                              |
 |-----------------------------|-------------------------------------------------------------|
+| Monorepo vs separate clone? | Monorepo — skillopt/ is already vendored in this repo       |
+| Data source                 | knowledgeBase/**/issues.json (not a flat index.json)        |
 | One skill per category?     | YES — matches prompts/*.txt structure, cleaner signal       |
 | Agent input                 | code_snippet + contract_name + functions_affected           |
 | Ground truth                | tags list — any one tag match in output = success           |
 | Optimizer model             | Stronger than target agent (GPT-4o, claude-opus)            |
 | Batch size                  | 10–15 issues per batch                                      |
 | Stopping criterion          | 4 consecutive rejects OR val recall ≥ 0.80                  |
-| Deploy                      | Replace prompts/*.txt with outputs/audit/*/best_skill.txt   |
+| Deploy                      | Copy best_skill.md → prompts/*.txt                          |
 
 Outputs per run:
-  outputs/audit/{category}/
-    ├── best_skill.txt       ← deployable optimized prompt
+  skillopt/outputs/audit/{category}/{run_name}/
+    ├── best_skill.md        ← deployable optimized prompt
     ├── history.json         ← per-step train/val metrics, accept/reject log
-    ├── skills/skill_vXXXX_*.txt
+    ├── skills/skill_vXXXX_*.md
     ├── steps/step_XXXX.json
     └── test_result.json     ← final recall on held-out test set
 
@@ -254,10 +340,40 @@ Outputs per run:
 中文版
 ================================================================================
 
+## 目前 Repo 架構（2026-05）
+
+本 repo 是 monorepo，SkillOpt 已內嵌在 `skillopt/`，不需要另外 clone。
+
+```
+audit_knowledge-base-factory/
+├── knowledgeBase/              ← 正式資料集（358 筆 issues，樹狀結構）
+│   ├── accounting/
+│   │   ├── payout-errors/hardcoded-overpayment/issues.json
+│   │   └── ...
+│   ├── griefing-attacks/
+│   └── ...
+├── prompts/                    ← 待優化的 seed skill
+│   ├── accounting.txt
+│   ├── access-control.txt
+│   ├── griefing-attacks/
+│   │   ├── gas-griefing.txt
+│   │   ├── logic-griefing.txt
+│   │   └── withdrawal-griefing.txt
+│   └── ...
+├── dataSetResource/            ← 原始審計報告（Hacken、Sherlock、Cyfrin 等）
+├── scripts/
+│   └── prepare_audit_dataset.py   ← 橋接腳本（knowledgeBase → SkillOpt items）
+└── skillopt/                   ← 內嵌 SkillOpt 引擎（來自 joshhu/skillopt-qa）
+    ├── skillopt/               ← 核心套件（agent、evaluator、trainer、optimizer）
+    ├── configs/
+    ├── data/audit/             ← 產生的 train/val 切分（勿手動編輯）
+    └── outputs/                ← 訓練產物
+```
+
 ## 背景：SkillOpt 做了什麼
 
-joshhu/skillopt-qa 是 Microsoft SkillOpt 的精簡重現版 — 文字空間優化器，為凍結的
-LLM 訓練可部署的自然語言「技能」（prompt 文字檔），不修改模型權重。訓練迴圈：
+SkillOpt 是文字空間優化器，為凍結的 LLM 訓練可部署的自然語言「技能」（prompt
+文字檔），不修改模型權重。訓練迴圈：
 
   種子技能（seed skill）
       │
@@ -271,23 +387,23 @@ LLM 訓練可部署的自然語言「技能」（prompt 文字檔），不修改
       └─ NO → 拒絕，並記憶這次被拒絕的版本
 
 本專案對應：
-  - prompts/*.txt          = 「技能」
-  - knowledgeBaseJson/     = 資料集（index.json 共 358 個 issues）
-  - Audit agent 任務       = 給定有漏洞的程式碼，找出漏洞類別與 tags
-  - 評分器                 = tag recall（召回率）
-  - 資料切分               = 每類別 50% train / 50% val + 外部 test set
+  - prompts/*.txt                    = 「技能」
+  - knowledgeBase/**/issues.json     = 資料集（共 358 筆 issues）
+  - Audit agent 任務                 = 給定有漏洞的程式碼，找出漏洞 tags
+  - 評分器（待實作）                 = tag recall（召回率）
+  - 資料切分                         = 每類別 50% train / 50% val + 外部 test set
 
 ## Step 1 — 理解現有資產
 
 | SkillOpt 元件        | 本專案對應                                                   |
 |----------------------|--------------------------------------------------------------|
 | best_skill.md        | prompts/accounting.txt、prompts/access-control.txt 等        |
-| HotpotQA 資料集      | knowledgeBaseJson/index.json（358 個 issues）                |
+| HotpotQA 資料集      | knowledgeBase/**/issues.json（358 筆 issues）                  |
 | Agent 任務           | 審計：給定 code snippet，辨識漏洞 tags                       |
-| EM/F1 評分器         | Recall：agent 輸出命中 expected tags 的比例                  |
+| EM/F1 評分器         | Tag recall（需改寫 evaluator.py）                            |
 | Train/Val/Test       | 每類別 50/50 切分；外部資料作 test                           |
 
-Issues 分布（index.json，共 358）：
+Issues 分布（共 358 筆，依 issue["category"] 分組）：
   - Griefing Attacks:     120
   - Accounting:           108
   - DoS / Liveness:        51
@@ -296,39 +412,56 @@ Issues 分布（index.json，共 358）：
   - Access Control:        10
   - External Dependencies:  3
 
-建議每個類別獨立訓練一個 skill 檔（例如只用 108 個 Accounting issues 優化
-prompts/accounting.txt）。
+每個 `issues.json` 是 issue 物件陣列，欄位包含：
+  id, source, category, severity, contract_name, functions_affected,
+  description, impact, code_snippet, location, recommendation, tags, patterns
 
-## Step 2 — Fork 並改寫 skillopt-qa
+分類路徑（如 accounting/payout-errors/hardcoded-overpayment）由
+knowledgeBase/ 下的檔案路徑推導，不是扁平的 index.json。
 
-Clone https://github.com/joshhu/skillopt-qa，只改三處：
-  - data loader（資料載入）
-  - agent（審計 agent）
-  - evaluator（評分器）
+建議每個頂層類別獨立訓練一個 skill 檔（例如只用 108 個 Accounting issues 優化
+prompts/accounting.txt）。Griefing Attacks 目前在 prompts/griefing-attacks/
+下有三份子 prompt；初期可先用單一合併 prompt，或之後按子分類各自訓練。
 
-optimizer.py 與 trainer.py 原封不動。
+## Step 2 — 改寫內嵌的 skillopt/
 
-### 2a. 資料準備腳本
+引擎位於 `skillopt/`。optimizer.py 與 trainer.py 原封不動，只改：
+  - agent.py     （審計 prompt，取代 HotpotQA QA）
+  - evaluator.py （tag recall，取代 EM/F1）
+  - configs/      （各類別的 audit YAML）
 
-建立 scripts/prepare_audit_dataset.py：
+data.py 已支援本地切分（load_split）；執行 prepare_audit_dataset.py 後
+不需要 HotpotQA 下載。
 
-  - 讀取 knowledgeBaseJson/index.json
-  - 依 category 分組
-  - 每組 shuffle（seed=42），50/50 切為 train / val
-  - 轉成 SkillOpt item 格式：
+### 2a. 資料準備腳本（已完成）
+
+`scripts/prepare_audit_dataset.py` 讀取樹狀 knowledge base 並輸出 SkillOpt items。
+
+功能：
+  - 走訪 knowledgeBase/**/issues.json
+  - 依頂層 category slug 分組
+  - 跳過 code_snippet 為空的 issue
+  - 每類別 shuffle（seed=42），50/50 切為 train / val
+  - 寫出 manifest.json 記錄各類別筆數
+
+Item 格式：
 
     {
       "id": issue["id"],
-      "question": "審計以下 Solidity 程式碼：\n```solidity\n{code_snippet}\n```\n合約：{contract_name}\n函數：{functions_affected}",
+      "question": "Audit this Solidity code:\n```solidity\n{code_snippet}\n```\nContract: {contract_name}\nFunctions: {functions_affected}",
       "context": issue["description"],
       "answers": issue["tags"],
       "category": "accounting",
-      "severity": issue["severity"]
+      "taxonomy_path": "accounting/payout-errors/hardcoded-overpayment",
+      "severity": issue["severity"],
+      "source": issue["source"],
+      "location": issue["location"]
     }
 
-  - 輸出至：
-      data/audit/{category}/train/items.json
-      data/audit/{category}/val/items.json
+輸出路徑：
+  skillopt/data/audit/{category}/train/items.json
+  skillopt/data/audit/{category}/val/items.json
+  skillopt/data/audit/manifest.json
 
 類別 slug 對照：
   Accounting            → accounting
@@ -339,10 +472,25 @@ optimizer.py 與 trainer.py 原封不動。
   Upgrade / Config        → upgrade-config
   External Dependencies   → external-dependencies
 
-### 2b. 改寫 Data Loader（skillopt/data.py）
+在 repo 根目錄執行：
 
-將 HotpotQA 下載改為讀取本地 data/audit/{category}/。
-Item 結構維持：{"id", "question", "context", "answers"}。
+  python scripts/prepare_audit_dataset.py
+  python scripts/prepare_audit_dataset.py --category accounting
+  python scripts/prepare_audit_dataset.py --kb-root knowledgeBase --out-root skillopt/data/audit
+
+產生的切分大小（seed=42）：
+  accounting:            54 train / 54 val
+  griefing-attacks:      60 train / 60 val
+  dos-liveness:          25 train / 26 val
+  token-transfer:        18 train / 18 val
+  upgrade-config:        15 train / 15 val
+  access-control:         5 train /  5 val
+  external-dependencies:  1 train /  2 val
+
+### 2b. Data Loader（skillopt/data.py）
+
+Audit 用途不需修改。load_split(split_dir, "train"|"val"|"test") 讀取
+{split_dir}/{name}/items.json。HotpotQA 下載（build_split）僅供原始 benchmark 使用。
 
 ### 2c. 改寫 Agent（skillopt/agent.py）
 
@@ -362,7 +510,7 @@ Item 結構維持：{"id", "question", "context", "answers"}。
   - 說明（Explanation）:
   """
 
-技能（prompts/*.txt）在執行時注入 BASE_INSTRUCTIONS。
+技能（prompts/*.txt）在執行時透過 cfg.seed_skill 注入 BASE_INSTRUCTIONS。
 
 ### 2d. 改寫評分器（skillopt/evaluator.py）
 
@@ -375,32 +523,41 @@ Item 結構維持：{"id", "question", "context", "answers"}。
               return 1.0
       return 0.0
 
-  def evaluate_batch(outputs, items) -> float:
-      return 平均(score(out, item["answers"]) for 每筆)
+將 recall 接入 EvalResult，使 cfg.metric = "recall" 能與 trainer.py 配合。
 
 目標：val recall ≥ 0.80（validation set 80% 召回率）。
 
 ### 2e. Config 檔
 
-建立 configs/audit/accounting.yaml：
+建立 skillopt/configs/audit/accounting.yaml（從 configs/hotpotqa/default.yaml
+複製，欄位需符合 Config dataclass）：
+
+  benchmark: audit
+  metric: recall
+  seed_skill: ""   # 留空；由 wrapper 從 ../prompts/accounting.txt 載入，或 CLI 指定
 
   model:
-    target_model: gpt-4o              # 凍結的 audit agent 模型
-    optimizer_model: gpt-4o           # 負責編輯 skill 的 optimizer 模型
+    target_model: gpt-4o
+    optimizer_model: gpt-4o
     base_url: https://api.openai.com/v1
 
-  training:
+  train:
     num_epochs: 5
     batch_size: 10
-    val_size: 54                      # 108 個 Accounting issues 的一半
+    val_size: 54        # 108 個 Accounting issues 的一半（見 manifest.json）
+    patience: 4
+    seed: 42
 
-  skill:
-    seed_path: prompts/accounting.txt
-    output_path: outputs/audit/accounting/best_skill.txt
+每個類別各建一份 config，對應各自的 seed_skill 路徑與 manifest 中的 val_size。
 
-  metric: recall
-
-每個類別各建一份 config，對應各自的 seed_path 與 val_size。
+建議 seed_skill 路徑（相對 repo 根目錄）：
+  accounting              → prompts/accounting.txt
+  access-control          → prompts/access-control.txt
+  griefing-attacks        → prompts/griefing-attacks/gas-griefing.txt（或合併子 prompt）
+  dos-liveness            → prompts/dos-liveness.txt
+  token-transfer          → prompts/token-transfer.txt
+  upgrade-config          → prompts/upgrade-config.txt
+  external-dependencies   → prompts/external-dependencies.txt
 
 ## Step 3 — 完整訓練流程
 
@@ -422,39 +579,41 @@ Item 結構維持：{"id", "question", "context", "answers"}。
           └─ NO → 拒絕，告訴 optimizer 不要再提同樣編輯
           │
           ▼
-  outputs/audit/accounting/best_skill.txt   ← 可直接部署的優化後 prompt
+  skillopt/outputs/audit/accounting/best_skill.md   ← 可直接部署的優化後 prompt
 
-停止條件：連續 4 次拒絕，或 val recall ≥ 0.80。
+停止條件：連續 4 次拒絕（train.patience），或 val recall ≥ 0.80。
 
 ## Step 4 — Test Set 策略
 
 目標：外部 test set 50% 召回率（未見過的資料）。
 
 Test set 使用尚未進入 knowledgeBase 的資料：
-  - 2026.03 之後新的 Sherlock 報告
+  - 2026.03 之後新的 Sherlock 報告（來自 dataSetResource/）
   - 尚未 ingest 的新 Cyfrin 報告
   - 新的 Hacken / Peckshield 報告
 
 轉成相同 item 格式，存放於：
-  data/audit/{category}/test/items.json
+  skillopt/data/audit/{category}/test/items.json
 
 Test set 在 train 與 val 優化過程中絕不可被看到。
 
 ## Step 5 — 執行順序
 
-  # 1. Clone 並安裝
-  git clone https://github.com/joshhu/skillopt-qa
-  cd skillopt-qa
+  # 1. 安裝 SkillOpt（在 repo 根目錄）
+  cd skillopt
   uv venv && uv pip install -e ".[dev]"
 
-  # 2. 準備 audit 資料集（在本專案根目錄執行）
+  # 2. 準備 audit 資料集（回到 repo 根目錄）
+  cd ..
   python scripts/prepare_audit_dataset.py
 
-  # 3. 訓練 accounting 類別 prompt
+  # 3. 訓練 accounting 類別 prompt（在 skillopt/ 目錄）
+  cd skillopt
   uv run skillopt-train \
       --config configs/audit/accounting.yaml \
       --split-dir data/audit/accounting \
-      --out-root outputs/audit/accounting
+      --out-root outputs/audit/accounting \
+      --metric recall
 
   # 4. 對每個類別重複
   uv run skillopt-train --config configs/audit/access-control.yaml ...
@@ -463,30 +622,37 @@ Test set 在 train 與 val 優化過程中絕不可被看到。
   uv run skillopt-train --config configs/audit/token-transfer.yaml ...
   uv run skillopt-train --config configs/audit/upgrade-config.yaml ...
 
-  # 5. test set 最終評估
-  uv run skillopt-test \
-      --skill outputs/audit/accounting/best_skill.txt \
-      --data data/audit/accounting/test/items.json
+  # 5. test set 最終評估（agent/evaluator 改寫完成後）
+  uv run skillopt-train \
+      --config configs/audit/accounting.yaml \
+      --split-dir data/audit/accounting \
+      --out-root outputs/audit/accounting \
+      --no-test   # 或手動跑 test split（需先建立 test/items.json）
+
+  # 6. 部署優化後 prompt 回 prompts/
+  cp outputs/audit/accounting/<run>/best_skill.md ../prompts/accounting.txt
 
 ## Step 6 — 關鍵設計決策
 
 | 決策                 | 建議                                                        |
 |----------------------|-------------------------------------------------------------|
+| Monorepo vs 另 clone | Monorepo — skillopt/ 已內嵌在本 repo                        |
+| 資料來源             | knowledgeBase/**/issues.json（非扁平 index.json）           |
 | 每類別一個 skill？   | 是 — 對應 prompts/*.txt，優化信號更純淨                    |
 | Agent 輸入           | code_snippet + contract_name + functions_affected           |
 | Ground truth         | tags 列表 — 輸出命中任一 tag 即算成功                       |
 | Optimizer 模型       | 比 target agent 更強（GPT-4o、claude-opus）                 |
 | Batch size           | 每批 10~15 個 issues                                        |
 | 停止條件             | 連續 4 次拒絕，或 val recall ≥ 0.80                          |
-| 部署                 | 用 outputs/audit/*/best_skill.txt 替換 prompts/*.txt        |
+| 部署                 | 複製 best_skill.md → prompts/*.txt                          |
 
 每次訓練產出：
-  outputs/audit/{category}/
-    ├── best_skill.txt       ← 可部署的優化後 prompt
+  skillopt/outputs/audit/{category}/{run_name}/
+    ├── best_skill.md        ← 可部署的優化後 prompt
     ├── history.json         ← 每步 train/val 指標、接受/拒絕紀錄
-    ├── skills/skill_vXXXX_*.txt
+    ├── skills/skill_vXXXX_*.md
     ├── steps/step_XXXX.json
     └── test_result.json     ← test set 最終 recall
 
-最終 best_skill.txt 可直接替換 prompts/accounting.txt 等，在 Grok / Cursor
+最終 best_skill.md 可直接複製到 prompts/accounting.txt 等，在 Grok / Cursor
 audit workflow 中使用，無需其他改動。
