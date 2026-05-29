@@ -77,15 +77,7 @@ generate a report.txt, 根據 @submitField.txt 來完成 @issues.txt 提到的is
 - 在cursor run 的篩選部分, 可以把篩選理由也放進prompt
 - 從拿去codebase 做issue review 產生的review.txt 來優化prompt, 不過可能要多搜集一點review.txt 才知道prompt 會犯什麼通病
 
-## Optimize
-### konwledgebase: prompt 無法有效的利用整理好的knowledgebase 內的issue
-- 用AI tool 來train prompts 內容
-- 用knowledgebase 的一半的issues 當作train set, 一半的issues 當作 validation set, 需要額外一些內容來當test set
-- prompt 不斷的被train set 修改, 拿去validation set 評分, 並且根據評分結果決定是否要回頭優化prompts
-
-
-
-### target repo: 要更有效的go through 整份repo 來找issue
+## target repo: 要更有效的go through 整份repo 來找issue
 a. 可能需要透過graph 來進行分析, 生成檔案讓找漏洞更簡單
 -> run static analysis to create summaries and graphs from Slither:
 - contract_summary.md (state vars, functions, modifiers, external calls)
