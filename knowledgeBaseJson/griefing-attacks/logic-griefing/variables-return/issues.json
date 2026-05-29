@@ -1,0 +1,188 @@
+[
+  {
+    "id": "variables-return-manager-001",
+    "source": "cyfrin/manager.md",
+    "category": "Griefing Attacks",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "LidoStVaultYieldProvider",
+    "functions_affected": [
+      "_syncExternalLiabilitySettlement"
+    ],
+    "description": "`LidoStVaultYieldProvider::_syncExternalLiabilitySettlement` 已声明了命名返回变量 `lstLiabilityPrincipalSynced`。函数体可以完全用这个命名返回变量编写，无需单独的中间局部变量 `liabilityETH`。目前逻辑在初始调用中赋值给 `lstLiabilityPrincipalSynced`，但随后引入 `liabilityETH` 作为冗余别名，增加了栈深度并混淆了控制流，没有增加任何清晰度。",
+    "impact": "冗余局部变量在每次调用时增加了不必要的字节码和栈使用，并增加了阅读或维护函数的开发者的认知负担。虽然影响较小，但干净地消除可避免的局部变量可以提高合约可读性并略微降低 gas 成本。",
+    "code_snippet": "// `LidoStVaultYieldProvider::_syncExternalLiabilitySettlement` already declares a named return variable `lstLiabilityPrinc",
+    "location": "LidoStVaultYieldProvider.sol (_syncExternalLiabilitySettlement)",
+    "recommendation": "重写 `_syncExternalLiabilitySettlement` 以在整个函数中只使用命名返回变量 `lstLiabilityPrincipalSynced`，完全消除中间局部变量 `liabilityETH`。",
+    "tags": [
+      "lido-st-vault-yield-provider",
+      "sync-external-liability-settlement",
+      "manager"
+    ],
+    "patterns": [
+      "LidoStVaultYieldProvider::_syncExternalLiabilitySettlement already declares a named return variable lstLiabilityPrincipalSynced.",
+      "The function body could be written entirely in terms of this named return variable, eliminating the need for a separate intermediate local variable liabilityETH.",
+      "Currently the logic assigns to lstLiabilityPrincipalSynced in the initial call but then introduces liabilityETH as a redundant alias, increasing stack depth and obscuring the control flow without adding clarity."
+    ]
+  },
+  {
+    "id": "variables-return-vesting-001",
+    "source": "cyfrin/vesting.md",
+    "category": "Griefing Attacks",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "SDLVesting",
+    "functions_affected": [
+      "stakeReleasableTokens"
+    ],
+    "description": "`SDLVesting::stakeReleasableTokens` 多次从存储读取 `lockTime`，并多次从存储读取 `reSDLTokenIds[lockTime]`。具体地，`lockTime` 被用作映射键两次访问 `reSDLTokenIds[lockTime]`，`lockTime` 本身也在 `abi.encode` 调用中被读取。由于 `lockTime` 和 `reSDLTokenIds[lockTime]` 在函数执行期间都不会改变，两者都应缓存在局部变量中以避免冗余的存储读取。",
+    "impact": "每次调用 `stakeReleasableTokens` 都为多次不必要的存储读取付费。在频繁进行代币质押操作的质押系统中，许多次调用累积的 gas 浪费是可观的。",
+    "code_snippet": "// `SDLVesting::stakeReleasableTokens` reads `lockTime` from storage multiple times and reads `reSDLTokenIds[lockTime]` fro",
+    "location": "SDLVesting.sol (stakeReleasableTokens)",
+    "recommendation": "在函数开始时将 `lockTime` 缓存到局部 `uint256 _lockTime` 变量中，将 `reSDLTokenIds[lockTime]` 缓存到局部 `uint256 _tokenId` 变量中，然后在整个函数中使用缓存值。",
+    "tags": [
+      "sdlvesting",
+      "stake-releasable-tokens",
+      "vesting"
+    ],
+    "patterns": [
+      "SDLVesting::stakeReleasableTokens reads lockTime from storage multiple times and reads reSDLTokenIds[lockTime] from storage multiple times.",
+      "Specifically, lockTime is used as a mapping key to access reSDLTokenIds[lockTime] twice, and lockTime itself is read in the abi.encode call.",
+      "Since neither lockTime nor reSDLTokenIds[lockTime] changes during the function execution, both should be cached in local variables to avoid redundant storage reads."
+    ]
+  },
+  {
+    "id": "variables-return-angstrom-001",
+    "source": "cyfrin/angstrom.md",
+    "category": "Griefing Attacks",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "TickIterator",
+    "functions_affected": [
+      "_advanceToNextUp",
+      "hasNext"
+    ],
+    "description": "`TickIterator::_advanceToNextUp` 使用 do-while 循环将迭代器推进到下一个已初始化的刻度。循环的退出条件在 `self.currentTick >= self.endTick` 时终止。然而，当当前刻度和结束刻度之间不存在已初始化的刻度时，循环将 `self.currentTick` 设置为结束刻度，即使该结束刻度未被初始化。`TickIterator::hasNext` 检查 `self.currentTick <= self.endTick`，当 `currentTick == endTick` 时评估为 true，错误地指示存在下一个刻度。在此状态下调用 `getNext` 会返回未初始化的结束刻度而非以 `NoNext` 回滚。",
+    "impact": "依赖 `hasNext` 来确定是否调用 `getNext` 的下游代码将在字边界处理未初始化的幻影刻度。虽然当前评估似乎为幻影刻度产生零值结果（作为无操作），但这不能保证，在边缘情况下可能产生不正确的定价或奖励计算。",
+    "code_snippet": "// `TickIterator::_advanceToNextUp` uses a do-while loop to advance the iterator to the next initialized tick. The loop's e",
+    "location": "TickIterator.sol (_advanceToNextUp, hasNext)",
+    "recommendation": "当 `_advanceToNextUp` 在到达结束刻度之前耗尽所有已初始化的刻度时，通过将 `self.currentTick = type(int24).max` 将迭代器标记为已耗尽。将 `hasNext` 更新为使用严格的小于比较（`self.currentTick < self.endTick`），使未初始化的边界不被视为有效的下一个刻度。",
+    "tags": [
+      "tick-iterator",
+      "advance-to-next-up",
+      "has-next",
+      "angstrom"
+    ],
+    "patterns": [
+      "TickIterator::_advanceToNextUp uses a do-while loop to advance the iterator to the next initialized tick.",
+      "The loop's exit condition terminates once self.currentTick >= self.endTick.",
+      "However, when no initialized tick exists between the current tick and the end tick, the loop sets self.currentTick to the end tick even if that end tick is not initialized."
+    ]
+  },
+  {
+    "id": "variables-return-syntetika-001",
+    "source": "cyfrin/syntetika.md",
+    "category": "Griefing Attacks",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "CompliantDepositRegistry",
+    "functions_affected": [
+      "getDepositAddresses",
+      "redeem"
+    ],
+    "description": "在 `CompliantDepositRegistry::getDepositAddresses` 和 `StakingVault::redeem` 中，局部返回变量被声明并填充，但可以用命名返回变量替换。在这些函数中使用命名返回变量将消除对单独局部变量声明的需求，减少栈深度并略微提高 gas 效率，特别是对于内存类型返回，命名返回可以避免额外的分配。",
+    "impact": "不必要的局部变量声明增加了少量栈和 gas 开销。对于内存返回类型，将中间局部变量改为命名返回在 gas 效率上是可测量的提升，尤其是对于返回数组或结构体的函数。",
+    "code_snippet": "// In `CompliantDepositRegistry::getDepositAddresses` and `StakingVault::redeem`, local return variables are declared and p",
+    "location": "CompliantDepositRegistry.sol (getDepositAddresses, redeem)",
+    "recommendation": "将 `CompliantDepositRegistry::getDepositAddresses` 和 `StakingVault::redeem` 转换为使用命名返回变量，移除命名返回将替换的中间局部声明。",
+    "tags": [
+      "compliant-deposit-registry",
+      "get-deposit-addresses",
+      "redeem",
+      "redeem-path-revert",
+      "syntetika"
+    ],
+    "patterns": [
+      "In CompliantDepositRegistry::getDepositAddresses and StakingVault::redeem, local return variables are declared and populated but could be replaced with named return variables.",
+      "Using named return variables in these functions would eliminate the need for the separate local variable declarations, reducing stack depth and slightly improving gas efficiency, particularly for memory-type returns where the named return avoids an extra allocation."
+    ]
+  },
+  {
+    "id": "variables-return-wannabetv2-001",
+    "source": "cyfrin/wannabetv2.md",
+    "category": "Griefing Attacks",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "BetFactory",
+    "functions_affected": [
+      "createBet",
+      "_status"
+    ],
+    "description": "`BetFactory::createBet` 和 `Bet::_status` 都声明了被赋值一次然后立即返回的局部变量。在两种情况下，用命名返回变量替换局部变量将完全消除中间声明，减少栈使用，并产生略微更高效的字节码——尤其是对于频繁调用的视图函数 `_status`。",
+    "impact": "在频繁调用的函数中不必要的局部变量声明在许多交易中累积了 gas 开销。每次调用的影响较小，但对于有大量投注创建和状态查询活动的协议，规模化后是可测量的。",
+    "code_snippet": "// `BetFactory::createBet` and `Bet::_status` both declare local variables that are assigned once and then immediately retu",
+    "location": "BetFactory.sol (createBet, _status)",
+    "recommendation": "将 `BetFactory::createBet` 和 `Bet::_status` 转换为使用命名返回变量而非中间局部变量，允许编译器优化掉额外的局部槽。",
+    "tags": [
+      "bet-factory",
+      "create-bet",
+      "status",
+      "wannabetv2"
+    ],
+    "patterns": [
+      "BetFactory::createBet and Bet::_status both declare local variables that are assigned once and then immediately returned.",
+      "In both cases, replacing the local variable with a named return variable would eliminate the intermediate declaration entirely, reduce stack usage, and produce slightly more gas-efficient bytecode — especially for _status which is a view function called frequently."
+    ]
+  },
+  {
+    "id": "variables-return-escrow-001",
+    "source": "cyfrin/escrow.md",
+    "category": "Griefing Attacks",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "SablierBob",
+    "functions_affected": [
+      "_safeTokenSymbol"
+    ],
+    "description": "`SablierBob::_safeTokenSymbol` 声明并赋值了一个可以用命名返回变量替换的局部返回变量。对于像 `string` 这样的内存返回类型，使用命名返回变量允许编译器将分配直接视为返回槽，与声明单独局部变量然后返回相比，可能节省一个内存分配步骤。",
+    "impact": "每次调用的少量 gas 开销在处理多种不同代币金库类型的协议中 `_safeTokenSymbol` 的许多次调用中累积。虽然每次调用的节省很小，但一致地采用此模式可提高整体代码质量。",
+    "code_snippet": "// `SablierBob::_safeTokenSymbol` declares and assigns a local return variable that could be replaced with a named return v",
+    "location": "SablierBob.sol (_safeTokenSymbol)",
+    "recommendation": "将 `SablierBob::_safeTokenSymbol` 转换为使用命名返回变量 `(string memory symbol)`，消除中间局部变量并启用编译器对返回内存分配的优化。",
+    "tags": [
+      "sablier-bob",
+      "safe-token-symbol",
+      "escrow"
+    ],
+    "patterns": [
+      "SablierBob::_safeTokenSymbol declares and assigns a local return variable that could be replaced with a named return variable.",
+      "For memory return types like string, using a named return variable allows the compiler to treat the allocation as the return slot directly, potentially saving a memory allocation step compared to declaring a separate local variable and then returning it."
+    ]
+  },
+  {
+    "id": "variables-return-pledge-001",
+    "source": "cyfrin/pledge.md",
+    "category": "Griefing Attacks",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "TokenBank",
+    "functions_affected": [
+      "viewAllFees"
+    ],
+    "description": "`TokenBank::viewAllFees` 声明了一个局部变量，该变量被填充后在函数末尾返回。使用命名返回变量代替将消除中间局部声明。对于 `memory` 返回类型（数组、结构体、字符串），好处尤为显著，因为命名返回允许编译器直接使用返回内存槽，避免了声明、填充然后返回单独分配的局部变量的开销。",
+    "impact": "`viewAllFees` 中的额外局部变量导致每次调用的 gas 成本略高，特别是因为返回类型涉及内存分配。对于可能被前端和集成商频繁调用的视图函数，采用命名返回所节省的成本是有意义的。",
+    "code_snippet": "// `TokenBank::viewAllFees` declares a local variable that is populated and then returned at the end of the function. Using",
+    "location": "TokenBank.sol (viewAllFees)",
+    "recommendation": "重构 `TokenBank::viewAllFees`，将返回值声明为命名返回变量，允许编译器消除单独的局部声明并优化返回值的内存分配。",
+    "tags": [
+      "token-bank",
+      "view-all-fees",
+      "pledge"
+    ],
+    "patterns": [
+      "TokenBank::viewAllFees declares a local variable that is populated and then returned at the end of the function.",
+      "Using a named return variable instead would eliminate the intermediate local declaration.",
+      "The benefit is especially significant for memory return types (arrays, structs, strings) because named returns allow the compiler to use the return memory slot directly, avoiding the overhead of declaring, populating, and then returning a separately allocated local variable."
+    ]
+  }
+]

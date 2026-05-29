@@ -1,0 +1,511 @@
+[
+  {
+    "id": "rewards-referral-protocol-001",
+    "source": "cyfrin/protocol.md",
+    "category": "Accounting",
+    "severity": "Critical",
+    "severity_level": 4,
+    "contract_name": "DepositManager",
+    "functions_affected": [
+      "_payEntryFee",
+      "_refundEntryFee"
+    ],
+    "description": "`DepositManager::_payEntryFee` 在玩家加入游戏时增加推荐人的奖励，但 `DepositManager::_refundEntryFee` 在玩家退出游戏退款时不扣减推荐奖励。这一非对称设计意味着每次加入-离开循环都会永久增大推荐奖励余额，即使没有实际参与游戏。",
+    "impact": "恶意用户可以故意加入再离开重新安排的游戏，通过虚增的推荐奖励耗尽合约代币。即使没有恶意行为，正常的加入-离开行为也会给推荐人分配超额奖励，导致游戏结束后缺乏足够代币支付获奖者和手续费。",
+    "code_snippet": "// `DepositManager::_payEntryFee` increments the referral rewards for the user's referrer when a player joins a game. Howev",
+    "location": "DepositManager.sol (_payEntryFee, _refundEntryFee)",
+    "recommendation": "`_refundEntryFee` 在退款时应对称地扣减推荐奖励，与 `_payEntryFee` 增加推荐奖励的逻辑保持对称。",
+    "tags": [
+      "referral-rewards",
+      "_refund-entry-fee",
+      "_pay-entry-fee",
+      "deposit-manager",
+      "engage-protocol"
+    ],
+    "patterns": [
+      "_payEntryFee increments referralRewards on join",
+      "_refundEntryFee does not decrement referral balance on leave",
+      "join-leave loop permanently inflates referralRewards"
+    ]
+  },
+  {
+    "id": "rewards-referral-stakingproxy-001",
+    "source": "cyfrin/stakingproxy.md",
+    "category": "Accounting",
+    "severity": "Critical",
+    "severity_level": 4,
+    "contract_name": "PriorityPool",
+    "functions_affected": [
+      "_withdraw"
+    ],
+    "description": "优先池启用即时提款时，用户通过 `StakingProxy` 提款会导致永久资金损失。`PriorityPool::_withdraw` 的即时提款路径在成功从质押池提款后，没有更新 `withdrawn` 变量。由于 `withdrawn` 保持为零，实际代币不会转移给 `StakingProxy`。",
+    "impact": "`StakingProxy` 永久失去流动性质押代币，被提取的代币滞留在 `PriorityPool` 合约内，同时 LST 已经从 `StakingProxy` 销毁。",
+    "code_snippet": "// When instant withdrawals are enabled in the priority pool, stakers can permanently lose funds when withdrawing through t",
+    "location": "PriorityPool.sol (_withdraw)",
+    "recommendation": "在 `PriorityPool::_withdraw` 处理即时提款时，对称地更新 `withdrawn` 变量。",
+    "tags": [
+      "priority-pool",
+      "instant-withdraw",
+      "staking-proxy",
+      "withdrawn-not-updated",
+      "lst-loss"
+    ],
+    "patterns": [
+      "PriorityPool instant withdraw path omits withdrawn accounting update",
+      "tokens remain in pool after LST burned on StakingProxy",
+      "StakingProxy permanently loses liquid staking tokens"
+    ]
+  },
+  {
+    "id": "rewards-referral-VechainFoundation-001",
+    "source": "HackenPDFTXT/Vechain Foundation.txt",
+    "category": "Accounting",
+    "severity": "Critical",
+    "severity_level": 4,
+    "contract_name": "Stargate",
+    "functions_affected": [
+      "_claimableDelegationPeriods",
+      "_claimRewards",
+      "claimableRewards"
+    ],
+    "description": "在 Hayabusa Stargate 协议中，已退出的委托人可以继续领取未来周期的 VTHO 奖励。漏洞位于 `_claimableDelegationPeriods` 函数，`endPeriod == nextClaimablePeriod` 的边界情况没有被识别为已结束的委托，导致函数错误地返回正数可领取周期范围。",
+    "impact": "已退出的委托人可以从他们不再参与的周期中窃取 VTHO，直接稀释仍在活跃委托人的奖励。",
+    "code_snippet": "if (endPeriod > nextClaimablePeriod) return (nextClaimablePeriod, endPeriod); // misses endPeriod == nextClaimablePeriod",
+    "location": "Stargate.sol (_claimableDelegationPeriods)",
+    "recommendation": "将 `_claimableDelegationPeriods` 中的边界检查从 `endPeriod > nextClaimablePeriod` 改为 `endPeriod >= nextClaimablePeriod`，正确处理边界相等情况。",
+    "tags": [
+      "F-2026-14779",
+      "stargate",
+      "exited-delegator",
+      "vtho-rewards",
+      "hayabusa"
+    ],
+    "patterns": [
+      "endPeriod == nextClaimablePeriod not treated as ended delegation",
+      "_claimableDelegationPeriods returns positive range after exit",
+      "exited NFT keeps claiming VTHO for future validator periods"
+    ]
+  },
+  {
+    "id": "rewards-referral-Launchly-001",
+    "source": "HackenPDFTXT/Launchly.txt",
+    "category": "Accounting",
+    "severity": "High",
+    "severity_level": 3,
+    "contract_name": "LaunchlyBNBHook",
+    "functions_affected": [
+      "take"
+    ],
+    "description": "`LaunchlyBNBHook` 在收取原生货币输入的 2% 手续费后，根据原生货币是 `currency0` 还是 `currency1` 来决定 `BeforeSwapDelta` 字段位置。但 Uniswap v4 中两个字段对应的是 specified/unspecified 货币，而非 currency0/currency1，导致费用 delta 被放入错误字段。",
+    "impact": "手续费 delta 应用到错误的交易方，导致池端交易金额与实际扣除不匹配，可能引发交易回滚或对用户错误收费。",
+    "code_snippet": "function take(...) { ... }  // see audit report",
+    "location": "LaunchlyBNBHook.sol (take)",
+    "recommendation": "根据原生货币是否为 specified 货币（而非其在 currency0/currency1 中的位置）来决定 delta 字段。",
+    "tags": [
+      "launchly-bnb-hook",
+      "before-swap-delta",
+      "native-fee",
+      "uniswap-v4",
+      "specified-currency"
+    ],
+    "patterns": [
+      "fee delta placed by currency0/currency1 position",
+      "v4 BeforeSwapDelta uses specified vs unspecified currency",
+      "wrong leg charged or swap amount mismatch"
+    ]
+  },
+  {
+    "id": "rewards-referral-core-001",
+    "source": "cyfrin/core.md",
+    "category": "Accounting",
+    "severity": "High",
+    "severity_level": 3,
+    "contract_name": "Rewards",
+    "functions_affected": [
+      "claimUndistributedRewards"
+    ],
+    "description": "`claimUndistributedRewards` 计算 `totalDistributedShares` 时，对每个 vault 都将 `curatorShares[epoch][curator]` 加入总量。但该映射已存储了 curator 在该 epoch 所有 vault 的累计份额。当一个 curator 拥有多个 vault 时，其总份额被多次叠加，极大高估了已分配份额。",
+    "impact": "可领取的未分配奖励被严重低估，协议无法正确回收未领取的奖励。",
+    "code_snippet": "totalDistributedShares += curatorShares[epoch][curator]; // per-vault double-count",
+    "location": "Rewards.sol (claimUndistributedRewards)",
+    "recommendation": "按 vault 追踪 curator 份额而非聚合值，或在加总前对 curator 地址去重。",
+    "tags": [
+      "claim-undistributed-rewards",
+      "curator-shares",
+      "double-count",
+      "rewards",
+      "avalanche-l1"
+    ],
+    "patterns": [
+      "curatorShares already aggregated across vaults per curator",
+      "loop adds same curator total once per owned vault",
+      "undistributed rewards understated and unclaimable"
+    ]
+  },
+  {
+    "id": "rewards-referral-Acecoin-001",
+    "source": "HackenPDFTXT/Acecoin.txt",
+    "category": "Accounting",
+    "severity": "High",
+    "severity_level": 3,
+    "contract_name": "Rewards",
+    "functions_affected": [
+      "_processTeamRewards"
+    ],
+    "description": "协议文档规定\"用户必须有有效质押\"才能获取团队奖励，但 `_processTeamRewards()` 在累积团队奖励前不检查推荐人是否持有有效质押。用户可注册后不质押，仅通过下线的领取积累奖励，最后用最少量质押一次性领取全部奖励。",
+    "impact": "用户可完全绕过质押要求，从团队奖励系统中套利，破坏质押激励模型。",
+    "code_snippet": "function _processTeamRewards(...) { ... }  // see audit report",
+    "location": "_processTeamRewards",
+    "recommendation": "在 `_processTeamRewards()` 中，累积奖励前对推荐人添加有效质押检查。",
+    "tags": [
+      "team-rewards",
+      "stake-gate",
+      "referral-tree",
+      "acecoin",
+      "process-team-rewards"
+    ],
+    "patterns": [
+      "_processTeamRewards accrues without referrer active stake check",
+      "user registers without staking and farms downline rewards",
+      "minimal stake at claim drains accumulated team rewards"
+    ]
+  },
+  {
+    "id": "rewards-referral-Seedifyfund-001",
+    "source": "HackenPDFTXT/Seedify.fund.txt",
+    "category": "Accounting",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "BondingCurve",
+    "functions_affected": [
+      "dex"
+    ],
+    "description": "`BondingCurve` 合约定义了包含 `reserveFee` 的费用结构。调用 `dex()` 时，其他费用分发正常，但 `reserveFee` 从未被转账，永久锁定在合约中。",
+    "impact": "`reserveFee` 永久锁定在合约内，预定接收人无法提取，造成资金损失。",
+    "code_snippet": "function dex(...) { ... }  // see audit report",
+    "location": "BondingCurve.sol (dex)",
+    "recommendation": "在 `dex()` 函数中添加 `reserveFee` 向指定受益人的转账逻辑。",
+    "tags": [
+      "bonding-curve",
+      "reserve-fee",
+      "dex",
+      "fee-not-transferred",
+      "seedify"
+    ],
+    "patterns": [
+      "dex() distributes other fees but never transfers reserveFee",
+      "reserveFee accumulates locked in BondingCurve contract",
+      "intended reserve beneficiary cannot withdraw"
+    ]
+  },
+  {
+    "id": "rewards-referral-Seedifyfund-002",
+    "source": "HackenPDFTXT/Seedify.fund.txt",
+    "category": "Accounting",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "BondingCurveWritable",
+    "functions_affected": [
+      "_buy"
+    ],
+    "description": "在 `_buy` 函数中，`totalProjectTokenSold` 在计算渐进式 TGE 百分比之前就已递增。这导致每位买家收到的 TGE 解锁额度略高于预期。更严重的是，一次性购买所有剩余代币的用户会使比率达到 100%，完全绕过归属计划。",
+    "impact": "每位买家都会收到略微超额的 TGE 解锁；单次购买全部剩余代币的用户可完全规避归属计划。",
+    "code_snippet": "totalProjectTokenSold += tokensToGive; // before TGE ratio uses updated sold",
+    "location": "BondingCurveWritable.sol (_buy)",
+    "recommendation": "在递增 `totalProjectTokenSold` 之前先计算 TGE 百分比。",
+    "tags": [
+      "tge-ratio",
+      "total-project-token-sold",
+      "bonding-curve",
+      "vesting-bypass",
+      "seedify"
+    ],
+    "patterns": [
+      "totalProjectTokenSold incremented before progressive TGE percent",
+      "each buyer receives slightly excess TGE unlock",
+      "buying entire remainder sets ratio 100% bypassing vesting"
+    ]
+  },
+  {
+    "id": "rewards-referral-Acecoin-002",
+    "source": "HackenPDFTXT/Acecoin.txt",
+    "category": "Accounting",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "Subscription",
+    "functions_affected": [
+      "_addDownlines"
+    ],
+    "description": "`_addDownlines()` 在遍历推荐层级时使用 `current.referrers[level]` 作为下一个节点，而不是沿着直接父节点链向上遍历。这导致中间层的推荐人被跳过，无法收到新注册用户的下线记录。",
+    "impact": "推荐树的传播不正确，中间层推荐人的下线记录缺失，影响依赖下线计数的奖励资格计算。",
+    "code_snippet": "// `Subscription::_addDownlines()` traverses the referral hierarchy to propagate a new user's registration upward. At each ",
+    "location": "Subscription.sol (_addDownlines)",
+    "recommendation": "修正遍历逻辑，始终沿直接父节点链向上，确保不跳过中间推荐人。",
+    "tags": [
+      "_add-downlines",
+      "referral-walk",
+      "subscription",
+      "skipped-referrer",
+      "acecoin"
+    ],
+    "patterns": [
+      "traversal uses current.referrers[level] not direct parent chain",
+      "intermediate referrers skipped in downline propagation",
+      "team reward eligibility missing middle tiers"
+    ]
+  },
+  {
+    "id": "rewards-referral-protocol-002",
+    "source": "cyfrin/protocol.md",
+    "category": "Accounting",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "DefaultSession",
+    "functions_affected": [
+      "recordResults",
+      "recordResult"
+    ],
+    "description": "UMA 预言机断言解决后，`recordResults` 为每个问题调用 `recordResult`，但传入的是玩家在所有问题上的平均总 XP 和时间，而非该题的具体数据。",
+    "impact": "每个问题存储了错误的 xp/time 值，影响 `getResult` 的返回值和 `_calculatePlayerSessionResult` 的奖励计算。",
+    "code_snippet": "// When an UMA oracle assertion is resolved truthfully, `DefaultSession::recordResults` is called to persist player perform",
+    "location": "DefaultSession.sol (recordResults, recordResult)",
+    "recommendation": "调用 `recordResult` 时传入问题特定的 xp 和时间值，而非玩家总量。",
+    "tags": [
+      "record-results",
+      "uma-assertion",
+      "per-question-xp",
+      "default-session",
+      "engage-protocol"
+    ],
+    "patterns": [
+      "recordResults passes session-total xp/time to each recordResult",
+      "every question stores identical aggregate performance",
+      "reward calculation uses wrong per-question scores"
+    ]
+  },
+  {
+    "id": "rewards-referral-wlf-001",
+    "source": "cyfrin/wlf.md",
+    "category": "Accounting",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "WLFI",
+    "functions_affected": [
+      "_checkNotBlacklisted"
+    ],
+    "description": "`_checkNotBlacklisted(address _account)` 函数验证 `_account` 是否被黑名单列出，但错误信息显示 \"WLFI: caller is blacklisted\"（调用者被黑名单），而实际被检查的是输入参数 `_account`，两者可能不同。",
+    "impact": "错误信息会误导开发者和用户，使其认为触发黑名单的是调用者，增加调试和事件响应的难度。",
+    "code_snippet": "require(!isBlacklisted(_account), \"WLFI: caller is blacklisted\");",
+    "location": "WLFI.sol (_checkNotBlacklisted)",
+    "recommendation": "将错误信息改为 \"WLFI: account is blacklisted\"。",
+    "tags": [
+      "wlfi",
+      "blacklist",
+      "misleading-revert",
+      "check-not-blacklisted",
+      "world-liberty"
+    ],
+    "patterns": [
+      "_checkNotBlacklisted validates _account parameter",
+      "revert string says caller is blacklisted",
+      "debugging confusion when blacklisted arg != msg.sender"
+    ]
+  },
+  {
+    "id": "rewards-referral-stbl-001",
+    "source": "cyfrin/stbl.md",
+    "category": "Accounting",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "STBL_PT1_Issuer",
+    "functions_affected": [
+      "generateMetaData"
+    ],
+    "description": "`generateMetaData` 中计算 `haircutAmountAssetValue` 时，调用了 `fetchForwardPrice(haircutAmount)`，但 `haircutAmount` 已是 USD 计价，而该函数期望资产数量作为输入。将 USD 金额传给期望资产金额的函数会产生错误结果，正确做法是使用预言机价格的倒数进行转换。",
+    "impact": "NFT 元数据中 `haircutAmountAssetValue` 值不正确，影响依赖此元数据的链下系统。",
+    "code_snippet": "// In `STBL_PT1_Issuer::generateMetaData`, `haircutAmountAssetValue` is calculated by calling `fetchForwardPrice(MetaData.h",
+    "location": "STBL_PT1_Issuer.sol (generateMetaData)",
+    "recommendation": "使用预言机价格的倒数将 USD 计价的 `haircutAmount` 转换为资产计价。",
+    "tags": [
+      "generate-metadata",
+      "haircut-asset-value",
+      "fetch-forward-price",
+      "stbl-issuer",
+      "oracle-unit-mix"
+    ],
+    "patterns": [
+      "haircutAmount is USD but passed to fetchForwardPrice expecting asset units",
+      "haircutAmountAssetValue metadata computed with wrong units",
+      "off-chain systems read incorrect NFT metadata"
+    ]
+  },
+  {
+    "id": "rewards-referral-core-002",
+    "source": "cyfrin/core.md",
+    "category": "Accounting",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "AvalancheL1Middleware",
+    "functions_affected": [
+      "forceUpdateNodes",
+      "_requireMinSecondaryAssetClasses"
+    ],
+    "description": "`forceUpdateNodes` 遍历节点时，早期迭代中被删除的节点在后续迭代的 `_requireMinSecondaryAssetClasses` 计算中仍被包含，因为节点列表未立即更新。这导致次级资产类别要求基于包含已删除节点的过期集合进行评估。",
+    "impact": "节点移除决策不准确，本应保留的节点可能被错误移除。在最坏情况下可导致运营商的所有节点都被移除。",
+    "code_snippet": "// removed node still counted in _requireMinSecondaryAssetClasses on next iteration",
+    "location": "AvalancheL1Middleware.sol (forceUpdateNodes)",
+    "recommendation": "在每次迭代调用 `_requireMinSecondaryAssetClasses` 之前，过滤掉已标记为移除的节点。",
+    "tags": [
+      "force-update-nodes",
+      "removed-node-ghost",
+      "secondary-asset-classes",
+      "avalanche-l1-middleware",
+      "node-removal"
+    ],
+    "patterns": [
+      "node removed in iteration i still in list for iteration i+1",
+      "_requireMinSecondaryAssetClasses uses stale node set",
+      "wrong nodes removed or all nodes removed"
+    ]
+  },
+  {
+    "id": "rewards-referral-NodeMeta-001",
+    "source": "HackenPDFTXT/Node Meta.txt",
+    "category": "Accounting",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "NTE",
+    "functions_affected": [
+      "_checkMaxSellAmount"
+    ],
+    "description": "NTE 代币的防抛售机制在计算 `maxSellAmount` 时使用除数 100，但 `maxSellPercentage` 是用基点（10000）表示的百分比值（100 = 1%）。错误的除数导致当 `maxSellPercentage = 100` 时，`maxSellAmount = totalSupply`，完全失去限制作用。",
+    "impact": "即使启用了防抛售功能，用户仍可在单笔交易中出售全部代币供应量，破坏代币经济模型。",
+    "code_snippet": "maxSellAmount = (_totalSupply * maxSellPercentage) / 100; // should be / 10000",
+    "location": "NTE.sol (anti-dump max sell check)",
+    "recommendation": "将 `maxSellAmount` 计算中的除数从 `100` 改为 `10000`。",
+    "tags": [
+      "F-2026-14942",
+      "max-sell-percentage",
+      "basis-points",
+      "nte",
+      "anti-dump-bypass"
+    ],
+    "patterns": [
+      "maxSellPercentage in bps but divisor is 100",
+      "maxSellPercentage 100 yields maxSellAmount == totalSupply",
+      "anti-dump allows full supply single-tx sell"
+    ]
+  },
+  {
+    "id": "rewards-referral-core-003",
+    "source": "cyfrin/core.md",
+    "category": "Accounting",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "MiddlewareVaultManager",
+    "functions_affected": [
+      "_wasActiveAt"
+    ],
+    "description": "`_wasActiveAt` 函数使用 `disabledTime >= timestamp` 判断，导致在 epoch 边界时间戳恰好被禁用的 vault 仍被认为是活跃的。正确语义应为：在时间戳 T 禁用的 vault 从 T 起即为非活跃。",
+    "impact": "在 epoch 边界被禁用的 vault 被错误地包含在该 epoch 的奖励分发和权益核算中。",
+    "code_snippet": "// `MiddlewareVaultManager::_wasActiveAt` returns `true` when `disabledTime >= timestamp`, meaning a vault disabled at exac",
+    "location": "MiddlewareVaultManager.sol (_wasActiveAt)",
+    "recommendation": "将 `disabledTime >= timestamp` 改为 `disabledTime > timestamp`。",
+    "tags": [
+      "_was-active-at",
+      "disabled-time",
+      "epoch-boundary",
+      "middleware-vault-manager",
+      "vault-rewards"
+    ],
+    "patterns": [
+      "_wasActiveAt true when disabledTime >= timestamp",
+      "vault disabled exactly at epoch start still counted active",
+      "rewards include vault disabled at boundary timestamp"
+    ]
+  },
+  {
+    "id": "rewards-referral-tranches-001",
+    "source": "cyfrin/tranches.md",
+    "category": "Accounting",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "sUSDeStrategy",
+    "functions_affected": [
+      "reduceReserve"
+    ],
+    "description": "`sUSDeStrategy::reduceReserve` 在请求 `USDe` 时，直接将 `tokenAmount`（USDe 计价）数量的 sUSDe 转出。由于 sUSDe 的汇率高于 1:1，转出的 sUSDe 实际价值远超所请求的 USDe。",
+    "impact": "策略释放了超额的 sUSDe，导致存款人蒙受损失，策略持有的 sUSDe 低于应有数量。",
+    "code_snippet": "// In `sUSDeStrategy::reduceReserve`, when the caller requests `USDe` as the asset to receive, the function transfers `toke",
+    "location": "sUSDeStrategy.sol (reduceReserve)",
+    "recommendation": "调用 `sUSDe.previewWithdraw(tokenAmount)` 获取所需 sUSDe 数量，再进行转账。",
+    "tags": [
+      "reduce-reserve",
+      "susde-strategy",
+      "exchange-rate",
+      "preview-withdraw",
+      "strata-tranches"
+    ],
+    "patterns": [
+      "reduceReserve transfers tokenAmount sUSDe for USDe request",
+      "sUSDe trades above 1:1 so transferred value exceeds USDe needed",
+      "strategy sheds excess sUSDe harming depositors"
+    ]
+  },
+  {
+    "id": "rewards-referral-core-004",
+    "source": "cyfrin/core.md",
+    "category": "Accounting",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "Rewards",
+    "functions_affected": [
+      "claimRewards"
+    ],
+    "description": "`claimRewards` 通过 `getVaults(epoch)` 获取 vault 列表。如果奖励分发后、用户领取前某 vault 被移除，`getVaults` 不再返回该 vault，相关奖励永久锁定在合约中无法领取。",
+    "impact": "曾在已移除 vault 中质押的用户无法领取对应奖励，相关代币永久锁定在 `Rewards` 合约中。",
+    "code_snippet": "// In `Rewards::claimRewards`, stakers iterate over epochs and claim rewards via `_getStakerVaults`, which calls `middlewar",
+    "location": "Rewards.sol (claimRewards)",
+    "recommendation": "为每个 epoch 维护不可变的历史 vault 注册表，确保移除的 vault 仍可用于历史 epoch 奖励查询。",
+    "tags": [
+      "claim-rewards",
+      "get-vaults",
+      "removed-vault",
+      "rewards",
+      "avalanche-l1"
+    ],
+    "patterns": [
+      "claimRewards iterates getVaults(epoch) current list",
+      "vault removed after distribution omitted from claim path",
+      "staker rewards locked in Rewards contract forever"
+    ]
+  },
+  {
+    "id": "rewards-referral-core-005",
+    "source": "cyfrin/core.md",
+    "category": "Accounting",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "UptimeTracker",
+    "functions_affected": [
+      "computeValidatorUptime"
+    ],
+    "description": "`computeValidatorUptime` 将总运行时间均分到各 epoch 时，使用整数除法 `uptimeToDistribute / elapsedEpochs`，余数被丢弃且永不恢复。若每 epoch 的运行时间因此低于 `minRequiredUptime` 哪怕 1 秒，该 epoch 的全部奖励都会归零。",
+    "impact": "整数除法导致的精度损失可使验证人在某些 epoch 完全失去奖励，即使实际总运行时间已足够。",
+    "code_snippet": "// In `UptimeTracker::computeValidatorUptime`, uptime is distributed across multiple epochs using `uptimePerEpoch = uptimeT",
+    "location": "UptimeTracker.sol (computeValidatorUptime)",
+    "recommendation": "将截断的余数加到某个 epoch（如最新 epoch），确保总运行时间不丢失；或对每 epoch 分配值向上取整以避免阈值不足。",
+    "tags": [
+      "compute-validator-uptime",
+      "integer-division",
+      "min-required-uptime",
+      "uptime-tracker",
+      "reward-forfeit"
+    ],
+    "patterns": [
+      "uptime split via uptimeToDistribute / elapsedEpochs truncates remainder",
+      "discarded remainder never added to any epoch",
+      "per-epoch uptime can fall below minRequiredUptime despite sufficient total"
+    ]
+  }
+]

@@ -1,0 +1,539 @@
+[
+  {
+    "id": "token-transfer-Dexalot-001",
+    "source": "HackenPDFTXT/Dexalot.txt",
+    "category": "Token Transfer",
+    "severity": "Critical",
+    "severity_level": 4,
+    "contract_name": "DexalotRFQ",
+    "functions_affected": [
+      "_executeOrder",
+      "_takeFunds",
+      "simpleSwap",
+      "partialSwap"
+    ],
+    "description": "`_executeOrder` 中 `isDirect` 标志被错误地设置为 `_sender == trustedForwarder`，当用户直接调用兑换函数时该值为 `false`。`_takeFunds` 中的 ERC20 代币收取逻辑仅在 `isDirect` 为 `true` 时执行，导致直接调用时跳过代币收取，合约在未收到用户代币的情况下释放出 maker 代币，允许任意用户耗尽预存的 ERC20 流动性。",
+    "impact": "任何直接调用兑换函数的用户均可在不付出代币的情况下获得 maker 代币，导致预存 ERC20 流动性被完全耗尽，属于严重资金损失漏洞。",
+    "code_snippet": "isDirect: _sender == trustedForwarder  // inverted: false on direct ERC20 swap\nif (_swapData.isDirect) { safeTransferFrom(...); }  // skipped when false",
+    "location": "DexalotRFQ.sol (_executeOrder, _takeFunds)",
+    "recommendation": "将标志赋值修改为 `isDirect: _sender != trustedForwarder`，确保直接调用时正确执行 ERC20 代币收取。",
+    "tags": [
+      "erc20-swap-drain",
+      "isDirect-flag-inversion",
+      "skipped-transferFrom",
+      "rfq-liquidity-theft"
+    ],
+    "patterns": [
+      "isDirect false on direct user call",
+      "maker tokens released without taker ERC20 pull"
+    ]
+  },
+  {
+    "id": "token-transfer-Fabstir-001",
+    "source": "HackenPDFTXT/Fabstir.txt",
+    "category": "Token Transfer",
+    "severity": "High",
+    "severity_level": 3,
+    "contract_name": "JobMarketplaceWithModelsUpgradeable",
+    "functions_affected": [
+      "createSessionForModelAsDelegate",
+      "authorizeDelegate"
+    ],
+    "description": "`DelegateConfig` 结构体通过原始代币数量追踪支出限额，但未限定可使用的代币类型，委托人可在创建会话时自由选择支付代币。攻击者可先使用低价值代币耗尽限额，再切换高价值代币，实际消耗的经济价值远超付款人的授权意图。",
+    "impact": "委托人可通过选择不同精度或市值的代币，绕过支出限额保护，从付款人账户取走远超预期的资金。",
+    "code_snippet": "DelegateConfig storage dc = delegateConfigs[payer][msg.sender];\n// no allowedToken: delegate picks any paymentToken at session creation",
+    "location": "JobMarketplaceWithModelsUpgradeable.sol (createSessionForModelAsDelegate)",
+    "recommendation": "在 `DelegateConfig` 中增加 `allowedToken` 字段，要求付款人在授权时指定允许使用的代币，并在支出限额检查前验证 `session.paymentToken` 与 `DelegateConfig.allowedToken` 一致，防止跨代币绕过。",
+    "tags": [
+      "delegate-spending-cap",
+      "cross-token-bypass",
+      "missing-allowedToken",
+      "payment-token-selection"
+    ],
+    "patterns": [
+      "spending limits compare raw amounts only",
+      "low-value token drains cap then switches token"
+    ]
+  },
+  {
+    "id": "token-transfer-vii-001",
+    "source": "cyfrin/vii.md",
+    "category": "Token Transfer",
+    "severity": "High",
+    "severity_level": 3,
+    "contract_name": "ERC721WrapperBase",
+    "functions_affected": [
+      "transfer"
+    ],
+    "description": "`ERC721WrapperBase::transfer` 通过 `normalizedToFull` 计算应转移的 ERC-6909 代币数量时，错误地乘以 `totalSupply(tokenId)` 而非发送方对该 token 的实际 ERC-6909 余额。当发送方持有的 ERC-6909 占比不足 100% 时，计算出的转移量被虚高，导致清算方提取的价值超过请求数量。",
+    "impact": "被清算账户承受超出预期的损失，可通过部分清算或借款人将部分仓位转移至其他地址来触发，极端情况下反复局部清算可耗尽借款人的过多抵押品。",
+    "code_snippet": "// `ERC721WrapperBase::transfer` calculates the proportional amount of ERC-6909 tokens to transfer from sender to receiver ",
+    "location": "ERC721WrapperBase.sol (transfer)",
+    "recommendation": "在 `normalizedToFull` 中将 `totalSupply(tokenId)` 替换为发送方对该特定 `tokenId` 的 ERC-6909 余额，使比例转移量正确反映发送方的分数所有权。",
+    "tags": [
+      "erc6909-liquidation",
+      "normalizedToFull",
+      "totalSupply-vs-balance",
+      "over-transfer-on-partial-ownership"
+    ],
+    "patterns": [
+      "Math.mulDiv uses totalSupply not sender balance",
+      "liquidator extracts more than requested value"
+    ]
+  },
+  {
+    "id": "token-transfer-core-001",
+    "source": "cyfrin/core.md",
+    "category": "Token Transfer",
+    "severity": "High",
+    "severity_level": 3,
+    "contract_name": "Rewards",
+    "functions_affected": [
+      "claimRewards",
+      "claimOperatorFee",
+      "claimCuratorRewards"
+    ],
+    "description": "`Rewards` 合约中追踪最后领取 epoch 的映射仅以地址为键，而非以 `(地址, 奖励代币)` 为键。当用户针对某一 epoch 范围和某一奖励代币发起领取时，合约同时更新该地址在所有代币上的最后领取 epoch，导致同一 epoch 范围内其他代币的奖励无法再被领取。",
+    "impact": "符合多代币奖励资格的质押者、策展人和运营商，在首次领取后将永久失去同一 epoch 范围内其他所有代币的奖励，属于直接的已赚奖励损失。",
+    "code_snippet": "mapping(address => uint48) lastEpochClaimedStaker;  // keyed by address only, not reward token",
+    "location": "Rewards.sol (lastEpochClaimedStaker/Curator/Operator mappings)",
+    "recommendation": "将最后领取映射的键从单一地址改为 `(地址, 奖励代币)` 的组合，确保对一种代币的领取不影响其他代币的 epoch 记录。",
+    "tags": [
+      "multi-token-rewards",
+      "epoch-claim-mapping",
+      "lost-rewards",
+      "single-key-lastClaimed"
+    ],
+    "patterns": [
+      "claim for one token marks all tokens claimed",
+      "mapping not keyed by reward token"
+    ]
+  },
+  {
+    "id": "token-transfer-Fabstir-002",
+    "source": "HackenPDFTXT/Fabstir.txt",
+    "category": "Token Transfer",
+    "severity": "High",
+    "severity_level": 3,
+    "contract_name": "NodeRegistryWithModelsUpgradeable",
+    "functions_affected": [
+      "getPricePerToken",
+      "createSessionJobForModelWithToken"
+    ],
+    "description": "`NodeRegistryWithModelsUpgradeable` 的定价逻辑对所有 ERC20 支付代币使用相同的回退值，既不区分代币精度也不区分经济价值。以 18 位精度代币与 6 位精度代币为例，在相同经济存款下，前者计算出的 `maxTokens` 是后者的 10^12 倍，导致会话经济完全错误。",
+    "impact": "对任何非 18 精度或非 $1 价值的代币，会话经济计算均失误，付款人可创建严重低付或高付的会话，破坏激励机制并导致主机收益错误。",
+    "code_snippet": "uint256 maxTokens = (deposit * PRICE_PRECISION) / pricePerToken;\n// same fallback price/decimals for all ERC20 payment tokens",
+    "location": "NodeRegistryWithModelsUpgradeable.sol (pricing)",
+    "recommendation": "在应用定价逻辑前，利用每种代币的价格和精度将所有代币数量归一化为统一记账单位（如 18 精度的 USD），并要求为每种代币单独配置价格，拒绝未明确设置价格的代币创建会话。",
+    "tags": [
+      "token-decimals-mismatch",
+      "pricing-fallback",
+      "session-economics",
+      "usdt-usdc-dai-mispricing"
+    ],
+    "patterns": [
+      "6-decimal and 18-decimal tokens use same price formula",
+      "maxTokens off by 10^12 for USDT vs DAI"
+    ]
+  },
+  {
+    "id": "token-transfer-wannabetv2-001",
+    "source": "cyfrin/wannabetv2.md",
+    "category": "Token Transfer",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "BetFactory",
+    "functions_affected": [
+      "setPool",
+      "getPool",
+      "getReserveAToken"
+    ],
+    "description": "`BetFactory::setPool` 允许所有者为指定代币关联任意地址作为 Aave 池，但未进行任何链上验证，既不检查 `_pool` 是否为 `PoolAddressesProvider::getPool` 的规范地址，也不验证 `_token` 是否被该池支持，可能导致错误配置不兼容的池。",
+    "impact": "非法或错误配置的池会导致 bet 初始化静默接受不安全池，maker 和 taker 的资产被存入非预期合约，造成资金损失。",
+    "code_snippet": "// `BetFactory::setPool` allows the owner to associate any address as an Aave pool for a given token without any on-chain v",
+    "location": "BetFactory.sol (setPool, getPool, getReserveAToken)",
+    "recommendation": "在 `BetFactory::setPool` 中验证 `_pool` 等于 `AAVE_ADDRESSES_PROVIDER.getPool()`，并且 `_pool.getReserveAToken(_token)` 返回非零地址，确保只能配置支持指定代币的合法 AaveV3 池。",
+    "tags": [
+      "aave-pool-config",
+      "unvalidated-setPool",
+      "bet-initialization",
+      "wrong-reserve-address"
+    ],
+    "patterns": [
+      "setPool accepts arbitrary pool address",
+      "no getPool() or getReserveAToken() validation"
+    ]
+  },
+  {
+    "id": "token-transfer-S3Markets-001",
+    "source": "HackenPDFTXT/S3 Markets.txt",
+    "category": "Token Transfer",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "EAC1155",
+    "functions_affected": [
+      "burn",
+      "burnBatch",
+      "_checkExpiry"
+    ],
+    "description": "`EAC1155` 合约中，`burn` 和 `burnBatch` 函数在执行销毁逻辑前同样调用 `_checkExpiry(id)`，若 `block.timestamp > expiry` 则回滚。一旦证书到期，即便是持有 `BURNER_ROLE` 的授权角色也无法销毁该代币，形成永久僵局，过期代币永远无法从账本中清除。",
+    "impact": "过期的 EAC 代币作为\"僵尸代币\"永久锁定在用户钱包和账本中，随时间积累，浪费遍历 gas，污染账本，阻碍协议维护清洁的代币状态。",
+    "code_snippet": "function burn(...) onlyRole(BURNER_ROLE) { _checkExpiry(id); _burn(...); }",
+    "location": "EAC1155.sol (burn, burnBatch)",
+    "recommendation": "从 `burn` 和 `burnBatch` 函数中移除过期检查，或为 `BURNER_ROLE` 添加一个跳过过期限制的独立 `burnExpired` 函数，允许授权方清理过期代币。",
+    "tags": [
+      "erc1155-burn-blocked",
+      "expiry-check-on-burn",
+      "zombie-tokens",
+      "burner-role-deadlock"
+    ],
+    "patterns": [
+      "_checkExpiry reverts on expired id in burn",
+      "expired tokens permanently unburnable"
+    ]
+  },
+  {
+    "id": "token-transfer-accountable-001",
+    "source": "cyfrin/accountable.md",
+    "category": "Token Transfer",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "AccountableFixedTerm",
+    "functions_affected": [
+      "coverDefault"
+    ],
+    "description": "`AccountableFixedTerm::coverDefault` 允许贷款的 `InvestmentManager` 调用 `lockAssets(assets, provider)`，从 `provider` 地址拉取代币并转入金库，但未验证 `provider` 是否同意为本次违约提供覆盖。任何曾向金库授权过代币花费的地址（包括历史遗留的无关授权）均面临代币被静默取走的风险。",
+    "impact": "投资管理员可在未获代币持有人同意的情况下，从任何持有金库授权的地址耗尽代币余额，属于严重的中心化风险，可导致用户资金单方面损失。",
+    "code_snippet": "// `AccountableFixedTerm::coverDefault` allows the `InvestmentManager` of a loan to call `IAccountableVault.lockAssets(asse",
+    "location": "AccountableFixedTerm.sol (coverDefault)",
+    "recommendation": "为 `coverDefault` 提供者添加明确的同意机制，例如要求提供者在代币被拉取前调用确认函数，或将有效提供者限制在提供者自己预先配置的预批准集合内。",
+    "tags": [
+      "coverDefault-pull",
+      "unchecked-provider-consent",
+      "investment-manager-privilege",
+      "allowance-drain"
+    ],
+    "patterns": [
+      "lockAssets from arbitrary provider without opt-in",
+      "any address with vault allowance at risk"
+    ]
+  },
+  {
+    "id": "token-transfer-tranches-001",
+    "source": "cyfrin/tranches.md",
+    "category": "Token Transfer",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "UnstakeCooldown",
+    "functions_affected": [
+      "transfer"
+    ],
+    "description": "当 `UnstakeCooldown::transfer` 触发即时解质押时（`proxy.request()` 返回 `unlockAt <= block.timestamp`），函数在归还代理后提前返回，未发出 `Unstaked` 事件，导致链上事件日志对即时赎回流程存在缺口。",
+    "impact": "依赖事件追踪提款的链下系统会静默遗漏这些即时解质押操作，导致看板、索引器和监控工具的统计不准确；链上安全无影响，用户仍能正确收到资金。",
+    "code_snippet": "// When `UnstakeCooldown::transfer` triggers an immediate unstake (the handler's call to `proxy.request()` returns `unlockA",
+    "location": "UnstakeCooldown.sol (transfer)",
+    "recommendation": "在 `transfer()` 的即时返回分支中使用 `amount` 参数发出 `Unstaked` 或专用的 `ImmediateUnstake` 事件，确保所有解质押流程的事件完整性。",
+    "tags": [
+      "missing-unstaked-event",
+      "immediate-unstake-branch",
+      "indexer-gap",
+      "unstakeCooldown-transfer"
+    ],
+    "patterns": [
+      "early return before emit Unstaked",
+      "instant unstake invisible to event subscribers"
+    ]
+  },
+  {
+    "id": "token-transfer-parallel31-001",
+    "source": "cyfrin/parallel3.1.md",
+    "category": "Token Transfer",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "LibOracle",
+    "functions_affected": [
+      "readBurn",
+      "setOracle"
+    ],
+    "description": "`LibOracle::readBurn` 中，当现货价格在 `userDeviation` 范围内时，`readSpotAndTarget` 将价格归零至目标价。若 `userDeviation > burnRatioDeviation`，两个阈值之间的脱锚被无形吸收，比率检查始终通过，销毁比率惩罚被静默禁用。`LibSetters::setOracle` 仅通过 `readMint` 验证配置，无法防止此错误设置。",
+    "impact": "销毁比率惩罚被静默禁用，所有销毁在应触发惩罚的脱锚期间均以全额价值执行，导致协议面临抵押不足的赎回风险。",
+    "code_snippet": "// In `LibOracle::readBurn`, `readSpotAndTarget` snaps `oracleValue` to `targetPrice` when the spot price is within `userDe",
+    "location": "LibOracle.sol (readBurn, setOracle)",
+    "recommendation": "在 `LibSetters::setOracle` 中增加验证，若解码后的 `userDeviation > burnRatioDeviation` 则回滚，在配置阶段强制执行排序不变量。",
+    "tags": [
+      "oracle-snap-to-target",
+      "burn-ratio-penalty-bypass",
+      "userDeviation-misconfig",
+      "readBurn"
+    ],
+    "patterns": [
+      "readSpotAndTarget zeros price within userDeviation",
+      "burn ratio check always passes when userDeviation > burnRatioDeviation"
+    ]
+  },
+  {
+    "id": "token-transfer-spingame-001",
+    "source": "cyfrin/spingame.md",
+    "category": "Token Transfer",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "SpinGame",
+    "functions_affected": [
+      "receive",
+      "fallback"
+    ],
+    "description": "`SpinGame` 支持原生代币奖品（`prize.tokenAddress = address(0)`），但合约既无 `receive()` 也无 `fallback()` 函数，且没有任何 `payable` 函数，无法通过标准转账向合约存入原生代币，导致原生代币奖品永远无法充值。",
+    "impact": "原生代币奖品无法充值和领取，中奖用户无法收到原生代币奖励，该奖品类型功能完全失效。",
+    "code_snippet": "function receive(...) { ... }  // see audit report",
+    "location": "SpinGame.sol (receive, fallback)",
+    "recommendation": "在合约中添加 `receive() external payable {}` 函数，允许协议团队存入原生代币，使原生代币奖品流程正常运作。",
+    "tags": [
+      "native-token-prize",
+      "missing-receive-fallback",
+      "unpayable-contract",
+      "eth-deposit-blocked"
+    ],
+    "patterns": [
+      "prize.tokenAddress == address(0) but no receive()",
+      "no payable function to fund native prizes"
+    ]
+  },
+  {
+    "id": "token-transfer-spingame-002",
+    "source": "cyfrin/spingame.md",
+    "category": "Token Transfer",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "Spin",
+    "functions_affected": [
+      "_transferPrize"
+    ],
+    "description": "`Spin::_transferPrize` 在发送原生代币奖品时未进行显式余额检查，而 ERC20 和 ERC721 奖品均有相应的余额/所有权前置检查，处理方式不一致，增加了调试难度。",
+    "impact": "轻微：原生余额不足时交易仍会回滚，但错误路径与其他奖品类型不一致，降低代码可读性和错误诊断效率。",
+    "code_snippet": "// In `Spin::_transferPrize`, native token prizes are sent via `_winner.call{value: prize.amount}(\"\")` without a prior expl",
+    "location": "Spin.sol (_transferPrize)",
+    "recommendation": "在原生转账前增加 `address(this).balance >= prize.amount` 的显式检查，与其他奖品类型的余额检查保持一致，提供统一且信息丰富的错误路径。",
+    "tags": [
+      "native-prize-transfer",
+      "missing-balance-check",
+      "inconsistent-prize-validation",
+      "_transferPrize"
+    ],
+    "patterns": [
+      "ERC20/721 prizes pre-check balance",
+      "native prize uses call{value} without explicit balance check"
+    ]
+  },
+  {
+    "id": "token-transfer-update-001",
+    "source": "cyfrin/update.md",
+    "category": "Token Transfer",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "Pocket",
+    "functions_affected": [
+      "execWithValue",
+      "transferNative"
+    ],
+    "description": "`Pocket::execWithValue` 通过 `value` 参数发送原生代币，但只发出 `Executed(target, selector)` 事件，未发出 `NativeTransferred(to, amount)`，而 `Pocket::transferNative` 正确发出了后者。依赖 `NativeTransferred` 事件追踪原生代币流向的链下系统会静默遗漏通过 `execWithValue` 产生的所有转账。",
+    "impact": "依赖 `NativeTransferred` 事件进行账务统计的链下系统、钱包和索引器将得到不完整的原生代币流出记录，可能导致余额计算错误和审计轨迹缺失。",
+    "code_snippet": "// `Pocket::execWithValue` sends native tokens via the `value` parameter but only emits `Executed(target, selector)`, not `",
+    "location": "Pocket.sol (execWithValue, transferNative)",
+    "recommendation": "在 `execWithValue` 中当 `value > 0` 时发出 `NativeTransferred(target, value)` 事件，与 `transferNative` 的事件发出保持一致，确保所有原生转账路径的事件完整性。",
+    "tags": [
+      "missing-native-transferred-event",
+      "execWithValue",
+      "indexer-incomplete",
+      "pocket-native-flow"
+    ],
+    "patterns": [
+      "execWithValue emits Executed only",
+      "transferNative emits NativeTransferred but execWithValue does not"
+    ]
+  },
+  {
+    "id": "token-transfer-RYT2-001",
+    "source": "HackenPDFTXT/RYT-2.txt",
+    "category": "Token Transfer",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "DIDContract",
+    "functions_affected": [
+      "revokeSBTCredential",
+      "setSBTContract"
+    ],
+    "description": "`DIDContract` 将 `SoulboundCredential` 合约地址存储在可变状态变量中，合约所有者可随时更新。`revokeSBTCredential` 使用当前存储的地址调用 `sbtContract.burnCredential(tokenId)`。若所有者在凭证颁发后更换了 `sbtContract`，后续撤销操作可能从新合约销毁代币，而非原始合约，导致销毁错误的或无关的代币。",
+    "impact": "新旧凭证合约间的 token ID 碰撞可能导致从错误合约销毁代币，造成对应凭证的意外撤销或应被销毁的凭证未被撤销。",
+    "code_snippet": "function revokeSBTCredential(uint256 tokenId) external {\n    sbtContract.burnCredential(tokenId);  // uses mutable sbtContract address\n}",
+    "location": "DIDContract.sol (revokeSBTCredential, setSBTContract)",
+    "recommendation": "将凭证合约地址设为部署后不可变，或在允许地址变更前实施迁移机制，确保所有现有凭证被迁移或废止，防止跨合约 token ID 混淆。",
+    "tags": [
+      "mutable-sbt-contract-address",
+      "cross-contract-tokenId",
+      "wrong-contract-burn",
+      "owner-setSBTContract"
+    ],
+    "patterns": [
+      "owner can change sbtContract after mint",
+      "revoke burns on current not original contract"
+    ]
+  },
+  {
+    "id": "token-transfer-rwasegwrap-001",
+    "source": "cyfrin/rwasegwrap.md",
+    "category": "Token Transfer",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "RWASegWrap",
+    "functions_affected": [
+      "safeTransferFrom"
+    ],
+    "description": "`RWASegWrap::safeTransferFrom` 在调用底层 `internalTransferFrom` 前进行了显式余额检查，但底层 ERC20 `_update` 函数本身已包含相同的 `ERC20InsufficientBalance` 检查，外层检查完全冗余，只增加 gas 消耗而无额外安全保障。",
+    "impact": "轻微的 gas 浪费和代码重复；无安全影响。冗余检查可能误导审计人员认为外层检查有独立目的。",
+    "code_snippet": "// `RWASegWrap::safeTransferFrom` performs an explicit balance check (`balanceOf(from) < value → revert`) before calling `I",
+    "location": "RWASegWrap.sol (safeTransferFrom)",
+    "recommendation": "从 `RWASegWrap::safeTransferFrom` 中移除冗余的余额检查，完全依赖底层 ERC20 `_update` 函数中的余额验证。",
+    "tags": [
+      "redundant-balance-check",
+      "gas-waste",
+      "erc20-insufficient-balance",
+      "safeTransferFrom"
+    ],
+    "patterns": [
+      "explicit balanceOf check before internalTransferFrom",
+      "underlying _update already reverts on insufficient balance"
+    ]
+  },
+  {
+    "id": "token-transfer-pledge-001",
+    "source": "cyfrin/pledge.md",
+    "category": "Token Transfer",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "TokenBank",
+    "functions_affected": [
+      "withdrawFunds"
+    ],
+    "description": "`TokenBank::withdrawFunds` 将 `tokenData[tokenAddress]` 复制至 `memory` 变量 `curData`，在内存副本上将 `feeAmount` 或 `saleAmount` 置零后执行转账。由于置零操作作用于内存副本而非 storage，存储中的值保持不变，允许调用者反复调用 `withdrawFunds` 多次提取相同的代币金额。",
+    "impact": "持有 `restricted` 角色的特权调用者可反复调用 `withdrawFunds`，多次耗尽相同的手续费和销售收益，对协议造成重大财务损失。",
+    "code_snippet": "// `TokenBank::withdrawFunds` copies `tokenData[tokenAddress]` into a `memory` variable `curData`, sets `curData.feeAmount ",
+    "location": "TokenBank.sol (withdrawFunds)",
+    "recommendation": "在转账前或转账后直接对 storage 变量 `tokenData[tokenAddress].feeAmount = 0` / `tokenData[tokenAddress].saleAmount = 0` 进行置零，而非操作本地内存副本。",
+    "tags": [
+      "memory-vs-storage",
+      "withdrawFunds-double-spend",
+      "feeAmount-not-zeroed",
+      "restricted-role-abuse"
+    ],
+    "patterns": [
+      "tokenData copied to memory then zeroed",
+      "storage feeAmount/saleAmount unchanged after withdraw"
+    ]
+  },
+  {
+    "id": "token-transfer-wlf-001",
+    "source": "cyfrin/wlf.md",
+    "category": "Token Transfer",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "WorldLibertyFinancialV",
+    "functions_affected": [
+      "ownerReallocateFrom"
+    ],
+    "description": "`WorldLibertyFinancialV::ownerReallocateFrom` 赋予合约所有者无限制地从任意地址销毁代币并铸造至任意地址的权力，绕过所有安全机制（包括黑名单、暂停、时间锁和速率限制）。被攻击或恶意的所有者可立即、静默地转移任意持有人的代币余额。",
+    "impact": "被攻击或恶意的所有者可没收任意持有人（包括黑名单地址）的代币并任意重新分配，从根本上破坏代币的去中心化特性，形成存在性治理风险。",
+    "code_snippet": "// `WorldLibertyFinancialV::ownerReallocateFrom` gives the contract owner unlimited power to burn tokens from any address a",
+    "location": "WorldLibertyFinancialV.sol (ownerReallocateFrom)",
+    "recommendation": "为 `ownerReallocateFrom` 实施时间锁、多签要求或治理控制执行；发出带有详细元数据的专用 `Reallocated` 事件；评估该函数的必要性，考虑通过权限更低的机制实现合规目标。",
+    "tags": [
+      "owner-reallocate",
+      "unlimited-burn-mint",
+      "blacklist-bypass",
+      "centralization-risk"
+    ],
+    "patterns": [
+      "ownerReallocateFrom burns from any address",
+      "bypasses pause blacklist and rate limits"
+    ]
+  },
+  {
+    "id": "token-transfer-Dirol-001",
+    "source": "HackenPDFTXT/Dirol.txt",
+    "category": "Token Transfer",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "CoreAggregator",
+    "functions_affected": [
+      "_swapCrystalOrderbook",
+      "_ensureAllowance"
+    ],
+    "description": "Crystal 兑换路径中，`market` 从调用者提供的 `pathData` 中解码后直接用作 `_ensureAllowance(tokenIn, market, amountIn)` 的被授权方，未验证其是否为合法注册的路由器或交易对。攻击者可将任意地址指定为 `market`，以合法兑换操作为幌子，触发对任意地址的无限 ERC20 授权。",
+    "impact": "攻击者可通过构造恶意 `pathData` 获取对攻击者控制地址的无限 ERC20 授权，为后续耗尽合约或已授权用户的代币埋下后门。",
+    "code_snippet": "(address market, address referrer) = abi.decode(pathData, (address, address));\n_ensureAllowance(tokenIn, market, amountIn);  // market not whitelisted",
+    "location": "CoreAggregator.sol (Crystal swap path)",
+    "recommendation": "在调用 `_ensureAllowance` 前，对照已知合法 Crystal 路由器/交易对的注册表验证 `market`，拒绝包含未注册市场地址的 `pathData`。",
+    "tags": [
+      "untrusted-pathData-spender",
+      "erc20-approval-hijack",
+      "crystal-router",
+      "market-not-whitelisted"
+    ],
+    "patterns": [
+      "market decoded from user pathData",
+      "approve granted to arbitrary address"
+    ]
+  },
+  {
+    "id": "token-transfer-yieldfi-001",
+    "source": "cyfrin/yieldfi.md",
+    "category": "Token Transfer",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "BridgeCCIP",
+    "functions_affected": [
+      "send"
+    ],
+    "description": "`BridgeCCIP::send` 接受 `_receiver` 参数作为目标链桥接合约地址，但该参数直接被编码为 CCIP 消息接收方，未验证其是否为目标链上的合法桥接合约。若用户传入错误或零地址，CCIP 消息会被发送至该地址，目标链上若 `_receiver` 不是有效桥接合约，消息无法被处理，桥接代币无法送达，导致不可恢复的损失。",
+    "impact": "传入错误 `_receiver` 的用户将永久损失代币，发送至非桥接地址的 CCIP 消息无法被重播或恢复，需要协议层面的人工干预。",
+    "code_snippet": "// `BridgeCCIP::send` accepts a `_receiver` parameter intended to be the destination bridge contract on the receiving chain",
+    "location": "BridgeCCIP.sol (send)",
+    "recommendation": "在链上维护以目标链 ID 为键的授权桥接接收地址注册表，在构建 CCIP 消息前验证 `_receiver` 与 `_dstChain` 对应的注册地址一致。",
+    "tags": [
+      "ccip-bridge-receiver",
+      "unvalidated-receiver",
+      "cross-chain-loss",
+      "BridgeCCIP-send"
+    ],
+    "patterns": [
+      "_receiver encoded without chain registry check",
+      "tokens sent to non-bridge address irrecoverable"
+    ]
+  },
+  {
+    "id": "token-transfer-Fabstir-003",
+    "source": "HackenPDFTXT/Fabstir.txt",
+    "category": "Token Transfer",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "JobMarketplaceWithModelsUpgradeable",
+    "functions_affected": [
+      "_validateProofRequirements",
+      "triggerSessionTimeout"
+    ],
+    "description": "`proofInterval` 参数存在两种相互冲突的语义：在会话创建的 `_validateProofRequirements` 中被作为代币数量（最小值 `MIN_PROVEN_TOKENS = 100`）验证；但在 `triggerSessionTimeout()` 中被作为秒数时长来确定会话何时可超时。这导致超时窗口直接绑定于代币数量而非预期时长，产生不可预测的错误超时行为。",
+    "impact": "会话超时窗口使用代币数量（而非秒数）计算，导致大面值代币对应的会话超时过快、小面值代币超时过慢，破坏预期的会话生命周期行为。",
+    "code_snippet": "require(tokensPerProof >= MIN_PROVEN_TOKENS);  // token count\n// triggerSessionTimeout uses proofInterval as seconds for timeout window",
+    "location": "JobMarketplaceWithModelsUpgradeable.sol (proofInterval)",
+    "recommendation": "将 `proofInterval` 拆分为两个独立参数，分别用于代币数量验证和时间时长，各自进行适当验证；或明确并统一合约中所有用法的单一语义解释。",
+    "tags": [
+      "proofInterval-semantics",
+      "token-count-vs-seconds",
+      "session-timeout",
+      "parameter-overloading"
+    ],
+    "patterns": [
+      "proofInterval validated as token count",
+      "same field used as seconds in triggerSessionTimeout"
+    ]
+  }
+]

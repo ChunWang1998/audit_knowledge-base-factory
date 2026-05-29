@@ -1,0 +1,486 @@
+[
+  {
+    "id": "decimals-rounding-stbl-001",
+    "source": "cyfrin/stbl.md",
+    "category": "Accounting",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "STBL_LT1_Vault",
+    "functions_affected": [
+      "withdrawERC20"
+    ],
+    "description": "STBL 金库以存款时的价格记录存款，但提款时使用当前市价的反价（inversPrice）计算要扣除的资产单位数量。系统假设抵押品价格只会上升，但当底层协议被迫提前出售债券并产生亏损时，会发生负向 rebase：预言机会返回比原始存款更大的资产单位数量。`withdrawERC20` 中将这一更大数量从 `VaultData.assetDepositNet` 中扣除时会发生下溢（underflow），导致交易回滚。",
+    "impact": "在负向 rebase 期间，所有提款都会因算术下溢而回滚，造成提款 DoS。先提款的用户可能可以成功提取，而后续用户则完全无法取回资金。",
+    "code_snippet": "VaultData.assetDepositNet -= (withdrawAssetValue + withdrawFeeAssetValue); // underflow on negative rebase",
+    "location": "STBL_LT1_Vault.sol (withdrawERC20)",
+    "recommendation": "修改 `withdrawERC20`，当 `totalWithdrawal` 超过 `VaultData.assetDepositNet` 时，将可用余额直接归零而非产生下溢，允许金库在资不抵债时进行有限度的资金回收。",
+    "tags": [
+      "withdraw-erc20",
+      "asset-deposit-net",
+      "negative-rebase",
+      "stbl-lt1-vault",
+      "withdrawal-dos"
+    ],
+    "patterns": [
+      "withdraw uses inverse price after deposit-time price record",
+      "negative rebase increases asset units owed vs assetDepositNet",
+      "assetDepositNet subtraction underflows blocking all withdrawals"
+    ]
+  },
+  {
+    "id": "decimals-rounding-sherpa-001",
+    "source": "cyfrin/sherpa.md",
+    "category": "Accounting",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "ShareMath",
+    "functions_affected": [
+      "pricePerShare",
+      "sharesToTokens",
+      "tokensToShares"
+    ],
+    "description": "`ShareMath.sol` 中所有函数都默认采用整除（向下取整）。例如 `pricePerShare` 直接使用 `/ totalSupply`，不区分上下文。在某些场景中（如向用户发行份额）向下取整有利于协议，但在计算份额价格时则会导致持续低估。代码库中没有明确的舍入方向，也没有解释每个调用点为何采用该舍入方向的注释。",
+    "impact": "份额价格被持续低估，每笔交易都会产生 wei 级别的精度损失，随着交易量增加而积累成实质性差异。",
+    "code_snippet": "return (totalBalance - pending) / totalSupply; // always round down",
+    "location": "ShareMath.sol",
+    "recommendation": "参照 OpenZeppelin `Math.Rounding` 模式，为所有 `ShareMath` 函数添加明确的舍入方向参数，并在每个调用点注释说明该方向的合理性。",
+    "tags": [
+      "share-math",
+      "round-down",
+      "price-per-share",
+      "sherpa-vault",
+      "rounding-direction"
+    ],
+    "patterns": [
+      "all ShareMath helpers use implicit floor division",
+      "pricePerShare systematically underestimated",
+      "no per-call rounding direction or documentation"
+    ]
+  },
+  {
+    "id": "decimals-rounding-rebasing-001",
+    "source": "cyfrin/rebasing.md",
+    "category": "Accounting",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "RebasingLibrary",
+    "functions_affected": [
+      "convertTokensToShares",
+      "convertSharesToTokens"
+    ],
+    "description": "`RebasingLibrary` 中的 `convertTokensToShares` 和 `convertSharesToTokens` 在输入非零但结果因定点数除法被取整为零时，会静默返回 0。这意味着用户可能为非零数量的代币获得零份额，或者以零代币兑换非零份额，导致资金无声损失。",
+    "impact": "代币发行或销毁操作在零输出情况下静默完成，用户可能损失资金，协议内部会计状态与实际余额产生偏差。",
+    "code_snippet": "// non-zero in, zero out silently on fixed-point floor",
+    "location": "RebasingLibrary.sol (convertTokensToShares, convertSharesToTokens)",
+    "recommendation": "在两个函数中添加零输出断言：若输入非零而输出为零则回滚。注意在只读路径（如 `balanceOf`）中可跳过此检查。",
+    "tags": [
+      "rebasing-library",
+      "zero-output-mint",
+      "fixed-point-floor",
+      "dstoken",
+      "silent-loss"
+    ],
+    "patterns": [
+      "non-zero token amount can convert to zero shares",
+      "non-zero shares can convert to zero tokens",
+      "mint/burn completes with no revert on zero output"
+    ]
+  },
+  {
+    "id": "decimals-rounding-vii-001",
+    "source": "cyfrin/vii.md",
+    "category": "Accounting",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "ERC721WrapperBase",
+    "description": "`ERC721WrapperBase` 中 OpenZeppelin `Math` 库被导入了两次。重复导入虽不影响编译，但会增加维护混乱风险：开发者可能引用错误的别名，静态分析工具也可能产生误报。",
+    "impact": "无直接利用风险，但增加维护成本，可能在安全审查中掩盖真实问题。",
+    "code_snippet": "import {Math} from \".../Math.sol\"; // duplicated import",
+    "location": "ERC721WrapperBase.sol (imports)",
+    "recommendation": "删除 `ERC721WrapperBase` 中重复的 `Math` 库导入语句，只保留一个规范导入。",
+    "tags": [
+      "duplicate-import",
+      "erc721-wrapper-base",
+      "openzeppelin-math",
+      "maintainability",
+      "vii"
+    ],
+    "patterns": [
+      "OpenZeppelin Math imported twice in ERC721WrapperBase",
+      "no runtime exploit but review and tooling confusion",
+      "risk of editing wrong import alias during changes"
+    ]
+  },
+  {
+    "id": "decimals-rounding-syntetika-001",
+    "source": "cyfrin/syntetika.md",
+    "category": "Accounting",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "StakingVault",
+    "functions_affected": [
+      "decimals"
+    ],
+    "description": "EIP-4626 强烈建议金库份额代币的精度（decimals）应大于等于底层资产的精度，以避免份额与资产换算时的精度损失。`StakingVault` 构造函数中未对此进行验证，可能部署出精度低于底层资产的金库，导致所有换算操作静默截断精度。",
+    "impact": "若金库精度小于底层资产精度，存款人获得的份额或提款时取回的资产会系统性偏少，误差随操作次数积累。",
+    "code_snippet": "function decimals(...) { ... }  // see audit report",
+    "location": "StakingVault.sol (decimals)",
+    "recommendation": "在 `StakingVault` 构造函数中添加检查，若 `IERC20Metadata(_asset).decimals() > decimals()` 则回滚部署。",
+    "tags": [
+      "eip-4626",
+      "decimals-mismatch",
+      "staking-vault",
+      "share-truncation",
+      "syntetika"
+    ],
+    "patterns": [
+      "constructor does not require vault decimals >= asset decimals",
+      "vault shares can have lower precision than underlying",
+      "deposit and withdraw conversions silently truncate"
+    ]
+  },
+  {
+    "id": "decimals-rounding-Seedifyfund-001",
+    "source": "HackenPDFTXT/Seedify.fund.txt",
+    "category": "Accounting",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "BondingCurve",
+    "functions_affected": [
+      "buy",
+      "buyPublic"
+    ],
+    "description": "`BondingCurveLibrary` 中的 `calculateBuyAmount` 通过 `_inverseArea0` 计算购买数量后，应用了\"智能取整\"逻辑：将计算出的代币量四舍五入到最近的整数代币。当结果不足 0.5 个代币时，四舍五入为 0。由于合约在调用计算函数前已接受用户付款，付款金额对应不足半个代币的用户将得到零代币但损失全部付款。",
+    "impact": "购买不足 0.5 个代币的用户完全损失付款，实质等同于资金被窃取。",
+    "code_snippet": "if (remainder >= SCALE / 2) sWei = sWei + (SCALE - remainder); // can round buy to zero tokens",
+    "location": "BondingCurve.sol (buy, buyPublic via calculateBuyAmount)",
+    "recommendation": "完全移除 `_inverseArea0` 中的取整逻辑。底层定点数学库已提供足够精度返回精确的小数代币量。",
+    "tags": [
+      "calculate-buy-amount",
+      "smart-rounding",
+      "bonding-curve",
+      "zero-token-buy",
+      "seedify"
+    ],
+    "patterns": [
+      "_inverseArea0 rounds sub-0.5 token purchases to zero",
+      "payment taken before rounding applied to token amount",
+      "user pays full price and receives zero tokens"
+    ]
+  },
+  {
+    "id": "decimals-rounding-core-001",
+    "source": "cyfrin/core.md",
+    "category": "Accounting",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "AvalancheL1Middleware",
+    "functions_affected": [
+      "getOperatorStake"
+    ],
+    "description": "`AvalancheL1Middleware::getOperatorStake` 在汇总资产类别中各金库的质押量时，直接将不同精度代币的原始数量相加。例如 USDC（6位精度）的质押量与 DAI（18位精度）相加时，USDC 的数值量级远小于 DAI，实际上被忽略。",
+    "impact": "精度较低的代币在质押计算中严重被低估或完全忽略，破坏质押报告、奖励分配和基于质押量的安全阈值。",
+    "code_snippet": "// `AvalancheL1Middleware::getOperatorStake` iterates over all vaults associated with a given asset class and sums their st",
+    "location": "AvalancheL1Middleware.sol (getOperatorStake)",
+    "recommendation": "在 `getOperatorStake` 汇总前，通过代币的 `decimals()` 将各金库质押量归一化为 18 位精度。",
+    "tags": [
+      "get-operator-stake",
+      "raw-decimal-sum",
+      "multi-vault-stake",
+      "avalanche-l1-middleware",
+      "usdc-dai"
+    ],
+    "patterns": [
+      "getOperatorStake sums vault stakes without decimal normalization",
+      "6-decimal USDC added to 18-decimal DAI raw amounts",
+      "low-decimal stake dominates or vanishes in totals"
+    ]
+  },
+  {
+    "id": "decimals-rounding-Acecoin-001",
+    "source": "HackenPDFTXT/Acecoin.txt",
+    "category": "Accounting",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "Subscription",
+    "functions_affected": [
+      "register",
+      "renew",
+      "setDefaultFee"
+    ],
+    "description": "`Subscription` 合约将 USDT 费用常量硬编码为 18 位精度（如 `MAX_FEE = 3 * 1e18`），但 USDT 实际上使用 6 位精度（1 USDT = 1e6）。这导致所有费用相关逻辑的计算值比预期高出 10^12 倍，用户需要批准和转移天文数字级别的 USDT 才能与协议交互。",
+    "impact": "注册、续订和级别访问等所有收费操作实际上无法进行，协议从部署之日起即无法正常运行。",
+    "code_snippet": "uint256 public constant MAX_FEE = 3 * 1e18; // USDT uses 6 decimals",
+    "location": "Subscription.sol (fee constants)",
+    "recommendation": "将所有费用常量从 `1e18` 精度改为 `1e6` 精度，并考虑通过 `IERC20Metadata.decimals()` 动态获取代币精度。",
+    "tags": [
+      "usdt-decimals",
+      "max-fee-1e18",
+      "subscription",
+      "fee-magnitude",
+      "acecoin"
+    ],
+    "patterns": [
+      "USDT fee constants scaled with 1e18 not 1e6",
+      "required approvals and transfers 1e12 times too large",
+      "registration and renewal economically unusable"
+    ]
+  },
+  {
+    "id": "decimals-rounding-parallel31-001",
+    "source": "cyfrin/parallel3.1.md",
+    "category": "Accounting",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "Swapper",
+    "functions_affected": [
+      "swap"
+    ],
+    "description": "`LibHelpers.convertDecimalsTo` 在将金额从高精度转换为低精度时始终向下取整，不区分调用上下文。在精确输出铸造路径中，向下取整意味着协议收取的抵押品略少于数学上所需，给予用户小额折扣，损害协议利益。精确输出销毁路径中高精度抵押品同样存在此问题。",
+    "impact": "每笔涉及该转换的铸造和销毁操作都给用户少量折扣，大量交易后积累为协议的实质性价值损失。",
+    "code_snippet": "// `LibHelpers.convertDecimalsTo` always rounds down when converting amounts from higher to lower decimal precision, regard",
+    "location": "Swapper.sol (swap)",
+    "recommendation": "为 `convertDecimalsTo` 添加舍入方向参数，精确输出铸造和销毁路径上应采用向上取整（有利于协议）。",
+    "tags": [
+      "convert-decimals-to",
+      "lib-helpers",
+      "exact-output-mint",
+      "swapper",
+      "parallel-protocol"
+    ],
+    "patterns": [
+      "convertDecimalsTo always rounds down on high-to-low precision",
+      "exact-output mint path undercharges collateral vs math requirement",
+      "protocol gives user discount on every affected swap"
+    ]
+  },
+  {
+    "id": "decimals-rounding-rebasing-002",
+    "source": "cyfrin/rebasing.md",
+    "category": "Accounting",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "RebasingLibrary",
+    "functions_affected": [
+      "convertTokensToShares",
+      "convertSharesToTokens"
+    ],
+    "description": "`RebasingLibrary` 对超过 18 位精度的代币有特殊处理逻辑，其中 `_shares * _rebasingMultiplier * scale` 三数连乘可能导致 uint256 溢出。在 Solidity 0.8+ 中溢出会回滚，造成使用高精度代币的所有转换操作 DoS。",
+    "impact": "使用超过 18 位精度代币的协议，在代币转换操作中会遭遇 DoS 故障。",
+    "code_snippet": "_shares * _rebasingMultiplier * scale; // uint256 overflow for >18 decimal tokens",
+    "location": "RebasingLibrary.sol (high-decimal branch)",
+    "recommendation": "使用 OpenZeppelin 的 `Math.mulDiv` 替代内联三数乘法，避免中间乘法溢出。",
+    "tags": [
+      "rebasing-library",
+      "uint256-overflow",
+      "high-decimal-token",
+      "muldiv-fix",
+      "dstoken"
+    ],
+    "patterns": [
+      ">18 decimal tokens use triple multiply before division",
+      "intermediate product overflows in Solidity 0.8+",
+      "all conversions revert for high-decimal assets"
+    ]
+  },
+  {
+    "id": "decimals-rounding-core-002",
+    "source": "cyfrin/core.md",
+    "category": "Accounting",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "VaultTokenized",
+    "functions_affected": [
+      "onSlash"
+    ],
+    "description": "`VaultTokenized::onSlash` 中的级联惩没逻辑在将超额惩没量级联至下一纪元时，若 `nextWithdrawals` 为零或小于 `nextWithdrawalsSlashed`，减法操作会下溢导致回滚。在整数除法取整和质押量接近总额时，这种情况可以在正常操作中自然发生。",
+    "impact": "惩没交易回滚，导致受影响场景下的惩没完全无法执行。恶意行为者可通过制造条件（如最小化未来纪元提款）来阻止自己的仓位被惩没。",
+    "code_snippet": "// `VaultTokenized::onSlash` implements a cascading slashing mechanism: when the amount to be slashed from current-epoch wi",
+    "location": "VaultTokenized.sol (onSlash)",
+    "recommendation": "在减法前添加显式保护：若 `nextWithdrawalsSlashed > nextWithdrawals`，将其上限设为 `nextWithdrawals`，并将剩余超额归零或向前级联处理。",
+    "tags": [
+      "on-slash",
+      "cascade-slash",
+      "next-withdrawals",
+      "vault-tokenized",
+      "underflow-revert"
+    ],
+    "patterns": [
+      "cascading slash subtracts nextWithdrawalsSlashed from nextWithdrawals",
+      "nextWithdrawals zero or small causes underflow revert",
+      "slashing DoS when attacker minimizes future epoch withdrawals"
+    ]
+  },
+  {
+    "id": "decimals-rounding-core-003",
+    "source": "cyfrin/core.md",
+    "category": "Accounting",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "UptimeTracker",
+    "functions_affected": [
+      "computeValidatorUptime"
+    ],
+    "description": "`UptimeTracker::computeValidatorUptime` 中的循环计数器和纪元加法使用了 Solidity 0.8+ 的自动溢出检查。由于操作数类型为 `uint48` 且由协议控制，实际不可能溢出，这些检查是多余的，每次操作浪费约 20-30 gas。",
+    "impact": "Gas 效率低下，对于处理大量验证者的协议，长期累积成显著的 gas 浪费。",
+    "code_snippet": "// In `UptimeTracker::computeValidatorUptime`, loop increments (`i++`) and additions (`lastUptimeEpoch + i`) are wrapped in",
+    "location": "UptimeTracker.sol (computeValidatorUptime)",
+    "recommendation": "将循环自增和纪元索引计算放入 `unchecked` 块中，消除多余的溢出检查。",
+    "tags": [
+      "compute-validator-uptime",
+      "unchecked-block",
+      "uint48-overflow",
+      "gas-optimization",
+      "uptime-tracker"
+    ],
+    "patterns": [
+      "loop increment and epoch add use default checked arithmetic",
+      "uint48 bounds make overflow unreachable",
+      "~20-30 gas wasted per increment on large validator sets"
+    ]
+  },
+  {
+    "id": "decimals-rounding-pledge-001",
+    "source": "cyfrin/pledge.md",
+    "category": "Accounting",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "RemoraToken",
+    "functions_affected": [
+      "decimals",
+      "initialize"
+    ],
+    "description": "`RemoraToken::initialize` 在铸造初始供应量时使用 `_initialSupply * 10 ** decimals()`，而 `decimals()` 始终返回 `0`，因此 `10 ** 0 = 1`，该乘法是多余的无操作。此冗余表达式具有误导性，可能使维护者误认为精度缩放在此处有实际意义。",
+    "impact": "无直接财务影响，但存在维护风险：若 `decimals()` 在分叉或升级中被修改，此处的缩放逻辑可能产生意外的铸造放大效果。",
+    "code_snippet": "// `RemoraToken` overrides `decimals()` to return `0` because RWA tokens are non-fractional and operate in whole units only",
+    "location": "RemoraToken.sol (decimals, initialize)",
+    "recommendation": "将 `_mint(tokenOwner, _initialSupply * 10 ** decimals())` 改为 `_mint(tokenOwner, _initialSupply)`。",
+    "tags": [
+      "remora-token",
+      "decimals-zero",
+      "initialize-mint",
+      "misleading-scale",
+      "pledge"
+    ],
+    "patterns": [
+      "initialize mints _initialSupply * 10**decimals()",
+      "decimals() always returns 0 so multiply is no-op",
+      "future decimals change would unexpectedly scale mint"
+    ]
+  },
+  {
+    "id": "decimals-rounding-vii-002",
+    "source": "cyfrin/vii.md",
+    "category": "Accounting",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "ERC721WrapperBase",
+    "functions_affected": [
+      "transfer"
+    ],
+    "description": "`ERC721WrapperBase::transfer` 使用 `Math.mulDiv`（向下取整）计算清算转移给清算人的 ERC-6909 代币数量，取整始终有利于发送方（违规者）。恶意违规者可将自己的 ERC-6909 余额降至 1 wei，然后通过费用积累放大其价值，导致后续部分清算中向清算人转移的代币为零。",
+    "impact": "清算人在部分清算中可能遭受直接损失，清算激励减弱，导致抵押不足仓位持续存在，金库积累坏账。",
+    "code_snippet": "// `ERC721WrapperBase::transfer` uses `Math.mulDiv` to compute the proportional number of ERC-6909 tokens to transfer from ",
+    "location": "ERC721WrapperBase.sol (transfer)",
+    "recommendation": "将 `normalizedToFull` 中的 `Math.mulDiv` 改为使用向上取整（`Math.Rounding.Ceil`），确保舍入有利于清算人。",
+    "tags": [
+      "erc721-wrapper-base",
+      "math-muldiv",
+      "liquidation-transfer",
+      "round-down",
+      "vii"
+    ],
+    "patterns": [
+      "transfer uses Math.mulDiv floor for ERC-6909 slice",
+      "rounding favors violator on partial liquidation",
+      "1 wei balance plus fees can zero out liquidator transfer"
+    ]
+  },
+  {
+    "id": "decimals-rounding-tranches-001",
+    "source": "cyfrin/tranches.md",
+    "category": "Accounting",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "Tranche",
+    "functions_affected": [
+      "totalAssets",
+      "totalSupply",
+      "maxMint"
+    ],
+    "description": "当 Junior Tranche 的 `jrtNav` 下降至低于 1:1 份额-资产比率时，`Tranche::maxMint` 尝试将 `type(uint256).max` 资产转换为份额。由于此时 `totalAssets() < totalSupply()`，份额计算结果溢出 uint256，导致交易回滚。",
+    "impact": "Junior Tranche NAV 低于 1:1 时，所有 `maxMint` 和 `mint` 调用都会因溢出而回滚，阻止用户存款并阻塞依赖 `maxMint` 的集成协议。",
+    "code_snippet": "function totalAssets(...) { ... }  // see audit report",
+    "location": "Tranche.sol (totalAssets, totalSupply, maxMint)",
+    "recommendation": "在 `Tranche::maxMint` 中，若 `cdo.maxDeposit` 返回 `type(uint256).max`，则直接返回 `type(uint256).max`，跳过 `convertToShares` 转换。",
+    "tags": [
+      "max-mint",
+      "jrt-nav-below-par",
+      "convert-to-shares-overflow",
+      "tranche",
+      "strata"
+    ],
+    "patterns": [
+      "jrtNav below 1:1 makes convertToShares(type(uint256).max) overflow",
+      "maxMint and mint revert on underwater junior tranche",
+      "integrations relying on maxMint blocked"
+    ]
+  },
+  {
+    "id": "decimals-rounding-predeposit-001",
+    "source": "cyfrin/predeposit.md",
+    "category": "Accounting",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "pUSDeVault",
+    "functions_affected": [
+      "_withdraw"
+    ],
+    "description": "`pUSDeVault::_withdraw` 通过 `sUSDe.previewWithdraw(assets)` 计算需要转出的 sUSDe 数量。`previewWithdraw` 按 ERC-4626 规范向上取整（以确保协议有足够 sUSDe 支付赎回），但此处将向上取整后的值直接转给接收者，导致赎回方向有利于用户而非协议/yUSDe 存款人。",
+    "impact": "每笔 pUSDe 赎回都将略多于数学上应有的 sUSDe 转给用户，随着赎回次数增加持续从 sUSDe 池中漏出价值，损害剩余 yUSDe 存款人收益。",
+    "code_snippet": "// After entering the yield phase, `pUSDeVault::_withdraw` computes the sUSDe balance required to cover a redemption by cal",
+    "location": "pUSDeVault.sol (_withdraw)",
+    "recommendation": "将 `previewWithdraw`（向上取整）替换为 `convertToShares`（向下取整）来计算转出给用户的 sUSDe 数量，使舍入方向有利于协议。",
+    "tags": [
+      "preview-withdraw",
+      "pusde-vault",
+      "susde-rounding",
+      "erc-4626-ceil",
+      "yield-leak"
+    ],
+    "patterns": [
+      "_withdraw uses previewWithdraw (round up) for sUSDe sent to user",
+      "rounded-up sUSDe transfer favors redeemer over pool",
+      "repeated redemptions drain sUSDe from yUSDe holders"
+    ]
+  },
+  {
+    "id": "decimals-rounding-yieldfi-001",
+    "source": "cyfrin/yieldfi.md",
+    "category": "Accounting",
+    "severity": "Medium",
+    "severity_level": 2,
+    "contract_name": "YToken",
+    "functions_affected": [
+      "previewMint",
+      "previewWithdraw"
+    ],
+    "description": "L2 `YToken` 合约中 `previewMint` 和 `previewWithdraw` 的自定义实现使用整除（向零取整），取整方向有利于用户。EIP-4626 安全建议明确规定这两个函数应向上取整（有利于金库），以防止价值漏损。",
+    "impact": "每笔铸造和提款操作都给用户略微有利的条件，在高交易量或自动化场景下积累为持续的价值泄漏。",
+    "code_snippet": "function previewMint(...) { ... }  // see audit report",
+    "location": "YToken.sol (previewMint, previewWithdraw)",
+    "recommendation": "更新 `previewMint` 和 `previewWithdraw`，使用 `Math.Rounding.Ceil` 方向，确保取整有利于金库，参照 OpenZeppelin ERC-4626 参考实现。",
+    "tags": [
+      "preview-mint",
+      "preview-withdraw",
+      "ytoken",
+      "eip-4626-rounding",
+      "yieldfi-l2"
+    ],
+    "patterns": [
+      "L2 YToken previewMint and previewWithdraw use truncating division",
+      "rounding favors user not vault per EIP-4626 guidance",
+      "value leaks on each mint and withdraw at scale"
+    ]
+  }
+]

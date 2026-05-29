@@ -1,0 +1,29 @@
+[
+  {
+    "id": "upgrade-config-Vesu-001",
+    "source": "sherlockPDFTXT/Vesu.txt",
+    "category": "Upgrade / Config",
+    "severity": "High",
+    "severity_level": 3,
+    "contract_name": "Migrator",
+    "functions_affected": [
+      "migrate_position_from_v2",
+      "migrate_position_from_v1"
+    ],
+    "description": "迁移合约（migrator）在执行仓位迁移时，未验证调用者是否为仓位的实际所有者。`migrate_position_from_v2` 接受 `from_user` 参数，却没有检查 `get_contract_address() == from_user`。若用户曾将迁移合约委托（delegate）管理其 V1/V2 仓位，攻击者可传入任意受害者地址作为 `from_user`，借助闪电贷机制在无授权的情况下对受害者的仓位执行迁移。",
+    "impact": "攻击者可在未经授权的情况下迁移任何曾经委托过迁移合约的用户仓位，导致用户资产被窃取。所有尚未撤销委托授权的用户都面临持续风险。",
+    "code_snippet": "fn migrate_position_from_v2(..., from_user, ...) {\n    // missing: assert(get_contract_address() == from_user)\n    let (_, _, debt) = from_pool.position(..., from_user);\n}",
+    "location": "Vesu migrator (migrate_position_from_v2)",
+    "recommendation": "在迁移函数内部添加严格的所有权断言，确保只有仓位实际所有者才能发起迁移。同时，建议在迁移成功后自动撤销迁移合约权限，或强制要求用户显式重新授权，以减少后续攻击面。",
+    "tags": [
+      "unauthorized-migration",
+      "missing-ownership-check",
+      "flash-loan-position-theft",
+      "delegate-migrator-abuse"
+    ],
+    "patterns": [
+      "from_user not verified as caller",
+      "arbitrary victim address in migration params"
+    ]
+  }
+]
