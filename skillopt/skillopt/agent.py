@@ -1,8 +1,9 @@
-"""凍結的 QA agent。
+"""凍結的智能合約安全審計 agent。
 
-這個 agent 不會被訓練。它唯一可調整的輸入就是技能文字,該文字會被注入到
-system prompt。給定一個任務項目,它會產生答案;我們記錄一份輕量的軌跡供
-optimizer 從中學習。
+此 agent 不會被訓練。唯一可調整的輸入是技能文字（audit checklist），
+注入到 system prompt。給定一個含漏洞的 Solidity code snippet，它會輸出
+漏洞類型（Vulnerability Type）、分類路徑（Category），及簡短說明。
+評分器（evaluator）隨後比對預測文字中是否出現預期的 tags。
 """
 
 from __future__ import annotations
@@ -14,15 +15,20 @@ from typing import Any
 from .config import Config
 from .llm import ChatLLM
 
-# 注意:給模型的 prompt 字串刻意保留英文,實務上對模型推理較穩定。
 BASE_INSTRUCTIONS = (
-    "You are a question-answering agent. You are given a question and reference "
-    "context made of titled paragraphs. Answer using only the context.\n"
-    "Output ONLY the final answer on a single line, with no explanation, no "
-    "prefix, and no trailing punctuation. For yes/no questions answer 'yes' or 'no'."
+    "You are a smart contract security auditor.\n"
+    "Below is your audit skill (checklist). Apply it strictly.\n\n"
+    "# Skill\n"
+    "{skill}"
 )
 
-ANSWER_TAG = "Final answer:"
+USER_TEMPLATE = (
+    "{question}\n\n"
+    "Respond with:\n"
+    "- Vulnerability Type: (exact tag from taxonomy, e.g. hardcoded-overpayment)\n"
+    "- Category: (taxonomy path, e.g. accounting/payout-errors/hardcoded-overpayment, ≥3 layers)\n"
+    "- Explanation: (1-2 sentences)\n"
+)
 
 
 @dataclass
@@ -35,33 +41,17 @@ class Trajectory:
     correct: bool = False  # 由 evaluator 填入
 
 
-def _build_user_prompt(item: dict[str, Any]) -> str:
-    return (
-        f"Context:\n{item['context']}\n\n"
-        f"Question: {item['question']}\n\n"
-        f"{ANSWER_TAG}"
-    )
-
-
 def _parse_answer(raw: str) -> str:
-    """擷取答案,容忍模型加上前綴或多餘行數的情況。"""
-    text = raw.strip()
-    if ANSWER_TAG.lower() in text.lower():
-        idx = text.lower().rindex(ANSWER_TAG.lower())
-        text = text[idx + len(ANSWER_TAG):].strip()
-    # 只保留第一行非空白內容。
-    for line in text.splitlines():
-        line = line.strip()
-        if line:
-            return line
-    return text
+    """保留完整回應，讓 tag recall 評分器做子字串比對。"""
+    return raw.strip()
 
 
 def run_one(llm: ChatLLM, cfg: Config, skill: str, item: dict[str, Any]) -> Trajectory:
-    system = f"{BASE_INSTRUCTIONS}\n\n# Skill\n{skill}".strip()
+    system = BASE_INSTRUCTIONS.format(skill=skill).strip()
+    user = USER_TEMPLATE.format(question=item["question"])
     raw = llm.chat(
         system,
-        _build_user_prompt(item),
+        user,
         model=cfg.model.target_model,
         temperature=cfg.model.temperature,
         max_tokens=cfg.model.max_tokens,
@@ -77,7 +67,7 @@ def run_one(llm: ChatLLM, cfg: Config, skill: str, item: dict[str, Any]) -> Traj
 
 def run_batch(llm: ChatLLM, cfg: Config, skill: str,
               items: list[dict[str, Any]]) -> list[Trajectory]:
-    """平行 rollout agent 跑過所有項目(API 呼叫是 IO-bound)。"""
+    """平行 rollout agent 跑過所有項目（API 呼叫是 IO-bound）。"""
     workers = max(1, cfg.train.workers)
     if workers == 1:
         return [run_one(llm, cfg, skill, it) for it in items]

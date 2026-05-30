@@ -1,0 +1,27 @@
+benchmark: audit
+metric: recall
+# seed_skill 留空；透過 --seed-skill-file ../prompts/access-control.txt 在 CLI 載入。
+# 注意：access-control 僅有 10 筆 issues（5 train / 5 val）。
+# 樣本量極少，val recall 波動大；建議將 patience 降低至 2，避免過度優化。
+seed_skill: ""
+
+model:
+  base_url: "https://api.openai.com/v1"
+  api_key_env: "OPENAI_API_KEY"
+  target_model: "gpt-4o"
+  optimizer_model: "gpt-4o"
+  temperature: 0.0
+  optimizer_temperature: 0.7
+  max_tokens: 1024
+  optimizer_max_tokens: 2048
+  timeout: 300.0
+  max_retries: 4
+
+train:
+  num_epochs: 3
+  batch_size: 5
+  val_size: 5         # 10 個 Access Control issues 的一半
+  workers: 4
+  patience: 2         # 樣本量少，提早停止以防過擬合
+  min_improvement: 0.0
+  seed: 42

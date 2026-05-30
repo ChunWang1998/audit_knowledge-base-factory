@@ -1,0 +1,25 @@
+benchmark: audit
+metric: recall
+# seed_skill 留空；透過 --seed-skill-file ../prompts/upgrade-config.txt 在 CLI 載入。
+seed_skill: ""
+
+model:
+  base_url: "https://api.openai.com/v1"
+  api_key_env: "OPENAI_API_KEY"
+  target_model: "gpt-4o"
+  optimizer_model: "gpt-4o"
+  temperature: 0.0
+  optimizer_temperature: 0.7
+  max_tokens: 1024
+  optimizer_max_tokens: 2048
+  timeout: 300.0
+  max_retries: 4
+
+train:
+  num_epochs: 5
+  batch_size: 8
+  val_size: 15        # 30 個 Upgrade / Config issues 的一半
+  workers: 8
+  patience: 4
+  min_improvement: 0.0
+  seed: 42
