@@ -83,3 +83,7 @@ a. 可能需要透過graph 來進行分析, 生成檔案讓找漏洞更簡單
 - contract_summary.md (state vars, functions, modifiers, external calls)
 - call_graph.dot + inheritance tree
 - data-flow diagrams
+
+
+TODO:
+- get avaiable api key

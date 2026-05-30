@@ -6,7 +6,8 @@
     "start": "npx tsx index.ts",
     "check": "npx tsx index.ts",
     "fetch-github": "npx tsx fetchKeyFromGithub.ts",
-    "verify": "npx tsx verifyKey.ts"
+    "verify": "npx tsx verifyKey.ts",
+    "verify-cost": "npx tsx verifyKeyRemainingCost.ts"
   },
   "dependencies": {
     "openai": "^5.12.0"
