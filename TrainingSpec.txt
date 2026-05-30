@@ -190,55 +190,122 @@ for the original benchmark only.
   - Explanation: (1-2 sentences)
   """
 
-The skill (prompts/*.txt) is injected into BASE_INSTRUCTIONS at runtime via
-cfg.seed_skill (loaded from file in the audit config).
+The skill (prompts/*.txt) is injected into BASE_INSTRUCTIONS at runtime.
+Loading mechanism: pass --seed-skill-file <path> to skillopt-train; the CLI
+reads the file and sets cfg.seed_skill. Keep seed_skill: "" in the YAML.
 
-### 2d. Replace Evaluator (skillopt/evaluator.py)
+max_tokens is raised to 1024 in audit configs (agent must emit Vulnerability
+Type + Category path + Explanation, not just a single-line answer).
 
-Use tag recall instead of EM/F1:
+### 2d. Replace Evaluator (skillopt/evaluator.py) (DONE)
 
-  def score(predicted_text, expected_tags) -> float:
-      predicted_lower = predicted_text.lower()
-      for tag in expected_tags:
-          if tag.lower().replace("-", " ") in predicted_lower:
-              return 1.0
-      return 0.0
+Two additions are made on top of the existing EM/F1 evaluator:
 
-Wire recall into EvalResult so cfg.metric = "recall" works with trainer.py.
+1. tag_recall() — word-boundary match (NOT bare substring) to avoid false
+   positives. e.g. tag "reentrancy" must NOT match "reentrancy-guard":
+
+     def tag_recall(predicted_text, tags) -> float:
+         _BOUNDARY = r"(?<![a-z0-9_-])", r"(?![a-z0-9_-])"
+         pred = predicted_text.lower()
+         for tag in tags:
+             tag_lower = tag.lower()
+             for form in {tag_lower, tag_lower.replace("-", " ")}:
+                 pattern = _BOUNDARY[0] + re.escape(form) + _BOUNDARY[1]
+                 if re.search(pattern, pred):
+                     return 1.0
+         return 0.0
+
+   Decision: two surface forms (hyphenated + space) + custom lookaround boundary.
+   - Two forms: model may output "hardcoded-overpayment" or "hardcoded overpayment".
+   - Custom boundary (?<![a-z0-9_-]) instead of \\b: \\b fires at the y/-
+     junction in "reentrancy-guard" (hyphen is non-word char); explicit exclusion
+     of [-] blocks that false positive.
+
+2. evaluate_recall(trajectories) — sets t.correct via tag recall (not EM) so
+   the optimizer's failure analysis focuses on missed vulnerability tags.
+   Returns EvalResult with recall field populated.
+
+3. EvalResult gains a recall: float = 0.0 field.
+   EvalResult.metric() now accepts "recall" in addition to "em" / "f1".
+
+4. The existing evaluate() still runs EM/F1 (HotpotQA backward compat) but
+   also computes recall as a side-channel metric in the same pass.
+
+trainer.py dispatches to evaluate_recall() when cfg.metric == "recall",
+otherwise uses the original evaluate(). The evaluate_skill() function in
+trainer.py also respects cfg.metric for test-set scoring.
 
 Target: val recall ≥ 0.80 (80% of validation issues correctly tagged).
 
-### 2e. Config Files
+Note on patterns field: each issue also has a "patterns" field. This is
+intentionally excluded from both the agent input and the ground truth. Tags
+are the canonical ground truth; patterns are supplementary and would risk
+over-specificity if used as additional eval targets.
 
-Create skillopt/configs/audit/accounting.yaml (clone from
-configs/hotpotqa/default.yaml, adjust fields to match Config dataclass):
+### 2e. Config Files (DONE)
+
+Config files live at skillopt/configs/audit/{category}.yaml (created).
+Load the seed skill at runtime via --seed-skill-file, not inside the YAML:
 
   benchmark: audit
   metric: recall
-  seed_skill: ""   # leave empty; load from ../prompts/accounting.txt in a wrapper, or paste path via CLI
+  seed_skill: ""   # leave empty — always use --seed-skill-file at CLI
 
   model:
     target_model: gpt-4o
     optimizer_model: gpt-4o
     base_url: https://api.openai.com/v1
+    max_tokens: 1024
+    optimizer_max_tokens: 2048
 
   train:
     num_epochs: 5
     batch_size: 10
     val_size: 54        # half of 108 Accounting issues (see manifest.json)
+    workers: 8          # parallel API call workers; tune down if hitting rate limits
     patience: 4
     seed: 42
 
-Repeat per category with matching seed_skill path and val_size from manifest.
+Configs created (val_size from manifest):
+  accounting.yaml         val_size: 54   (108 issues)
+  griefing-attacks.yaml   val_size: 60   (120 issues)
+  dos-liveness.yaml       val_size: 26   (51 issues)
+  token-transfer.yaml     val_size: 18   (36 issues)
+  upgrade-config.yaml     val_size: 15   (30 issues)
+  access-control.yaml     val_size:  5   (10 issues, patience=2, workers=4)
 
-Suggested seed_skill paths (relative to repo root):
-  accounting              → prompts/accounting.txt
-  access-control          → prompts/access-control.txt
-  griefing-attacks        → prompts/griefing-attacks/gas-griefing.txt (or combine sub-prompts)
-  dos-liveness            → prompts/dos-liveness.txt
-  token-transfer          → prompts/token-transfer.txt
-  upgrade-config          → prompts/upgrade-config.txt
-  external-dependencies   → prompts/external-dependencies.txt
+external-dependencies is SKIPPED: only 3 issues total (1 train / 2 val).
+Minimum threshold: do not train categories with fewer than 10 issues.
+These are too few to give the optimizer meaningful signal.
+
+Seed skill paths (pass via --seed-skill-file, relative to skillopt/):
+  accounting              → ../prompts/accounting.txt
+  access-control          → ../prompts/access-control.txt
+  griefing-attacks        → ../prompts/griefing-attacks/gas-griefing.txt
+  dos-liveness            → ../prompts/dos-liveness.txt
+  token-transfer          → ../prompts/token-transfer.txt
+  upgrade-config          → ../prompts/upgrade-config.txt
+
+griefing-attacks strategy: use gas-griefing.txt as the seed skill for the
+first run (covers the largest sub-taxonomy). After training stabilises,
+optionally split into three separate configs (gas / logic / withdrawal).
+Do NOT yet create a combined prompt file.
+
+### 2f. Update Optimizer (skillopt/optimizer.py) (DONE)
+
+This file is NOT listed in the original spec but MUST be changed along with
+agent.py and evaluator.py. The defaults are HotpotQA-specific:
+
+  SEED_SKILL     — was QA ("identify which paragraphs are relevant…")
+                   → now audit ("Inspect Solidity code, identify vulnerability
+                     patterns, output the most specific vulnerability tag…")
+
+  _OPTIMIZER_SYSTEM — was "frozen question-answering agent … multi-hop questions"
+                   → now "frozen smart contract security auditor … vulnerability
+                     patterns, taxonomy, edge cases"
+
+Both are updated in skillopt/optimizer.py. The optimizer_max_tokens is raised
+to 2048 in all audit configs (audit checklists are longer than QA skills).
 
 ## Step 3 — Training Loop (End-to-End)
 
@@ -294,21 +361,51 @@ Test set must never be seen during train or val optimization.
       --config configs/audit/accounting.yaml \
       --split-dir data/audit/accounting \
       --out-root outputs/audit/accounting \
+      --seed-skill-file ../prompts/accounting.txt \
       --metric recall
 
-  # 4. Repeat per category
-  uv run skillopt-train --config configs/audit/access-control.yaml ...
-  uv run skillopt-train --config configs/audit/griefing-attacks.yaml ...
-  uv run skillopt-train --config configs/audit/dos-liveness.yaml ...
-  uv run skillopt-train --config configs/audit/token-transfer.yaml ...
-  uv run skillopt-train --config configs/audit/upgrade-config.yaml ...
+  # 4. Repeat per category (always pass --seed-skill-file and --metric recall)
+  uv run skillopt-train --config configs/audit/griefing-attacks.yaml \
+      --split-dir data/audit/griefing-attacks \
+      --out-root outputs/audit/griefing-attacks \
+      --seed-skill-file ../prompts/griefing-attacks/gas-griefing.txt \
+      --metric recall
 
-  # 5. Final test evaluation (after agent/evaluator adapted)
+  uv run skillopt-train --config configs/audit/dos-liveness.yaml \
+      --split-dir data/audit/dos-liveness \
+      --out-root outputs/audit/dos-liveness \
+      --seed-skill-file ../prompts/dos-liveness.txt \
+      --metric recall
+
+  uv run skillopt-train --config configs/audit/token-transfer.yaml \
+      --split-dir data/audit/token-transfer \
+      --out-root outputs/audit/token-transfer \
+      --seed-skill-file ../prompts/token-transfer.txt \
+      --metric recall
+
+  uv run skillopt-train --config configs/audit/upgrade-config.yaml \
+      --split-dir data/audit/upgrade-config \
+      --out-root outputs/audit/upgrade-config \
+      --seed-skill-file ../prompts/upgrade-config.txt \
+      --metric recall
+
+  uv run skillopt-train --config configs/audit/access-control.yaml \
+      --split-dir data/audit/access-control \
+      --out-root outputs/audit/access-control \
+      --seed-skill-file ../prompts/access-control.txt \
+      --metric recall
+
+  # external-dependencies is SKIPPED (only 3 issues; below 10-issue threshold)
+
+  # 5. Final test evaluation — only after test/items.json is populated.
+  #    Pass --no-test to skip if test set not yet ready.
   uv run skillopt-train \
       --config configs/audit/accounting.yaml \
       --split-dir data/audit/accounting \
       --out-root outputs/audit/accounting \
-      --no-test   # or run test split manually once test/items.json exists
+      --seed-skill-file ../prompts/accounting.txt \
+      --metric recall
+  # (omit --no-test to run test split; requires test/items.json to exist)
 
   # 6. Deploy optimized prompt back to prompts/
   cp outputs/audit/accounting/<run>/best_skill.md ../prompts/accounting.txt
@@ -510,22 +607,54 @@ Audit 用途不需修改。load_split(split_dir, "train"|"val"|"test") 讀取
   - 說明（Explanation）:
   """
 
-技能（prompts/*.txt）在執行時透過 cfg.seed_skill 注入 BASE_INSTRUCTIONS。
+技能（prompts/*.txt）在執行時注入 BASE_INSTRUCTIONS。
+載入機制：在 skillopt-train 傳入 --seed-skill-file <路徑>，CLI 讀取檔案並
+設定 cfg.seed_skill。YAML 中保留 seed_skill: ""。
 
-### 2d. 改寫評分器（skillopt/evaluator.py）
+max_tokens 在 audit configs 中提高至 1024（agent 需要輸出 Vulnerability Type
+＋ Category path ＋ Explanation，而非單行答案）。
 
-改用 tag recall，不用 EM/F1：
+### 2d. 改寫評分器（skillopt/evaluator.py）（已完成）
 
-  def score(predicted_text, expected_tags) -> float:
-      predicted_lower = predicted_text.lower()
-      for tag in expected_tags:
-          if tag.lower().replace("-", " ") in predicted_lower:
-              return 1.0
-      return 0.0
+在現有 EM/F1 評分器之上新增兩個函式：
 
-將 recall 接入 EvalResult，使 cfg.metric = "recall" 能與 trainer.py 配合。
+1. tag_recall() — 使用詞邊界（word boundary）比對，避免假陽性。
+   例如 tag "reentrancy" 不應命中 "reentrancy-guard"：
+
+     def tag_recall(predicted_text, tags) -> float:
+         _BOUNDARY = r"(?<![a-z0-9_-])", r"(?![a-z0-9_-])"
+         pred = predicted_text.lower()
+         for tag in tags:
+             tag_lower = tag.lower()
+             for form in {tag_lower, tag_lower.replace("-", " ")}:
+                 pattern = _BOUNDARY[0] + re.escape(form) + _BOUNDARY[1]
+                 if re.search(pattern, pred):
+                     return 1.0
+         return 0.0
+
+   決策說明：兩種表面形式（帶連字號 + 空格）加上自定義 lookaround 邊界。
+   - 兩種形式：模型可能輸出 "hardcoded-overpayment" 或 "hardcoded overpayment"。
+   - 自定義邊界 (?<![a-z0-9_-]) 而非 \\b：\\b 在 "reentrancy-guard" 中的
+     y/- 交界點仍會觸發（因為 - 是非詞字元）；明確排除 [-] 可避免假陽性。
+
+2. evaluate_recall(trajectories) — 以 tag recall 設定 t.correct（非 EM），
+   使 optimizer 的失敗分析聚焦於「漏掉的漏洞 tag」。
+   回傳帶有 recall 欄位的 EvalResult。
+
+3. EvalResult 新增 recall: float = 0.0 欄位。
+   EvalResult.metric() 現在也接受 "recall"（除了原有的 "em"/"f1"）。
+
+4. 現有 evaluate() 保留 EM/F1（維持 HotpotQA 向後相容），同時也計算 recall
+   作為附帶指標。
+
+trainer.py 在 cfg.metric == "recall" 時呼叫 evaluate_recall()，否則使用
+原本的 evaluate()。evaluate_skill() 同樣遵循 cfg.metric 進行 test set 評分。
 
 目標：val recall ≥ 0.80（validation set 80% 召回率）。
+
+patterns 欄位說明：每筆 issue 另有 patterns 欄位，刻意不納入 agent 輸入
+或 ground truth。tags 是標準答案；patterns 是補充資訊，若用作評分目標
+可能導致過度特異化（over-specificity）。
 
 ### 2e. Config 檔
 
@@ -548,16 +677,43 @@ Audit 用途不需修改。load_split(split_dir, "train"|"val"|"test") 讀取
     patience: 4
     seed: 42
 
-每個類別各建一份 config，對應各自的 seed_skill 路徑與 manifest 中的 val_size。
+Config 檔案已建立於 skillopt/configs/audit/{category}.yaml（已完成）：
+  accounting.yaml         val_size: 54   (108 筆)
+  griefing-attacks.yaml   val_size: 60   (120 筆)
+  dos-liveness.yaml       val_size: 26   (51 筆)
+  token-transfer.yaml     val_size: 18   (36 筆)
+  upgrade-config.yaml     val_size: 15   (30 筆)
+  access-control.yaml     val_size:  5   (10 筆，patience=2，workers=4)
 
-建議 seed_skill 路徑（相對 repo 根目錄）：
-  accounting              → prompts/accounting.txt
-  access-control          → prompts/access-control.txt
-  griefing-attacks        → prompts/griefing-attacks/gas-griefing.txt（或合併子 prompt）
-  dos-liveness            → prompts/dos-liveness.txt
-  token-transfer          → prompts/token-transfer.txt
-  upgrade-config          → prompts/upgrade-config.txt
-  external-dependencies   → prompts/external-dependencies.txt
+external-dependencies 略過：僅 3 筆（1 train / 2 val）。
+最小門檻：issues 總數 < 10 的類別不訓練。
+
+seed_skill 路徑（透過 --seed-skill-file 傳入，相對 skillopt/ 目錄）：
+  accounting              → ../prompts/accounting.txt
+  access-control          → ../prompts/access-control.txt
+  griefing-attacks        → ../prompts/griefing-attacks/gas-griefing.txt
+  dos-liveness            → ../prompts/dos-liveness.txt
+  token-transfer          → ../prompts/token-transfer.txt
+  upgrade-config          → ../prompts/upgrade-config.txt
+
+griefing-attacks 策略：初期用 gas-griefing.txt 作為種子（涵蓋最大子分類）。
+分數穩定後再視需要拆成三份 config（gas / logic / withdrawal）各自優化。
+
+### 2f. 改寫 Optimizer（skillopt/optimizer.py）（已完成）
+
+此檔案原始 Spec 未提及，但**必須**與 agent.py / evaluator.py 一同修改：
+
+  SEED_SKILL — 原為 QA 語境（"identify which paragraphs are relevant…"）
+               → 改為審計語境（"Inspect Solidity code, identify vulnerability
+                 patterns, output the most specific vulnerability tag…"）
+
+  _OPTIMIZER_SYSTEM — 原為「凍結的 QA agent…multi-hop questions」
+               → 改為「凍結的智能合約安全審計師…vulnerability patterns、
+                 taxonomy、edge cases」
+
+兩者已更新於 skillopt/optimizer.py。
+optimizer_max_tokens 在所有 audit config 中提高至 2048（審計 checklist 比
+QA skill 更長）。
 
 ## Step 3 — 完整訓練流程
 
@@ -613,21 +769,51 @@ Test set 在 train 與 val 優化過程中絕不可被看到。
       --config configs/audit/accounting.yaml \
       --split-dir data/audit/accounting \
       --out-root outputs/audit/accounting \
+      --seed-skill-file ../prompts/accounting.txt \
       --metric recall
 
-  # 4. 對每個類別重複
-  uv run skillopt-train --config configs/audit/access-control.yaml ...
-  uv run skillopt-train --config configs/audit/griefing-attacks.yaml ...
-  uv run skillopt-train --config configs/audit/dos-liveness.yaml ...
-  uv run skillopt-train --config configs/audit/token-transfer.yaml ...
-  uv run skillopt-train --config configs/audit/upgrade-config.yaml ...
+  # 4. 對每個類別重複（必須每次傳入 --seed-skill-file 與 --metric recall）
+  uv run skillopt-train --config configs/audit/griefing-attacks.yaml \
+      --split-dir data/audit/griefing-attacks \
+      --out-root outputs/audit/griefing-attacks \
+      --seed-skill-file ../prompts/griefing-attacks/gas-griefing.txt \
+      --metric recall
 
-  # 5. test set 最終評估（agent/evaluator 改寫完成後）
+  uv run skillopt-train --config configs/audit/dos-liveness.yaml \
+      --split-dir data/audit/dos-liveness \
+      --out-root outputs/audit/dos-liveness \
+      --seed-skill-file ../prompts/dos-liveness.txt \
+      --metric recall
+
+  uv run skillopt-train --config configs/audit/token-transfer.yaml \
+      --split-dir data/audit/token-transfer \
+      --out-root outputs/audit/token-transfer \
+      --seed-skill-file ../prompts/token-transfer.txt \
+      --metric recall
+
+  uv run skillopt-train --config configs/audit/upgrade-config.yaml \
+      --split-dir data/audit/upgrade-config \
+      --out-root outputs/audit/upgrade-config \
+      --seed-skill-file ../prompts/upgrade-config.txt \
+      --metric recall
+
+  uv run skillopt-train --config configs/audit/access-control.yaml \
+      --split-dir data/audit/access-control \
+      --out-root outputs/audit/access-control \
+      --seed-skill-file ../prompts/access-control.txt \
+      --metric recall
+
+  # external-dependencies 略過（僅 3 筆，低於 10 筆門檻）
+
+  # 5. test set 最終評估（需先建立 test/items.json）
+  #    尚未準備好 test set 時加上 --no-test 略過。
   uv run skillopt-train \
       --config configs/audit/accounting.yaml \
       --split-dir data/audit/accounting \
       --out-root outputs/audit/accounting \
-      --no-test   # 或手動跑 test split（需先建立 test/items.json）
+      --seed-skill-file ../prompts/accounting.txt \
+      --metric recall
+  # （不加 --no-test 即執行 test split）
 
   # 6. 部署優化後 prompt 回 prompts/
   cp outputs/audit/accounting/<run>/best_skill.md ../prompts/accounting.txt

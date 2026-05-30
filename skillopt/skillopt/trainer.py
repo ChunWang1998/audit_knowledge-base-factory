@@ -35,9 +35,15 @@ class Trainer:
         self.version = 0
 
     # -- 評估輔助 -----------------------------------------------------------
+    def _eval_fn(self):
+        """根據 cfg.metric 選擇對應的評分函式。"""
+        if self.cfg.metric == "recall":
+            return evaluator.evaluate_recall
+        return evaluator.evaluate
+
     def _val_metric(self, skill: str, val_items: list) -> evaluator.EvalResult:
         trajs = agent.run_batch(self.llm, self.cfg, skill, val_items)
-        return evaluator.evaluate(trajs)
+        return self._eval_fn()(trajs)
 
     def _save_skill(self, skill: str, tag: str) -> None:
         self.version += 1
@@ -60,7 +66,8 @@ class Trainer:
         best_skill = skill
         self._save_skill(skill, "seed")
         print(f"[baseline] val {metric_name}={best_metric:.4f} "
-              f"(em={base.em:.4f} f1={base.f1:.4f}) on {base.n} items")
+              f"(em={base.em:.4f} f1={base.f1:.4f} recall={base.recall:.4f}) "
+              f"on {base.n} items")
 
         no_improve = 0
         step = 0
@@ -71,7 +78,7 @@ class Trainer:
                 step += 1
                 # 1. 用目前最佳技能在 train batch 上 rollout
                 trajs = agent.run_batch(self.llm, self.cfg, best_skill, batch)
-                train_eval = evaluator.evaluate(trajs)
+                train_eval = self._eval_fn()(trajs)
 
                 # 2. 依軌跡證據提出一次有界編輯
                 candidate = optimizer.propose_skill(
@@ -104,7 +111,7 @@ class Trainer:
                     no_improve = 0
                     state = optimizer.OptimizerState()  # 有進展就清空拒絕記憶
                     print(f"[step {step}] ACCEPT  val {metric_name}={best_metric:.4f} "
-                          f"(train_f1={train_eval.f1:.3f})")
+                          f"(train_{metric_name}={train_eval.metric(metric_name):.3f})")
                 else:
                     no_improve += 1
                     state.remember_rejection(candidate)
@@ -128,6 +135,7 @@ class Trainer:
 
 def evaluate_skill(cfg: Config, llm: ChatLLM, skill: str,
                    items: list) -> evaluator.EvalResult:
-    """在固定技能上對某個(test)集評分——訓練後使用。"""
+    """在固定技能上對某個（test）集評分——訓練後使用。"""
     trajs = agent.run_batch(llm, cfg, skill, items)
-    return evaluator.evaluate(trajs)
+    eval_fn = evaluator.evaluate_recall if cfg.metric == "recall" else evaluator.evaluate
+    return eval_fn(trajs)
