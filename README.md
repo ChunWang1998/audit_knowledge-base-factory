@@ -90,3 +90,17 @@ TODO:
 - 新增peckshield and credSheild
 - list.txt 3個train 3個評分(大量參考實際audit 結果)
 - 問grok 怎麼透過skillopt 對list.txt 的內容進行audit, 並且前提是只有supergrok 的訂閱下(沒有openai)
+
+GitHub https://github.com/ChunWang1998/audit_knowledge-base-factory/tree/main 這是我用來訓練用來做smart contract audit prompt 的repo, 我從dataSetResouce/ 找出一些內容列在list.ts中, 我想要拿list.ts 中public 的repo 拿來做prompt 的訓練, 訓練方式是用 skillopt/ 的程式碼來訓練出各個vulnerability type的prompt(參考knowledgeBase/ 的分類).  在skillopt 訓練出來的prompt 會拿來替代目前prompts/ 的內容.
+
+
+
+訓練重點是訓練出來的prompt 應該要能從public repo 找到audit report的問題, 例如Aave labs: https://github.com/aave/aave-v4/tree/dc31f9a4d54c0503093ef6939e6e8a8d2586709d 中, 應該要能夠用prompts 找到shrelock aave labs pdf 中的findings, 這個可以拿來當作訓練用的分數標準
+
+
+
+給出詳細實作流程, 以及如何解決"skillopt 是用openai api key 但我只有訂閱grok 的 supergrok" 這個問題
+
+
+
+可以完全忽略 auditnotes/, fetchfreeOpenapikey/ immunifi/
