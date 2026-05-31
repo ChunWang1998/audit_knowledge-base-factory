@@ -21,25 +21,22 @@ from .llm import ChatLLM
 
 # 注意:種子技能與 optimizer 的 system prompt 刻意保留英文,對模型較穩定。
 SEED_SKILL = (
-    "Inspect the provided Solidity code carefully.\n"
-    "Identify any vulnerability patterns present.\n"
-    "Output the most specific vulnerability tag supported by the code.\n"
-    "Common categories: accounting, access-control, griefing-attacks, "
-    "dos-liveness, token-transfer, upgrade-config."
+    "Read the question carefully and identify which paragraphs are relevant. "
+    "Combine facts across paragraphs when the question requires multiple hops. "
+    "Give the most specific answer supported by the context."
 )
 
 _OPTIMIZER_SYSTEM = (
-    "You are a prompt optimizer. You improve a natural-language SKILL (audit "
-    "checklist) that is given to a frozen smart contract security auditor agent. "
-    "You cannot change the model; you can only edit the skill text.\n\n"
+    "You are a prompt optimizer. You improve a natural-language SKILL that is "
+    "given to a frozen question-answering agent. You cannot change the model; "
+    "you can only edit the skill text.\n\n"
     "Principles:\n"
     "- Make a SMALL, targeted edit grounded in the failures shown. Do not rewrite "
     "everything; keep what already works.\n"
-    "- Add concrete, general guidance (how to detect vulnerability patterns, apply "
-    "the taxonomy, identify edge cases) — never memorise specific contracts or "
-    "answers from the training set.\n"
-    "- Keep the skill concise (aim for under 300 words). Prefer imperative bullet "
-    "points organised by vulnerability category.\n"
+    "- Add concrete, general guidance (how to read context, resolve multi-hop "
+    "questions, format answers) — never memorize specific answers or facts.\n"
+    "- Keep the skill concise (aim for under 200 words). Prefer imperative bullet "
+    "points.\n"
     "- Output ONLY the full revised skill text. No preamble, no explanation, no "
     "code fences."
 )
