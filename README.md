@@ -86,4 +86,7 @@ a. 可能需要透過graph 來進行分析, 生成檔案讓找漏洞更簡單
 
 
 TODO:
-- get avaiable api key
+- 整理 list.txt, hacken, sherlock (可以透過要求fetch 後的資料的內部內容確保ai 沒有亂給? 例如要給readme 第一個字)
+- 新增peckshield and credSheild
+- list.txt 3個train 3個評分(大量參考實際audit 結果)
+- 問grok 怎麼透過skillopt 對list.txt 的內容進行audit, 並且前提是只有supergrok 的訂閱下(沒有openai)
