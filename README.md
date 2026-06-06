@@ -77,44 +77,12 @@ generate a report.txt, 根據 @submitField.txt 來完成 @issues.txt 提到的is
 - 在cursor run 的篩選部分, 可以把篩選理由也放進prompt
 - 從拿去codebase 做issue review 產生的review.txt 來優化prompt, 不過可能要多搜集一點review.txt 才知道prompt 會犯什麼通病
 
-## target repo: 要更有效的go through 整份repo 來找issue
-a. 可能需要透過graph 來進行分析, 生成檔案讓找漏洞更簡單
--> run static analysis to create summaries and graphs from Slither:
-- contract_summary.md (state vars, functions, modifiers, external calls)
-- call_graph.dot + inheritance tree
-- data-flow diagrams
-
-
-TODO:
-- 整理 list.txt, hacken, sherlock (可以透過要求fetch 後的資料的內部內容確保ai 沒有亂給? 例如要給readme 第一個字)
-- 新增peckshield and credSheild
-- list.txt 3個train 3個評分(大量參考實際audit 結果)
-- 問grok 怎麼透過skillopt 對list.txt 的內容進行audit, 並且前提是只有supergrok 的訂閱下(沒有openai)
-
-GitHub https://github.com/ChunWang1998/audit_knowledge-base-factory/tree/main 
-這是我用來訓練用來做smart contract audit prompt 的repo, 我從dataSetResouce/ 找出一些內容列在datasetResource/list.txt中, 我想要拿list.txt 中public 的repo 拿來做prompt 的訓練, 訓練方式是用 skillopt/ 的程式碼來訓練出各個vulnerability type的prompt(參考knowledgeBase/ 的分類:
-knowledgeBase/
-├── access-control/
-├── accounting/
-├── dos-liveness/
-├── external-dependencies/
-├── griefing-attacks/
-├── token-transfer/
-└── upgrade-config/
-). 在skillopt 訓練出來的prompt 會拿來替代目前prompts/ 的內容.
- 
-訓練重點是訓練出來的prompt 應該要能從public repo 找到audit report的問題, 例如Aave labs: https://github.com/aave/aave-v4/tree/dc31f9a4d54c0503093ef6939e6e8a8d2586709d 中, 應該要能夠用prompts 找到shrelock aave labs pdf 中的findings, 這個可以拿來當作訓練用的分數標準
- 
-進行訓練的時候應該是直接到該repo 去測試, 而不是把每個repo 整理成一個單一資料樣例, 不然會很侷限訓練出來的prompt, 會沒辦法看到整個repo 而被限縮在精簡的內容
-
-給出詳細實作流程, 具體說明如何將pdf 檔案找到的issue 轉化成訓練與評分標準, 如何用產出的 prompt 去掃提供的  commit
-
-先挑一個 category（建議 access-control）。
-先做出一個能用工具掃完整 repo 並輸出正確格式的簡單 AuditAgent，拿 Aave commit 測試看看目前會漏什麼。
-再把 optimizer loop 接上去。
-一開始 batch 設很小、epoch 別太多，先控制成本
- 
-可以完全忽略 auditnotes/, fetchfreeOpenapikey/ immunifi/
-
-
-https://grok.com/c/c03712f4-1716-4ddd-ab34-24e04cadc218?rid=8c6ae4ba-c690-41ef-a65c-cc653e30b19c
+目前訓練效果不佳 因為消耗的token 太多, 而且因為一定要求要有找到issue 所以會一直訓練下去
+不要訓練prompt 了
+- 針對比較重要的類別
+- 手動去修改prompt
+- 善用db
+- 與其創造倒不如用很多種prompt 讓AI產生上百個prompt 去測試已知? 然後一直合併優化
+- 或是確保每個issue 都能找到再進行下一步
+- 用不同llm 來多測試個幾次
+- 一樣從兩個角度出發: 怎麼訓練出好的prompt 和怎麼有效的用現有的prompt 來進行audit
