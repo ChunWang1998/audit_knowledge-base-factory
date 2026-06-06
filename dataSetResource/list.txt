@@ -6,8 +6,281 @@ Aegis: https://github.com/Loggy/aegis-contracts/tree/c65bce4dba50cb1064db0dffef5
 Aegis.im: https://github.com/Aegis-im/aegis-contracts/tree/eaaf21ec7f3a9bf30a2aadd7118499b7bcf43681
 Axion: https://github.com/AXION-MONEY/liquidity-amo/tree/9a9adab905878a3a8c4fbe7c0851354185d8466a
 Cork: https://github.com/Cork-Technology/Depeg-swap/tree/d4fcdd524deb5d07a7ccfd6eb49ba5157ed42642
+Crestal Network: https://github.com/crestalnetwork/crestal-omni-contracts/tree/dc45e98af5e247dce5bbe53b0bd5b1f256884f84
+Malda: https://github.com/malda-protocol/malda-lending/tree/0f62f27fbfc8a69e256dbbd45244450c9468cd80
+Notional: https://github.com/notional-finance/notional-exponent/tree/eb32a88cfad5efdf5f3a2719e1ff3581a37e3d59
+Notional exponent: https://github.com/notional-finance/notional-exponent/tree/0096f1f64071cafbf20062a7c092c6ec89c28275
+Perennial: https://github.com/equilibria-xyz/perennial-v2/tree/1beb10a3fe23a8a594b4275d376e261dffa811c2
+seamless: https://github.com/seamless-protocol/leverage-tokens/tree/23896d613d8509c785bc419851f6137647e8b610
+symmio: https://github.com/SYMM-IO/token/tree/1d014156b1d9f0ab3259026127b9220eb2da3292
+vesu(2): https://github.com/ForgeYields/starknet_vault_kit/tree/e22d6b0887d01478b983482e235d7843c818f314
+vesu: https://github.com/vesuxyz/vesu-v2-periphery/tree/c07c27212e5d1da8ee2f03d0c6dced8f3f458c2a
 
-## private
-ApeBond
-Atleta network
-BeraBorrow
+
+## Classified Known Issues (public repos + 0605 updates as unified train)
+# No more train/test split. All listed public repos (original Aave/Aegis/Axion/Cork + 0605 update repos: Crestal/Malda/Notional-exponent/Perennial/Seamless/Symmio/Vesu) are used for training prompts.
+# The focus is to train prompts that can find **all** known issues (not just half).
+# We train each category separately (--category).
+# Train issues are also the test issues (same set used for verification/eval).
+#
+# Format:
+# category:
+#   - repo (short-commit): issue-id
+#     (brief description + key file if known + severity if available)
+#
+# Overlaps are allowed (one issue can appear in multiple relevant categories).
+# 0605 update: issues extracted from corresponding Sherlock reports in dataSetResource/sherlockPDFTXT/ for the commits listed under Public.
+
+dos-liveness:
+  - aave labs (dc31f9a4...): unbounded-positions-dos
+    (while(true) in _processUserAccountData / _notifyRiskPremiumUpdate over user positions,
+     per-iteration external oracle + hub calls, permissionless bloat to MAX_USER_RESERVES_LIMIT,
+     OOG/grief on liquidationCall, withdraw, borrow, risk-premium update, etc.)
+  - aegis (c65bce4...): h1-dos-withdrawals
+    (attacker deposits/mints on behalf to bloat userLockedShares[] array; withdraw/updateUnlockedShares
+     loops over array → OOG on user withdrawals at no cost to attacker. H-1)
+  - axion (9a9adab...): h4-addliquidity-dos
+    (V3AMO liquidity calc wrong for V3 single-sided LP; attacker unbalanced LP DoS addLiquidity. H-4)
+  - cork (d4fcdd52...): m2-pause-deposits-dos-withdrawals
+    (Admin cannot only pause deposits due to incorrect check; leads to DoSed withdrawals. M-2)
+  - aegis.im (eaaf21ec...): m2-whale-grief-redeem-limit
+    (whale griefs redeem by consuming limit via requests that can be withdrawn/rejected without decrement. M-2)
+  - crestal (dc45e98...): m5-worker-dos-deployment-requests
+    (Worker-Induced Denial-of-Service in Deployment Requests Due to Lack of a Cancellation Mechanism. M-5; files: src/BlueprintCore.sol)
+  - crestal (dc45e98...): m1-hardcoded-requestid-index-lost-requests
+    (createCommonProjectIDAndDeploymentRequest() hardcodes request id index to 0, leading to lost/overwritten user requests (users paid fees). M-1; src/BlueprintCore.sol)
+  - malda (0f62f27...): m7-rebalance-transfer-validation-dos
+    (Incorrect transfer size validation after time window reset can lead to rebalancing DoS. M-7)
+  - malda (0f62f27...): m14-oracle-decimals-dos
+    (MixedPriceOracleV4.sol :: getUnderlyingPrice()/getPrice() will not work for some tokens because API3 and EO oracles return prices using different decimals, causing DOS scenario. M-14; src/oracles/MixedPriceOracleV4.sol)
+  - malda (0f62f27...): m11-no-liquidateexternal-endpoint-from-extension
+    (There is no endpoint for triggering liquidateExternal from extension chain to be executed by proof forwarder. M-11; mTokenGateway + mErc20Host, cross-chain proof forwarder)
+  - notional-exponent (0096f1f...): h6-dos-batch-nonce-overflow
+    (DoS might happen to DineroWithdrawRequestManager#_initiateWithdrawImpl() due to overflow on ++s_batchNonce. H-6)
+  - perennial (1beb10a3...): m2-intent-health-liquidation-inconsistency
+    (Some accounts using Intents to trade might be liquidated while healthy or be unliquidatable while being unhealthy. M-2; packages/periphery/contracts/TriggerOrders/*)
+  - perennial (1beb10a3...): m3-liquidations-blocked-pending-close
+    (Liquidations are temporarily blocked if user's pending position close amount is greater than the latest position size. M-3)
+  - symmio (1d014156...): h1-rewards-distribution-grief-dos
+    (USDC rewards will not be distributed if _updateRewardsStates is triggered too often. H-1; contracts/staking/SymmStaking.sol)
+  - vesu (c07c2721...): m1-dos-certain-ltv-positions
+    (DOS for certain scenarios depending on the LTVs of the 2 positions. M-1; src/liquidate.cairo, src/migrate.cairo)
+  - vesu(2) (e22d6b08...): m2-bridge-middleware-dos-small-donations
+    (Bridge middlewares are prone to DOS from small donations. M-2; packages/vault_allocator/src/adapters/*)
+
+accounting:
+  - aave labs (dc31f9a4...): m1-rounding-riskpremium
+    (updateUserRiskPremium rounding direction (mulDiv) allows repeated small inflation on high-value low-decimal assets;
+     attacker profits, bad debt socialization. M-1)
+  - aave labs (dc31f9a4...): m2-deadshares
+    (high-value low-decimal assets cause significant yield loss/gain due to dead share mechanics in Hub/Spoke. M-2)
+  - axion (9a9adab...): m4-boostprice-precision
+    (precision loss in boostPrice calculation in V3AMO. M-4)
+  - axion (9a9adab...): m1-under-peg
+    (boost can be sold under peg despite code/comments attempting to prevent it via buyback logic. M-1)
+  - cork (d4fcdd52...): h3-lv-fees-proportional-wrong
+    (LV token holders receive proportional fees when they shouldn't; late deposit gets full share. H-3)
+  - cork (d4fcdd52...): h4-incorrect-redeemamount-exchange-rate
+    (Incorrect redeemAmount accounted due to not accounting for exchange rate. H-4)
+  - cork (d4fcdd52...): h5-redemption-assets-not-tracked
+    (Incoming Redemption Assets not tracked when repurchase called. H-5)
+  - cork (d4fcdd52...): h6-steal-excess-funds-vault
+    (Users steal excess funds from Vault due to not decreasing withdrawalPool balances. H-6)
+  - cork (d4fcdd52...): h7-wrong-accounting-locked-ra
+    (Wrong accounting of locked RA when repurchasing DS+PA with RA. H-7)
+  - cork (d4fcdd52...): h8-stuck-funds-redeemexpiredlv
+    (stuck funds when admin new issuance or redeemExpiredLv after certain calls. H-8)
+  - aegis.im (eaaf21ec...): h1-yusd-depeg-insolvency
+    (YUSD will depeg/insolvency as redemption fees disbursed with no collateral backing. H-1)
+  - aegis.im (eaaf21ec...): m1-collateral-stuck-profit
+    (Collateral can get stuck in minting contract or accounted as profit. M-1)
+  - aave (ad00e17d...): l1-deficit-ignored-irm
+    (Deficit ignored as if never borrowed in IRM supply-demand logic, interest rates shift down. L-1)
+  - cork (d4fcdd52...): m6-rebasing-tokens-not-supported
+    (Rebasing tokens not supported, leads to loss of funds. M-6)
+  - malda (0f62f27...): m1-rounding-redeem-drain
+    (Wrong direction of rounding in redeem may lead to drain if exchange rate grows large. M-1; similar to aave risk-premium rounding issues)
+  - notional-exponent (0096f1f...): h3-dinero-batch-overwithdrawal
+    (DineroWithdrawRequestManager vulnerable to token overwithdrawal via batch ID overlap. H-3)
+  - notional-exponent (0096f1f...): h8-pendle-sy-assumption-wrong
+    (Incorrect assumption that one (1) Pendle Standard Yield (SY) token is equal to one (1) Yield Token. H-8; src/staking/PendlePTLib.sol, src/staking/PendlePT.sol)
+  - notional-exponent (0096f1f...): m2-tokensclaimed-calc-blocks-withdraw
+    (Incorrect tokensClaimed calculation in EthenaCooldownHolder::_finalizeCooldown() blocks withdrawals. M-2)
+  - notional-exponent (0096f1f...): m7-rounding-discrepancy-morpho-health-repay
+    (Rounding discrepancy between MorphoLendingRouter::healthFactor and Morpho::repay causes position migration failures. M-7; src/routers/MorphoLendingRouter.sol + AbstractLendingRouter::migratePosition)
+  - notional-exponent (0096f1f...): m9-oeth-strategy-rebasing-not-enabled
+    (OETH Strategy Broken as Rebasing Not Enabled (yield not generated because rebasing turned off, should use wrapped). M-9; OETH strategy / Yield Strategy)
+  - perennial (1beb10a3...): h1-pending-pnl-health-accounting-theft
+    (Anyone can steal all funds from the market due to incorrect health accounting for pending pnl from difference of intent price and market price when multiple intents are used. H-1; packages/core/contracts/libs/InvariantLib.sol, Market.sol)
+  - perennial (1beb10a3...): h2-pending-position-margin-withdraw-grief
+    (InvariantLib uses current position for margin check allowing to withdraw collateral while the position decrease is only pending and can cause unexpected immediate user liquidation. H-2)
+  - perennial (1beb10a3...): h3-intent-fees-not-accounted
+    (Intent orders are guaranteed to execute, but fees from these orders are not accounted in collateral, allowing user to withdraw all collateral ignoring these pending fees. H-3)
+  - perennial (1beb10a3...): m1-vault-settle-lose-profitshares
+    (Vault.settle(account=coordinator) will lose profitShares. M-1; packages/vault/contracts/MakerVault.sol, SolverVault.sol)
+  - seamless (23896d61...): m1-feemanager-timestamp-treasury0
+    (FeeManager#chargeManagementFee fails to init timestamp when treasury == address(0). M-1; src/FeeManager.sol)
+  - seamless (23896d61...): m2-fee-collection-methodology-treasury0
+    (Management fee collection methodology is incorrect when treasury == address(0). M-2; src/FeeManager.sol)
+  - seamless (23896d61...): m3-unused-shares-not-returned-morpho
+    (Unused shares not returned to user in _redeemAndRepayMorphoFlashLoan and may accumulate to a significant amount. M-3; src/lending/MorphoLendingAdapter.sol)
+  - symmio (1d014156...): m2-rewardpertokenpaid-readd-wrong
+    (Readding the reward token causes user-RewardPerTokenPaid to be incorrect for some users, resulting in them receiving too many rewards. M-2; contracts/vesting/Vesting.sol)
+  - vesu(2) (e22d6b08...): m1-ekubo-fee-not-collected-withdraw
+    (Ekubo adapter fee collection flag prevents collection of pending fees on full withdrawal. M-1; packages/vault_allocator/src/adapters/ekubo_adapter/ekubo_adapter.cairo)
+
+griefing-attacks/gas-griefing:
+  - aave labs (dc31f9a4...): position-bloat-gas-grief
+    (position bloat makes normal ops gas-expensive)
+  - aegis (c65bce4...): lockedshares-bloat-gas-grief
+    (array bloat causes gas grief on withdraw/redeem)
+  - cork (d4fcdd52...): m2-pause-deposits-grief (overlaps with dos)
+  - malda (0f62f27...): m2-first-depositor-brick-market
+    (First depositor can brick market by forcing very large borrow rate. M-2)
+  - notional-exponent (0096f1f...): m4-liquidation-frontrun-avoid-1share
+    (Liquidations can be frontrunned to avoid by paying as little as 1 share. M-4)
+  - symmio (1d014156...): m4-dilute-staking-rewards-timeframe
+    (Malicious User can dilute stakingRewards to a longer timeframe. M-4; contracts/staking/SymmStaking.sol)
+  - vesu(2) (e22d6b08...): m2-bridge-middleware-dos-small-donations
+    (Bridge middlewares are prone to DOS from small donations. M-2)
+
+griefing-attacks/withdrawal-griefing:
+  - aave labs (dc31f9a4...): position-bloat-withdrawal-grief
+    (bloat makes withdraw prohibitively expensive)
+  - aegis (c65bce4...): h1-withdrawal-grief
+    (H-1 directly griefs withdrawals)
+  - aegis.im (eaaf21ec...): m2-redeem-limit-grief
+    (whale consumes redeem limit to grief others. M-2)
+  - cork (d4fcdd52...): m2-pause-deposits-dos-withdrawals (grief on withdrawals)
+  - notional-exponent (0096f1f...): m2-tokensclaimed-calc-blocks-withdrawals
+    (Incorrect tokensClaimed calculation blocks withdrawals. M-2)
+  - symmio (1d014156...): m3-badcheck-resetvestingplans-prevent-addliq
+    (Bad check in Vesting.sol::_resetVestingPlans will prevent users from adding additional liquidity in SymmVesting.sol. M-3)
+  - vesu(2) (e22d6b08...): m1-ekubo-fee-prevents-full-withdrawal
+    (Ekubo adapter fee collection flag prevents collection of pending fees on full withdrawal. M-1)
+
+griefing-attacks/logic-griefing:
+  - cork (d4fcdd52...): h8-stuck-funds (stuck funds grief)
+  - aegis.im (eaaf21ec...): m2-whale-grief-redeem-limit
+  - symmio (1d014156...): m3-badcheck-resetvestingplans-prevent-addliq
+    (Bad check in Vesting.sol::_resetVestingPlans will prevent users from adding additional liquidity. M-3)
+  - symmio (1d014156...): m4-dilute-staking-rewards-timeframe
+    (Malicious User can dilute stakingRewards to a longer timeframe. M-4)
+  - vesu(2) (e22d6b08...): m3-bridge-middlewares-claiming-griefed
+    (Bridge middlewares claiming can be griefed. M-3)
+  - crestal (dc45e98...): m1-hardcoded-requestid-index-lost-requests
+    (createCommonProjectIDAndDeploymentRequest() hardcodes request id index to 0, leading to lost/overwritten user requests after fee payment. M-1; src/BlueprintCore.sol)
+
+external-dependencies:
+  - axion (9a9adab...): h2-v2amo-velodrome-incompatible (H-2)
+  - axion (9a9adab...): h3-v3amo-fee-on-burn (H-3)
+  - axion (9a9adab...): m6-mintandsellboost-dex-compat (M-6)
+  - axion (9a9adab...): h4-liquidity-calc (DEX V3)
+  - cork (d4fcdd52...): h1-slippage-protection (AMM, H-1)
+  - cork (d4fcdd52...): h9-flashswap-steal-reserve (FlashSwapRouter, H-9)
+  - cork (d4fcdd52...): m7-amm-liquidity-no-return-check (M-7)
+  - malda (0f62f27...): h1-rebalancer-steal-everclear-custom-receiver
+    (Rebalancer can steal funds from markets by sending to custom receiver through Everclear Bridge. H-1; src/rebalancer/bridges/EverclearBridge.sol, src/rebalancer/Rebalancer.sol)
+  - malda (0f62f27...): m3-migrator-slippage-underestimate
+    (Migrator severely underestimates slippage by using underlying instead of shares. M-3; src/migration/Migrator.sol)
+  - malda (0f62f27...): m5-rebalancer-unallowed-chains-everclear
+    (Rebalancer can send to unallowed destination chains through EverclearBridge. M-5)
+  - malda (0f62f27...): m6-everclear-no-pull-tokens-rebalancer
+    (EverclearBridge does not pull tokens from the Rebalancer, causing all rebalancing operations to fail. M-6)
+  - malda (0f62f27...): m9-rebalancing-broken-everclear
+    (The rebalancing system is broken when everclear bridge contract is used. M-9)
+  - malda (0f62f27...): m15-across-bridge-fail-funds-locked
+    (If AcrossBridging fails, all funds intended for bridging will become locked. M-15; src/rebalancer/bridges/AcrossBridge.sol)
+  - malda (0f62f27...): m16-bridges-dont-support-listed-assets
+    (Bridges don't support all of the listed assets. M-16)
+  - malda (0f62f27...): m11-no-liquidateexternal-endpoint-from-extension
+    (There is no endpoint for triggering liquidateExternal from extension chain to be executed by proof forwarder (cross-chain liquidation broken). M-11; mTokenGateway.sol + proof forwarder / ZkVerifier)
+  - notional-exponent (0096f1f...): h2-morpho-collateral-price-inflate-drain
+    (Attacker can drain the entire suppliers on Morpho market by inflating collateral price. H-2; src/routers/MorphoLendingRouter.sol)
+  - notional-exponent (0096f1f...): h4-morpho-borrow-direct-price-inaccurate
+    (When users borrow directly from Morpho price of the collateral will not be accurate. H-4)
+  - notional-exponent (0096f1f...): h5-curveconvex-migrate-storage-incompatible
+    (migrateRewardPool fails due to Incompatible Storage Design in CurveConvexLib. H-5; src/rewards/ConvexRewardManager.sol)
+  - notional-exponent (0096f1f...): h9-curve-remove-liquidity-hardcoded-useeth
+    (Hardcoded useEth = true in remove_liquidity_one_coin or remove_liquidity lead to stuck. H-9)
+  - notional-exponent (0096f1f...): h11-pendle-pt-expired-missing-slippage
+    (Missing SlippageProtection in Expired PT Redemption Causes User Fund Loss. H-11; src/staking/PendlePT.sol)
+  - notional-exponent (0096f1f...): m5-curvev2-dexid-single-sided-mint-impossible
+    (Minting yield tokens single sided can be impossible if CURVE_V2 dexId is used on redemptions. M-5; src/single-sided-lp/CurveConvex2Token.sol)
+  - notional-exponent (0096f1f...): m7-rounding-discrepancy-morpho-health-repay
+    (Rounding discrepancy between MorphoLendingRouter::healthFactor and Morpho::repay causes position migration failures (migration breaks). M-7; src/routers/MorphoLendingRouter.sol)
+  - seamless (23896d61...): m3-morpho-flashloan-unused-shares
+    (Unused shares not returned to user in _redeemAndRepayMorphoFlashLoan and may accumulate. M-3; overlap with accounting)
+  - vesu(2) (e22d6b08...): m2-m3-bridge-middlewares-dos-grief
+    (Bridge middlewares prone to DOS from small donations and claiming can be griefed. M-2/M-3)
+
+access-control:
+  - axion (9a9adab...): m5-initializer-misuse (M-5)
+  - crestal (dc45e98...): h1-payment-erc20-approve-drain
+    (Anyone who is approving BlueprintV5 contract to spend ERC20 can get drained because Payment::payWithERC20. H-1; src/Payment.sol, src/BlueprintV5.sol)
+  - crestal (dc45e98...): m2-sig-missing-params-vuln
+    (Signatures missing some parameters being vulnerable to attackers using them coupled with malicious parameters. M-2; src/EIP712.sol, src/BlueprintCore.sol)
+  - crestal (dc45e98...): m3-signature-replay-updateworkerconfig
+    (Signature Replay attack possible on updateWorkerDeploymentConfigWithSig() in BlueprintCore.sol which leads to users lose the funds. M-3)
+  - crestal (dc45e98...): m4-lack-ac-setworkerpublickey
+    (Lack of access control in setWorkerPublicKey() in BlueprintCore.sol which results users to lose funds. M-4; src/BlueprintCore.sol)
+  - crestal (dc45e98...): m6-whitelist-bypass-create-with-nft
+    (Non whitelisted user can also create agent by calling createAgentWithNFT instead of createAgentWithWhitelistUsers affecting the motive of protocol. M-6)
+  - malda (0f62f27...): h1-rebalancer-steal-custom-receiver
+    (Rebalancer can steal funds from markets by sending to custom receiver through Everclear Bridge. H-1; overlap external)
+  - malda (0f62f27...): m4-blacklist-bypass-outhere-gateway
+    (Blacklist can be completely bypassed on outHere endpoint in mTokenGateway. M-4; src/mToken/mTokenGateway.sol)
+  - malda (0f62f27...): m5-rebalancer-unallowed-dest-chains
+    (Rebalancer can send to unallowed destination chains through EverclearBridge. M-5)
+  - malda (0f62f27...): m8-external-endpoints-permissionless-mainnet-blocked
+    (mErc20Host: It is not possible to permissionlessly call ”external” endpoints when source chain is Eth mainnet, because l1Inclusion flag cannot be set to true. M-8; src/mToken/host/mErc20Host.sol)
+  - malda (0f62f27...): m10-unenforced-maxfee-ttl-sendmsg
+    (Unenforced maxFee and ttl Parameters in sendMsg Function. M-10)
+  - malda (0f62f27...): m12-rebalancer-drain-excessive-bridge-fees
+    (Rebalancer can drain market funds via excessive bridge fees. M-12)
+  - notional-exponent (0096f1f...): h1-cross-contract-reentrancy-yieldtoken-theft
+    (Cross-contract reentrancy allows YIELD_TOKEN theft for the GenericERC4626 WithdrawalRequestManager variant. H-1)
+  - notional-exponent (0096f1f...): h7-rewardmanager-claim-missing-param-check
+    (RewardManagerMixin.claimAccountRewards lacks of necessary param check. H-7; src/rewards/RewardManagerMixin.sol)
+  - notional-exponent (0096f1f...): h10-tradetype-malicious-change-steal-funds
+    (Malicious user can change the TradeType to steal funds from the vault or withdraw request manager. H-10)
+  - notional-exponent (0096f1f...): m26-initializemarket-frontrun-grief
+    (initializeMarket can be frontrun, preventing markets from being configured in MorphoLendingRouter. M-26; src/routers/MorphoLendingRouter.sol)
+  - symmio (1d014156...): m1-incorrect-initializer-modifier-vesting
+    (Incorrect initializer modifier in Vesting contract prevents proper initialization. M-1; contracts/vesting/Vesting.sol, SymmVesting.sol)
+  - symmio (1d014156...): m5-double-spending-vesting
+    (Double spending attack in the Vesting contract. M-5)
+  - vesu (c07c2721...): h1-missing-ownership-validation-positions
+    (Missing ownership validation of positions allows unauthorized migration. H-1; src/migrate.cairo)
+
+upgrade-config:
+  - cork (d4fcdd52...): m1-uups-proxy-incorrect (M-1)
+  - cork (d4fcdd52...): m3-cannot-upgrade (M-3)
+  - notional-exponent (0096f1f...): h5-curveconvex-migrate-storage-incompatible
+    (migrateRewardPool fails due to Incompatible Storage Design in CurveConvexLib. H-5; fits upgrade/migration storage issues)
+
+token-transfer:
+  - axion (9a9adab...): m2-usdt-approval-revert (M-2)
+  - crestal (dc45e98...): h1-payment-erc20-approve-drain
+    (Anyone approving BlueprintV5 to spend ERC20 can get drained because Payment::payWithERC20. H-1; token approval/transfer handling)
+  - malda (0f62f27...): m13-wrapandsupply-prevent-supply-host
+    (WrapAndSupply::wrapAndSupplyOnExtensionMarket prevents users from supplying on host. M-13)
+  - notional-exponent (0096f1f...): h3-dinero-overwithdrawal-batch-id
+    (DineroWithdrawRequestManager vulnerable to token overwithdrawal via batch ID overlap. H-3)
+  - notional-exponent (0096f1f...): m2-incorrect-tokensclaimed-calc
+    (Incorrect tokensClaimed calculation in EthenaCooldownHolder::_finalizeCooldown() blocks withdrawals. M-2)
+  - notional-exponent (0096f1f...): m13-erc20-approve-usdt-incompatibility
+    (Incompatibility of ERC20::approve function with USDT tokens on Ethereum Mainnet chain (no return value, high-level call reverts). M-13; any approve interaction with USDT)
+
+# Additional from Aave v3-origin (mostly Low but relevant):
+# - l2-liquidator-avoid-bad-debt-dust (griefing / accounting overlap)
+
+# Notes:
+# - All listed public repos (original 6 + 0605 update: crestal, malda, notional-exponent, perennial, seamless, symmio, vesu*) now used as train (no held-out test split for prompt training).
+# - Goal: train prompts (per category) that can find **all** the listed known issues for that category
+#   across the commits (measured by agent FINAL_REPORT hitting the issues via title/file/keywords in grounded eval).
+# - Train each category separately with --category.
+# - The same issues are used for both "training signal" and "verification".
+# - Update golds in skillopt/skillopt/audit/data.py to match this list.
+# - Some issues overlap multiple categories (common for grief/dos/accounting in AMO/DEX/vault/bridge designs).
+# - 0605 updates include some Cairo (Starknet) contracts (Vesu*); agent exploration currently Solidity-focused but issues classified for completeness.

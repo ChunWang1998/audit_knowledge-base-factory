@@ -91,7 +91,8 @@ TODO:
 - list.txt 3個train 3個評分(大量參考實際audit 結果)
 - 問grok 怎麼透過skillopt 對list.txt 的內容進行audit, 並且前提是只有supergrok 的訂閱下(沒有openai)
 
-GitHub https://github.com/ChunWang1998/audit_knowledge-base-factory/tree/main 這是我用來訓練用來做smart contract audit prompt 的repo, 我從dataSetResouce/ 找出一些內容列在datasetResource/list.txt中, 我想要拿list.txt 中public 的repo 拿來做prompt 的訓練, 訓練方式是用 skillopt/ 的程式碼來訓練出各個vulnerability type的prompt(參考knowledgeBase/ 的分類:
+GitHub https://github.com/ChunWang1998/audit_knowledge-base-factory/tree/main 
+這是我用來訓練用來做smart contract audit prompt 的repo, 我從dataSetResouce/ 找出一些內容列在datasetResource/list.txt中, 我想要拿list.txt 中public 的repo 拿來做prompt 的訓練, 訓練方式是用 skillopt/ 的程式碼來訓練出各個vulnerability type的prompt(參考knowledgeBase/ 的分類:
 knowledgeBase/
 ├── access-control/
 ├── accounting/
@@ -116,10 +117,4 @@ knowledgeBase/
 可以完全忽略 auditnotes/, fetchfreeOpenapikey/ immunifi/
 
 
-解決「skillopt 用 OpenAI API key，但我只有 xai 訂閱」的問題
-設定方式：
-
-修改 skillopt/skillopt/llm.py（或用 config/env 控制）：
-base_url = "https://api.x.ai/v1"
-api_key = os.getenv("XAI_API_KEY")
-target_model = "grok-3"（或最新版）
+https://grok.com/c/c03712f4-1716-4ddd-ab34-24e04cadc218?rid=8c6ae4ba-c690-41ef-a65c-cc653e30b19c
