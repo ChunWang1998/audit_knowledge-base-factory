@@ -12,6 +12,7 @@ scope: 2025~2026.03
 - cyfrin
 recouse: https://github.com/Cyfrin/cyfrin-audit-reports/tree/main/reports
 scope:
+(很差的report, 無法看出the issues accepted by the team or not)
 
 - credshield
 resouce: https://github.com/Credshields/audit-reports
@@ -77,14 +78,13 @@ generate a report.txt, 根據 @submitField.txt 來完成 @issues.txt 提到的is
 - 在cursor run 的篩選部分, 可以把篩選理由也放進prompt
 - 從拿去codebase 做issue review 產生的review.txt 來優化prompt, 不過可能要多搜集一點review.txt 才知道prompt 會犯什麼通病
 
-目前訓練效果不佳 因為消耗的token 太多, 而且因為一定要求要有找到issue 所以會一直訓練下去
-不要訓練prompt 了
-- 針對比較重要的類別
-- 手動去修改prompt
-- 善用db
-- 與其創造倒不如用很多種prompt 讓AI產生上百個prompt 去測試已知? 然後一直合併優化
-- 或是確保每個issue 都能找到再進行下一步
-- 用不同llm 來多測試個幾次
-- 一樣從兩個角度出發: 
+
 怎麼訓練出好的prompt 
+- train prompt with existing issues (X: cost a lot)
+- 先只針對最好的類型做audit: logic griefing, accounting, access-control 
+- 大量參考data set 中accepted, 且fixed 的issue
+  
 怎麼有效的用現有的prompt 來進行audit(多個model 多次audit 多個不同層面的prompt)
+- filter: 只針對最好的類型做audit
+- 與其創造倒不如用很多種prompt 讓AI產生上百個prompt 去測試已知? 然後一直合併優化
+- 用不同llm 來多測試個幾次

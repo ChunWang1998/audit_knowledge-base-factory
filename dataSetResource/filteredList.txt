@@ -1,0 +1,52 @@
+Sherlock Reports (High/Medium + Team committed to fix)
+
+logic-griefing
+
+Malicious users can take advantage of the rounding direction of a high-value & low-decimal asset (Aave Labs)
+Lack of slippage protection (Cork H-1)
+FlashSwapRouter::emptyReserve() and FlashSwapRouter::emptyReservePartial() functions return incorrect values (Cork H-2)
+LV token holders receive proportional fees when they shouldn't (Cork H-3)
+Incorrect redeemAmount Is Accounted Due To Not Accounting For The Exchange Rate (Cork H-4)
+Incoming Redemption Assets not being tracked when repurchase is called (Cork H-5)
+Users will steal excess funds from the Vault due to VaultPoolLib::redeem() not always decreasing balances (Cork H-6)
+Wrong accounting of locked RA when repurchasing DS+PA with RA (Cork H-7)
+Admin new issuance or user calling redeemExpiredLv() after certain calls will lead to stuck funds (Cork H-8)
+Attackers will steal the reserve from the Vault by receiving ra in FlashSwapRouter (Cork H-9)
+Users redeeming early will withdraw Ra without decreasing the amount locked (Cork H-10)
+VaultPoolLib::reserve() will store the Pa not attributed to user withdrawals incorrectly (Cork H-11)
+Withdrawing all lv before expiry will lead to lost funds in the Vault (Cork M-5)
+Providing liquidity to the AMM does not check the return value of actually provided tokens (Cork M-7)
+
+accounting
+
+Price not computed based on decayed total debt (ApeBond H-1)
+Incorrect scaling of the debt_ratio (ApeBond H-3)
+Several Cork issues above that heavily involve accounting during redemption/repurchase (H-3, H-4, H-6, H-7, H-10, H-11, M-6, M-7)
+
+access-control
+
+Missing ownership validation of positions allows unauthorized migration (Vesu H-1)
+Rebalancer should use depositForBurnWithCaller instead of depositForBurn (MetaLend H-1)
+Front-running risk in depositWithAuthorizationAavePool (MetaLend M-3)
+Some role/permission issues in Cork (H-5)
+
+Hacken Reports (Status = Fixed)
+logic-griefing
+
+F-2025-11617 (Seedify.fund)
+F-2025-11651 (Seedify.fund)
+F-2025-11654 (Seedify.fund)
+F-2025-11735 (Seedify.fund)
+Multiple logic/validation issues in Knoxnet and Dexalot (e.g. missing zero-address validation, CEI pattern violation, uncoordinated escape hatch mechanisms)
+
+accounting
+
+F-2025-11651, F-2025-11654, F-2025-11742, F-2025-11752, F-2025-11767 (Seedify.fund)
+Fee-on-Transfer / Rebasing Tokens Break Accounting (BullBit)
+Inconsistent Asset Accounting Between Internal Balances and Contract Holdings (BullBit)
+
+access-control
+
+F-2025-11735, F-2025-11752 (Seedify.fund)
+Lack of Two-Step Ownership Transfer (BullBit)
+Several access-control and authorization issues in Knoxnet and Dexalot
