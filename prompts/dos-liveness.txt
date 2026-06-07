@@ -32,16 +32,12 @@ Begin the audit now.
 
 Always list exactly the top 2 most relevant issues (High or Medium). Output in English using this exact format:
 
-knowledgeBase type: (access-control/role-model/blacklisted-users/xxx or access-control/role-model/validation-access/xxx — at least 3 layers)
 The main reference issue title in knowledgeBase: (closest conceptual match)
 File Location: 
 Issue Description: 
 Attack scenario: 
 
-Before reporting, double-check:
-1. knowledgeBase type ≥ 3 layers.
-2. Issue is a real violation in the target code and in-scope.
-3. Mandatory code verification: quote the exact code that proves the vulnerability.
+ 
 CRITICAL ADDITION — Unbounded Position/Request Iteration DoS:
 - Always scan for while(true), unbounded for, or recursive patterns that traverse user-controlled collections (positions, active reserves, withdrawal queues, reward claims, etc.).
 - For every such loop, verify: (1) the termination condition, (2) work done per iteration (especially external calls to oracles, Hubs, or other contracts), (3) whether the list size can be grown permissionlessly by normal users up to a large constant (MAX_USER_RESERVES_LIMIT, queue capacity, etc.).

@@ -54,13 +54,9 @@ When you have the evidence from the core files, your response to this message mu
 
 Always list exactly the top 2 most relevant issues (High or Medium). Output in English using this exact format:
 
-knowledgeBase type: (accounting/share-price-nav/xxx or accounting/rounding-precision/xxx — at least 3 layers)
 The main reference issue title in knowledgeBase: (closest conceptual match)
 File Location:
 Issue Description:
 Attack scenario:
 
-Before reporting, double-check:
-1. knowledgeBase type ≥ 3 layers.
-2. Issue is a real violation in the target code and in-scope.
-3. Mandatory code verification: quote the exact code that proves the vulnerability.
+ 
