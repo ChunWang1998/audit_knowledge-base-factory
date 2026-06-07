@@ -85,4 +85,6 @@ generate a report.txt, 根據 @submitField.txt 來完成 @issues.txt 提到的is
 - 與其創造倒不如用很多種prompt 讓AI產生上百個prompt 去測試已知? 然後一直合併優化
 - 或是確保每個issue 都能找到再進行下一步
 - 用不同llm 來多測試個幾次
-- 一樣從兩個角度出發: 怎麼訓練出好的prompt 和怎麼有效的用現有的prompt 來進行audit
+- 一樣從兩個角度出發: 
+怎麼訓練出好的prompt 
+怎麼有效的用現有的prompt 來進行audit(多個model 多次audit 多個不同層面的prompt)
