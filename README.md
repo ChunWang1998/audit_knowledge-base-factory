@@ -81,10 +81,8 @@ generate a report.txt, 根據 @submitField.txt 來完成 @issues.txt 提到的is
 
 怎麼訓練出好的prompt 
 - train prompt with existing issues (X: cost a lot)
-- 先只針對最好的類型做audit: logic griefing, accounting, access-control 
-- 大量參考data set 中accepted, 且fixed 的issue
+- 大量參考data set 中accepted, 且fixed 的issue. 目前只參考hacken 和sherlock
+- 只針對最好的類型做audit: logic griefing, accounting, access-control 
   
 怎麼有效的用現有的prompt 來進行audit(多個model 多次audit 多個不同層面的prompt)
-- filter: 只針對最好的類型做audit
-- 與其創造倒不如用很多種prompt 讓AI產生上百個prompt 去測試已知? 然後一直合併優化
-- 用不同llm 來多測試個幾次
+- 一個type 多個prompt, 多個llm, 多次verify
