@@ -78,5 +78,3 @@ agents4:
 - 一個type 多個prompt, 多個llm(找public 的, cost 怎麼取捨), 多次verify -> 好像只能手動開多個chat with diff llm 去跑
 - 怎麼切入repo 比較省錢 -  一定得用high 的去找issue
 - 每個階段的llm model 怎麼挑比較省錢
-
-llm as a judge
