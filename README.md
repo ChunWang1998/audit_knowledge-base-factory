@@ -47,16 +47,26 @@ a. Hyperbridge Protocol
 ## Audit approach
 
 in target repo, agents1:
-我現在想要對contract Moolah, contract PublicLiquidator 進行audit, 找出issue, 藉由 @prompts/ 內的prompts 找出問題. 我要先以logic-griefing , 並先以第一個prompt 進行audit, 幫我進行3 次獨立的audit, 並且結合結果產出2個最有效的issues, 將結果輸出在 issues.txt中. 找問題時要遵守 @Immutifi Feasibility Limitations.md  的規範
+我現在想要對{contract Moolah, contract PublicLiquidator} 進行audit, 找出issue, 藉由 @prompts/ 內的prompts 找出問題. 我要先以logic-griefing , 並先以第一個prompt 進行audit, 幫我進行3 次獨立的audit, 並且結合結果產出2個最有效的issues, 將結果輸出在 issues/issuesGrok.txt中. 找問題時要遵守 @Immutifi Feasibility Limitations.md  的規範
 
 agents2:
 對logic griefing 的其他prompt 做一樣的事情
+
+agents3:
+將 @issues/ 的關於 {contract Moolah, contract PublicLiquidator} 的漏洞確認過, 並且整理後給出2 個結果, 並依照 @Immutifi submitField.txt 產出兩個report
+
+agents4: 
+把兩個report 用更口語的方式重寫, 並且給一份中文report
+
+
+
+
 
 
 ## murmur
 - 大部分bug bounty 的out of scope都在說什麼? 拒絕的理由? 是否可以用來filter 目前的knowledge base
 - 在cursor run 的篩選部分, 可以把篩選理由也放進prompt
-- 從拿去codebase 做issue review 產生的review.txt 來優化prompt, 不過可能要多搜集一點review.txt 才知道prompt 會犯什麼通病
+- 最好的model: Opus
 
 
 怎麼訓練出好的prompt 
@@ -66,11 +76,7 @@ agents2:
   
 怎麼有效的用現有的prompt 來進行audit(多個model 多次audit 多個不同層面的prompt)
 - 一個type 多個prompt, 多個llm(找public 的, cost 怎麼取捨), 多次verify -> 好像只能手動開多個chat with diff llm 去跑
-- 怎麼切入repo 比較省錢
+- 怎麼切入repo 比較省錢 -  一定得用high 的去找issue
 - 每個階段的llm model 怎麼挑比較省錢
 
-
-free llm in cursor:
-composer 2.5 -> 太快了! -> auto
-grok build 0.1 -> 很久!
-sonnet 4.5 -> 還行 -> non auto
+llm as a judge
