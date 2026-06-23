@@ -47,10 +47,10 @@ a. Hyperbridge Protocol
 ## Audit approach
 
 in target repo, agents1:
-我現在想要對{contract Moolah, contract PublicLiquidator} 進行audit, 找出issue, 藉由 @prompts/ 內的prompts 找出問題. 我要先以logic-griefing , 並先以第一個prompt 進行audit, 幫我進行3 次獨立的audit, 並且結合結果產出2個最有效的issues, 將結果輸出在 issues/issuesGrok.txt中. 找問題時要遵守 @Immutifi Feasibility Limitations.md  的規範
+我現在想要對 @yearn/TokenizedStrategy.sol 進行audit, 找出issue, 藉由 @prompts 內的prompts 找出問題. 我要先以@logic-griefing-economic-distribution.txt 進行audit, 將結果輸出在 issues/issuesGrok.txt中. 找問題時要遵守 @immunefi/Immutifi Feasibility Limitations.md  的規範
 
 agents2:
-對logic griefing 的其他prompt 做一樣的事情
+用 @accounting-balance-cross-contract.txt 做一樣的事情
 
 agents3:
 將 @issues/ 的關於 {contract Moolah, contract PublicLiquidator} 的漏洞確認過, 並且整理後給出2 個結果, 並依照 @Immutifi submitField.txt 產出兩個report
