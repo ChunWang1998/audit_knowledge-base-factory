@@ -70,11 +70,9 @@ agents4:
 
 
 怎麼訓練出好的prompt 
-- train prompt with existing issues (X: cost a lot)
 - 大量參考data set 中accepted, 且fixed 的issue. 目前只參考hacken 和sherlock
-- 只針對最好的類型做audit: logic griefing, accounting, access-control 
+- llm as judge: 用low model 當audit agent, 用medium model 當judge. 因為要用cursor 額度所以需要手動貼上內容來judge
+(真的還需要訓練prompt 嗎? 其實感覺已經很好了, 只需要用好的high model來跑了)
   
 怎麼有效的用現有的prompt 來進行audit(多個model 多次audit 多個不同層面的prompt)
-- 一個type 多個prompt, 多個llm(找public 的, cost 怎麼取捨), 多次verify -> 好像只能手動開多個chat with diff llm 去跑
-- 怎麼切入repo 比較省錢 -  一定得用high 的去找issue
-- 每個階段的llm model 怎麼挑比較省錢
+- 直接就用high 去找issue 吧
