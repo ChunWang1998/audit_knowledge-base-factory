@@ -1,0 +1,18 @@
+3.  Choose Impact(s) - Smart Contract
+View Impact Definition
+Choose one or more impacts that apply to your vulnerability.
+Theft of unclaimed yield
+Permanent freezing of unclaimed yield
+Temporary freezing of funds for at least 7 days
+Definite losses due to Miner-extractable value (MEV) on user actions without any external factors
+Griefing (e.g. no profit motive for an attacker, but damage to the users or the protocol)
+Theft of gas
+Unbounded gas consumption
+Definite losses due to Miner-extractable value (MEV) on user actions with external factors
+Temporary freezing of funds for at least for 2 days
+Any governance voting result manipulation
+Direct theft of any user funds, whether at-rest or in-motion, other than unclaimed yield
+Permanent freezing of funds
+Miner-extractable value (MEV)
+Protocol insolvency
+Indefinite losses due to Miner-extractable value (MEV) on user actions without any external factors.
