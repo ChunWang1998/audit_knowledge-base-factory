@@ -47,15 +47,20 @@ a. Hyperbridge Protocol
 ## Audit approach
 
 in target repo, agents1:
-我現在想要對 @yearn/TokenizedStrategy.sol 進行audit, 找出issue, 藉由 @prompts 內的prompts 找出問題. 我要先以@logic-griefing-economic-distribution.txt 進行audit, 將結果輸出在 issues/issuesGrok.txt中. 找問題時要遵守 @immunefi/Immutifi Feasibility Limitations.md  的規範
+我現在想要對 @yearn/TokenizedStrategy.sol 進行audit, 找出issue, 藉由 @prompts 內的prompts 找出問題. 我要先以@logic-griefing-economic-distribution.txt 進行audit, 將結果輸出在 issue.txt中. 找問題時要遵守 @immunefi/Immutifi Feasibility Limitations.md  的規範
 
 agents2:
 用 @accounting-balance-cross-contract.txt 做一樣的事情
 
-agents3:
-將 @issues/ 的關於 {contract Moolah, contract PublicLiquidator} 的漏洞確認過, 並且整理後給出2 個結果, 並依照 @Immutifi submitField.txt 產出兩個report
+agents3:(換一個high model)
+將 @issues/issue.txt 的關於 @yearn/TokenizedStrategy.sol 的漏洞確認過是否真的存在, 並且刪除不合理issue, 並重新修改 @issues/issue.txt 
+
+(自己確認過)
 
 agents4: 
+@issues/issue.txt:1-240 把該issue1 用 @immunefi/3-Immutifi submitField.txt 的格式完整描述
+
+agents5: 
 把兩個report 用更口語的方式重寫, 並且給一份中文report
 
 
